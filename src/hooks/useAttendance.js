@@ -23,11 +23,11 @@ export const useAttendanceMatrixAll = () =>
 		queryFn: getAttendanceMatrixAll,
 	});
 
-export const useAttendanceMatrixByClass = (classId) =>
+export const useAttendanceMatrixByClass = (classId, section) =>
 	useQuery({
-		queryKey: ["attendance-matrix", "class", classId],
-		queryFn: () => getAttendanceMatrixByClass(classId),
-		enabled: !!classId,
+		queryKey: ["attendance-matrix", "class", classId, section],
+		queryFn: () => getAttendanceMatrixByClass(classId, section),
+		enabled: !!classId && !!section,
 	});
 
 export const useAttendanceMatrixByStudentId = (studentId) =>
@@ -77,7 +77,8 @@ export const useTodayAttendanceCount = () =>
 
 export const useAttendanceCountByDate = (date) =>
 	useQuery({
-		queryKey: ["attendance-count", date],
+		queryKey: ["attendance-count", "date", date],
 		queryFn: () => getAttendanceCountByDate(date),
-		enabled: !!date,
+		enabled: Boolean(date),
+		staleTime: 0,
 	});

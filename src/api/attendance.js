@@ -12,8 +12,11 @@ export const getAttendanceMatrixAll = async () => {
 	return res.data;
 };
 
-export const getAttendanceMatrixByClass = async (classId) => {
-	const res = await api.get(`/v1/student-attendance/by-class/${classId}`);
+export const getAttendanceMatrixByClass = async (classId, section) => {
+	const res = await api.get(`/v1/student-attendance/by-class/${classId}`, {
+		params: { section },
+	});
+
 	return res.data;
 };
 

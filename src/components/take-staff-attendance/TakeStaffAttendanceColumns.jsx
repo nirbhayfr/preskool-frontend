@@ -97,11 +97,6 @@ export const TakeStaffAttendanceColumns = (attendanceMap, setAttendance) => [
 						<RadioGroupItem value="H" />
 						<span className="text-sm">Half Day</span>
 					</label>
-
-					<label className="flex items-center gap-1 cursor-pointer">
-						<RadioGroupItem value="" />
-						<span className="text-sm">Holiday</span>
-					</label>
 				</RadioGroup>
 			);
 		},

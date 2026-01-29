@@ -28,6 +28,7 @@ import AddStaffPage from "./pages/AddStaffPage";
 import AddStudentPage from "./pages/AddStudentPage";
 import TakeTeacherAttendance from "./pages/TakeTeacherAttendance";
 import TakeStaffAttendance from "./pages/TakeStaffAttendance";
+import TakeStudentAttendance from "./pages/TakeStudentAttendance";
 
 function App() {
 	return (
@@ -133,6 +134,10 @@ function App() {
 							<Route
 								path="/take-staff-attendance"
 								element={<TakeStaffAttendance />}
+							/>
+							<Route
+								path="/take-student-attendance"
+								element={<TakeStudentAttendance />}
 							/>
 						</Route>
 					</Route>

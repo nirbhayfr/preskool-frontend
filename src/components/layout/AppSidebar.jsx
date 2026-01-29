@@ -93,7 +93,12 @@ const data = {
 			icon: UserCog,
 		},
 	],
-	others: [
+	attendanceMark: [
+		{
+			title: "Take Student Attendance",
+			url: "/take-student-attendance",
+			icon: GraduationCap,
+		},
 		{
 			title: "Take Teacher Attendance",
 			url: "/take-teacher-attendance",
@@ -104,7 +109,6 @@ const data = {
 			title: "Take Staff Attendance",
 			url: "/take-staff-attendance",
 			icon: UserCog,
-			badge: "10",
 		},
 	],
 };
@@ -163,8 +167,14 @@ export function AppSidebar({ ...props }) {
 			<SidebarContent className="sidebar-scroll">
 				<NavSecondary items={data.main} name="main" />
 				<NavSecondary items={data.people} name="people" />
-				<NavSecondary items={data.attendance} name="attendance" />
-				<NavSecondary items={data.others} name="others" />
+				<NavSecondary
+					items={data.attendance}
+					name="attendance list"
+				/>
+				<NavSecondary
+					items={data.attendanceMark}
+					name="mark attendance"
+				/>
 			</SidebarContent>
 			<SidebarFooter></SidebarFooter>
 			<SidebarRail />
