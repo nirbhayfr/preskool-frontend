@@ -1,352 +1,184 @@
-import * as React from "react";
+import * as React from 'react'
 import {
-	useReactTable,
-	getCoreRowModel,
-	getPaginationRowModel,
-	getFilteredRowModel,
-	flexRender,
-} from "@tanstack/react-table";
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  flexRender,
+} from '@tanstack/react-table'
 
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 
-import { CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
+import { CheckCheck, X, Clock, Calendar } from 'lucide-react'
 
-const leaveColumns = [
-	{
-		accessorKey: "type",
-		header: "Leave Type",
-	},
-	{
-		accessorKey: "date",
-		header: "Leave Date",
-	},
-	{
-		accessorKey: "days",
-		header: "No of Days",
-	},
-	{
-		accessorKey: "appliedOn",
-		header: "Applied On",
-	},
-	{
-		accessorKey: "status",
-		header: "Status",
-		cell: ({ row }) => {
-			const status = row.original.status;
+import { useAttendanceMatrixByStudentId } from '@/hooks/useAttendance'
+import { useParams } from 'react-router-dom'
 
-			return (
-				<Badge
-					variant={
-						status === "Approved" ? "default" : "secondary"
-					}
-				>
-					{status}
-				</Badge>
-			);
-		},
-	},
-];
+import { getAttendanceColumns } from '../student-attendance/StudentAttendanceColumns'
 
-const data = [
-	{
-		type: "Casual Leave",
-		date: "07 May 2024 - 07 May 2024",
-		days: 1,
-		appliedOn: "07 May 2024",
-		status: "Approved",
-	},
-	{
-		type: "Casual Leave",
-		date: "08 May 2024 - 08 May 2024",
-		days: 1,
-		appliedOn: "04 May 2024",
-		status: "Approved",
-	},
-	{
-		type: "Casual Leave",
-		date: "20 May 2024 - 20 May 2024",
-		days: 1,
-		appliedOn: "19 May 2024",
-		status: "Pending",
-	},
-	{
-		type: "Medical Leave",
-		date: "05 May 2024 - 09 May 2024",
-		days: 5,
-		appliedOn: "05 May 2024",
-		status: "Approved",
-	},
-	{
-		type: "Medical Leave",
-		date: "08 May 2024 - 11 May 2024",
-		days: 4,
-		appliedOn: "08 May 2024",
-		status: "Pending",
-	},
-	{
-		type: "Special Leave",
-		date: "09 May 2024 - 09 May 2024",
-		days: 1,
-		appliedOn: "09 May 2024",
-		status: "Pending",
-	},
-];
+function StudentAttendance() {
+  const { id } = useParams()
 
-function StudentLeaveandAttendance() {
-	const [globalFilter, setGlobalFilter] = React.useState("");
+  const [selectedMonth, setSelectedMonth] = React.useState('2026-01')
 
-	const table = useReactTable({
-		data,
-		columns: leaveColumns,
-		state: { globalFilter },
-		onGlobalFilterChange: setGlobalFilter,
-		getCoreRowModel: getCoreRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
-	});
+  const { data: attendanceData, isLoading, isError } = useAttendanceMatrixByStudentId(id)
 
-	return (
-		<div className="space-y-6">
-			<Card className="rounded-sm">
-				<CardHeader className="flex flex-row items-center justify-between">
-					<CardTitle className="text-lg font-semibold">
-						Leaves
-					</CardTitle>
+  const tableData = attendanceData?.Data || []
 
-					<Button size="sm">Apply for Leave</Button>
-				</CardHeader>
+  const columns = React.useMemo(
+    () => getAttendanceColumns(selectedMonth),
+    [selectedMonth]
+  )
 
-				<CardContent className="pt-0 space-y-4">
-					{/* Controls */}
-					<div className="flex flex-wrap items-center justify-between gap-3">
-						<div className="flex items-center gap-2 text-sm">
-							<span>Rows Per Page</span>
-							<Select
-								value={String(
-									table.getState().pagination
-										.pageSize
-								)}
-								onValueChange={(val) =>
-									table.setPageSize(Number(val))
-								}
-							>
-								<SelectTrigger className="w-20">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="5">
-										5
-									</SelectItem>
-									<SelectItem value="10">
-										10
-									</SelectItem>
-									<SelectItem value="20">
-										20
-									</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
+  const { presentCount, absentCount } = React.useMemo(() => {
+    let present = 0
+    let absent = 0
 
-						<Input
-							placeholder="Search"
-							value={globalFilter}
-							onChange={(e) =>
-								setGlobalFilter(e.target.value)
-							}
-							className="max-w-xs"
-						/>
-					</div>
+    tableData.forEach((row) => {
+      Object.entries(row).forEach(([key, value]) => {
+        if (!key.startsWith(selectedMonth)) return
 
-					{/* Table */}
-					<div className="rounded-md border">
-						<Table>
-							<TableHeader>
-								{table
-									.getHeaderGroups()
-									.map((headerGroup) => (
-										<TableRow
-											key={headerGroup.id}
-										>
-											{headerGroup.headers.map(
-												(header) => (
-													<TableHead
-														key={
-															header.id
-														}
-													>
-														{flexRender(
-															header
-																.column
-																.columnDef
-																.header,
-															header.getContext()
-														)}
-													</TableHead>
-												)
-											)}
-										</TableRow>
-									))}
-							</TableHeader>
+        if (value === 'P') present++
+        if (value === 'A') absent++
+      })
+    })
 
-							<TableBody>
-								{table.getRowModel().rows.length ? (
-									table
-										.getRowModel()
-										.rows.map((row) => (
-											<TableRow
-												key={row.id}
-												className="border-b last:border-b-0"
-											>
-												{row
-													.getVisibleCells()
-													.map(
-														(
-															cell
-														) => (
-															<TableCell
-																key={
-																	cell.id
-																}
-																className="py-3 px-4"
-															>
-																{flexRender(
-																	cell
-																		.column
-																		.columnDef
-																		.cell,
-																	cell.getContext()
-																)}
-															</TableCell>
-														)
-													)}
-											</TableRow>
-										))
-								) : (
-									<TableRow>
-										<TableCell
-											colSpan={
-												leaveColumns.length
-											}
-											className="py-6 text-center text-sm"
-										>
-											No results.
-										</TableCell>
-									</TableRow>
-								)}
-							</TableBody>
-						</Table>
-					</div>
+    return { presentCount: present, absentCount: absent }
+  }, [tableData, selectedMonth])
 
-					{/* Pagination */}
-					<div className="flex items-center justify-end gap-2">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => table.previousPage()}
-							disabled={!table.getCanPreviousPage()}
-						>
-							Prev
-						</Button>
+  const table = useReactTable({
+    data: tableData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  })
 
-						<span className="text-sm">
-							{table.getState().pagination.pageIndex + 1}
-						</span>
+  if (isLoading) return <p>Loading attendance...</p>
+  if (isError) return <p>Failed to load attendance</p>
+  if (!attendanceData) return null
 
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => table.nextPage()}
-							disabled={!table.getCanNextPage()}
-						>
-							Next
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
+  return (
+    <div className="space-y-6">
+      <Card className="rounded-sm">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-lg font-semibold">Attendance</CardTitle>
 
-			<Card className="rounded-sm">
-				<CardHeader className="flex flex-row items-center justify-between py-3 space-y-0">
-					<CardTitle className="text-lg font-semibold">
-						Attendance
-					</CardTitle>
+          {/* Month Selector */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Month</span>
+            <Input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-[160px]"
+            />
+          </div>
+        </CardHeader>
 
-					<p className="text-xs text-muted-foreground">
-						Last Updated on : 25 May 2024
-					</p>
-				</CardHeader>
+        <CardContent className="pt-0 space-y-4">
+          {/* Legend + Monthly Summary */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Status Legend */}
+            <div className="flex flex-wrap gap-3">
+              <LegendItem
+                icon={<CheckCheck className="h-4 w-4" />}
+                label="Present"
+                bg="bg-emerald-700"
+              />
+              <LegendItem
+                icon={<X className="h-4 w-4" />}
+                label="Absent"
+                bg="bg-red-700"
+              />
+              <LegendItem
+                icon={<Calendar className="h-4 w-4" />}
+                label="Holiday"
+                bg="bg-slate-400"
+              />
+            </div>
 
-				<CardContent className="pt-0">
-					<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-						<div className="flex items-center gap-3 rounded-sm border p-3">
-							<CheckCircle2 className="size-5 text-green-600" />
-							<div>
-								<p className="text-xs text-muted-foreground">
-									Present
-								</p>
-								<p className="text-lg font-semibold">
-									265
-								</p>
-							</div>
-						</div>
+            {/* Monthly Summary */}
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                <span className="font-medium">Present: {presentCount}</span>
+              </div>
 
-						<div className="flex items-center gap-3 rounded-sm border p-3">
-							<XCircle className="size-5 text-red-600" />
-							<div>
-								<p className="text-xs text-muted-foreground">
-									Absent
-								</p>
-								<p className="text-lg font-semibold">
-									05
-								</p>
-							</div>
-						</div>
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-red-600" />
+                <span className="font-medium">Absent: {absentCount}</span>
+              </div>
+            </div>
+          </div>
 
-						<div className="flex items-center gap-3 rounded-sm border p-3">
-							<AlertCircle className="size-5 text-yellow-600" />
-							<div>
-								<p className="text-xs text-muted-foreground">
-									Half Day
-								</p>
-								<p className="text-lg font-semibold">
-									01
-								</p>
-							</div>
-						</div>
+          {/* ✅ TABLE — THIS WILL RENDER */}
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        style={{ width: header.getSize() }}
+                        className="text-center"
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
 
-						<div className="flex items-center gap-3 rounded-sm border p-3">
-							<Clock className="size-5 text-orange-600" />
-							<div>
-								<p className="text-xs text-muted-foreground">
-									Late
-								</p>
-								<p className="text-lg font-semibold">
-									12
-								</p>
-							</div>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-		</div>
-	);
+              <TableBody>
+                {table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="p-2 text-center">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="py-6 text-center text-sm"
+                    >
+                      No attendance data.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 
-export default StudentLeaveandAttendance;
+export default StudentAttendance
+
+function LegendItem({ icon, label, bg }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-sm font-medium">
+      <span
+        className={`flex h-6 w-6 items-center justify-center rounded-md text-white ${bg}`}
+      >
+        {icon}
+      </span>
+      {label}
+    </div>
+  )
+}

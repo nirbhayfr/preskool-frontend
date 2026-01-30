@@ -1,167 +1,179 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Phone, Mail } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { useStudent } from '@/hooks/useStudents'
+import { Phone, Mail } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 
 function StudentDetailsTabContent() {
-	return (
-		<div className="space-y-6">
-			<Card className="rounded-sm">
-				<CardHeader className="">
-					<CardTitle className="font-semibold text-lg">
-						Parents Information
-					</CardTitle>
-				</CardHeader>
+  const { id } = useParams()
+  const { data: student, isLoading, isError } = useStudent(id)
 
-				<CardContent className="pt-0 space-y-6">
-					{/* Father */}
-					<div className="flex items-start gap-4">
-						<img
-							src="/img/parents/parent-01.jpg"
-							alt="Father"
-							className="size-14 rounded-sm object-cover"
-						/>
+  if (isLoading) return <p>Loading...</p>
+  if (isError) return <p>Failed to load student</p>
+  if (!student) return null
 
-						<div className="flex w-full items-start justify-between">
-							{/* Name + Role */}
-							<div>
-								<p className="text-sm font-medium">
-									Jerald Vicinius
-								</p>
-								<p className="text-xs text-muted-foreground">
-									Father
-								</p>
-							</div>
+  return (
+    <div className="space-y-6">
+      {/* Parents Information */}
+      <Card className="rounded-sm">
+        <CardHeader>
+          <CardTitle className="font-semibold text-lg">Parents Information</CardTitle>
+        </CardHeader>
 
-							{/* Contact */}
-							<div className="space-y-1 text-xs text-muted-foreground text-right">
-								<div className="flex items-center justify-end gap-2">
-									<Phone className="size-3.5" />
-									<span>+1 45545 46464</span>
-								</div>
-								<div className="flex items-center justify-end gap-2">
-									<Mail className="size-3.5" />
-									<span>jera@example.com</span>
-								</div>
-							</div>
-						</div>
-					</div>
+        <CardContent className="pt-0 space-y-6">
+          {/* Father / Guardian */}
+          <div className="flex items-start gap-4">
+            <img
+              src={
+                student.FatherPhoto ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  student.GuardianName || 'Father'
+                )}`
+              }
+              alt="Father"
+              className="size-14 rounded-sm object-cover"
+            />
 
-					{/* Mother */}
-					<div className="flex items-start gap-4">
-						<img
-							src="/img/parents/parent-02.jpg"
-							alt="Mother"
-							className="size-14 rounded-sm object-cover"
-						/>
+            <div className="flex w-full items-start justify-between">
+              <div>
+                <p className="text-sm font-medium">
+                  <ValueOrNA value={student.GuardianName} />
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <ValueOrNA value={student.GuardianRelation || 'Father'} />
+                </p>
+              </div>
 
-						<div className="flex w-full items-start justify-between">
-							{/* Name + Role */}
-							<div>
-								<p className="text-sm font-medium">
-									Roberta Webber
-								</p>
-								<p className="text-xs text-muted-foreground">
-									Mother
-								</p>
-							</div>
+              <div className="space-y-1 text-xs text-muted-foreground text-right">
+                <div className="flex items-center justify-end gap-2">
+                  <Phone className="size-3.5" />
+                  <ValueOrNA value={student.GuardianContact} />
+                </div>
 
-							{/* Contact */}
-							<div className="space-y-1 text-xs text-muted-foreground text-right">
-								<div className="flex items-center justify-end gap-2">
-									<Phone className="size-3.5" />
-									<span>+1 46499 24357</span>
-								</div>
-								<div className="flex items-center justify-end gap-2">
-									<Mail className="size-3.5" />
-									<span>robe@example.com</span>
-								</div>
-							</div>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
+                <div className="flex items-center justify-end gap-2">
+                  <Mail className="size-3.5" />
+                  <ValueOrNA value={student.EmailAddress} />
+                </div>
+              </div>
+            </div>
+          </div>
 
-			<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-				{/* Address Card */}
-				<Card className="rounded-sm">
-					<CardHeader>
-						<CardTitle className="font-semibold">
-							Address
-						</CardTitle>
-					</CardHeader>
+          {/* Mother */}
+          <div className="flex items-start gap-4">
+            <img
+              src={
+                student.MotherPhoto ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent('Mother')}`
+              }
+              alt="Mother"
+              className="size-14 rounded-sm object-cover"
+            />
 
-					<CardContent className="pt-0 space-y-4">
-						<div>
-							<p className="text-xs text-muted-foreground">
-								Current Address
-							</p>
-							<p className="mt-1 text-sm">
-								3495 Red Hawk Road, Buffalo Lake, MN
-								55314
-							</p>
-						</div>
+            <div className="flex w-full items-start justify-between">
+              <div>
+                <p className="text-sm font-medium">
+                  <ValueOrNA value={student.MotherName} />
+                </p>
+                <p className="text-xs text-muted-foreground">Mother</p>
+              </div>
 
-						<div>
-							<p className="text-xs text-muted-foreground">
-								Permanent Address
-							</p>
-							<p className="mt-1 text-sm">
-								3495 Red Hawk Road, Buffalo Lake, MN
-								55314
-							</p>
-						</div>
-					</CardContent>
-				</Card>
+              <div className="space-y-1 text-xs text-muted-foreground text-right">
+                <div className="flex items-center justify-end gap-2">
+                  <Phone className="size-3.5" />
+                  <ValueOrNA value={student.MotherContact} />
+                </div>
 
-				{/* Previous School Card */}
-				<Card className="rounded-sm">
-					<CardHeader>
-						<CardTitle className="font-semibold">
-							Previous School Details
-						</CardTitle>
-					</CardHeader>
+                <div className="flex items-center justify-end gap-2">
+                  <Mail className="size-3.5" />
+                  <ValueOrNA value={student.MotherEmail} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-					<CardContent className="pt-0 space-y-4">
-						<div>
-							<p className="text-xs text-muted-foreground">
-								Previous School Name
-							</p>
-							<p className="mt-1 text-sm">
-								Oxford Matriculation, USA
-							</p>
-						</div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* Address Card */}
+        <Card className="rounded-sm">
+          <CardHeader>
+            <CardTitle className="font-semibold">Address</CardTitle>
+          </CardHeader>
 
-						<div>
-							<p className="text-xs text-muted-foreground">
-								School Address
-							</p>
-							<p className="mt-1 text-sm">
-								1852 Barnes Avenue, Cincinnati, OH 45202
-							</p>
-						</div>
-					</CardContent>
-				</Card>
-			</div>
+          <CardContent className="pt-0 space-y-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Current Address</p>
+              <p className="mt-1 text-sm">
+                <ValueOrNA value={student.Address} />
+              </p>
+            </div>
 
-			<Card className="rounded-sm">
-				<CardHeader>
-					<CardTitle className="font-semibold">
-						Other Info
-					</CardTitle>
-				</CardHeader>
+            <div>
+              <p className="text-xs text-muted-foreground">Permanent Address</p>
+              <p className="mt-1 text-sm">
+                <ValueOrNA value={student.GuardianAddress} />
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-				<CardContent className="pt-0">
-					<p className="text-sm text-muted-foreground leading-relaxed">
-						Depending on the specific needs of your
-						organization or system, additional information may
-						be collected or tracked. It&apos;s important to
-						ensure that any data collected complies with
-						privacy regulations and policies to protect
-						students&apos; sensitive information.
-					</p>
-				</CardContent>
-			</Card>
-		</div>
-	);
+        {/* Previous School Card */}
+        <Card className="rounded-sm">
+          <CardHeader>
+            <CardTitle className="font-semibold">Previous School Details</CardTitle>
+          </CardHeader>
+
+          <CardContent className="pt-0 space-y-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Previous School Name</p>
+              <p className="mt-1 text-sm">
+                <ValueOrNA value={student.PreviousAcademicRecord} />
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-muted-foreground">School Address</p>
+              <p className="mt-1 text-sm">
+                <ValueOrNA value={student.PreviousSchoolAddress} />
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Other Info */}
+      <Card className="rounded-sm">
+        <CardHeader>
+          <CardTitle className="font-semibold">Other Info</CardTitle>
+        </CardHeader>
+
+        <CardContent className="pt-0 space-y-2">
+          <InfoLine label="Academic Status" value={student.AcademicStatus} />
+          <InfoLine label="Attendance" value={student.AttendancePercentage} />
+          <InfoLine label="GPA / Marks" value={student.GPAOrMarks} />
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 
-export default StudentDetailsTabContent;
+export default StudentDetailsTabContent
+
+function ValueOrNA({ value }) {
+  if (!value) {
+    return (
+      <span className="inline-block rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+        Not Available
+      </span>
+    )
+  }
+  return <span className="font-medium text-foreground">{value}</span>
+}
+
+function InfoLine({ label, value }) {
+  return (
+    <div className="flex justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <ValueOrNA value={value} />
+    </div>
+  )
+}

@@ -1,39 +1,39 @@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-const getAvatar = (row) =>
-	row.ProfilePhoto ||
-	row.ProfilePictureUrl ||
-	`https://ui-avatars.com/api/?name=${encodeURIComponent(
-		row.FullName || "Student",
-	)}`;
+// const getAvatar = (row) =>
+// 	row.ProfilePhoto ||
+// 	row.ProfilePictureUrl ||
+// 	`https://ui-avatars.com/api/?name=${encodeURIComponent(
+// 		row.FullName || "Student",
+// 	)}`;
 
 export const TakeStudentAttendanceColumns = (
 	attendanceMap,
 	setAttendanceMap,
 ) => [
-	{
-		accessorKey: "StudentID",
-		header: "ID",
-		cell: ({ row }) => (
-			<span className="font-medium text-primary">
-				{row.original.StudentID}
-			</span>
-		),
-		size: 80,
-	},
+	// {
+	// 	accessorKey: "StudentID",
+	// 	header: "ID",
+	// 	cell: ({ row }) => (
+	// 		<span className="font-medium text-primary">
+	// 			{row.original.StudentID}
+	// 		</span>
+	// 	),
+	// 	size: 80,
+	// },
 
-	{
-		id: "profile",
-		header: "Photo",
-		cell: ({ row }) => (
-			<img
-				src={getAvatar(row.original)}
-				alt="Profile"
-				className="h-9 w-9 rounded-full object-cover border"
-			/>
-		),
-		size: 70,
-	},
+	// {
+	// 	id: "profile",
+	// 	header: "Photo",
+	// 	cell: ({ row }) => (
+	// 		<img
+	// 			src={getAvatar(row.original)}
+	// 			alt="Profile"
+	// 			className="h-9 w-9 rounded-full object-cover border"
+	// 		/>
+	// 	),
+	// 	size: 70,
+	// },
 
 	{
 		accessorKey: "FullName",
@@ -90,17 +90,16 @@ export const TakeStudentAttendanceColumns = (
 						<span className="text-sm">Absent</span>
 					</label>
 
-					{/* Late */}
-					<label className="flex items-center gap-1 cursor-pointer">
+					{/* <label className="flex items-center gap-1 cursor-pointer">
 						<RadioGroupItem value="L" />
 						<span className="text-sm">Late</span>
 					</label>
 
-					{/* Half Day */}
+					
 					<label className="flex items-center gap-1 cursor-pointer">
 						<RadioGroupItem value="H" />
 						<span className="text-sm">Half Day</span>
-					</label>
+					</label> */}
 				</RadioGroup>
 			);
 		},
