@@ -1,20 +1,39 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Phone, Mail } from 'lucide-react'
+import { useStaffById } from '@/hooks/useStaff'
+import { useParams } from 'react-router-dom'
 
 export default function StaffDetailsAndInfoCard() {
+  const { id } = useParams()
+  const { data: staff, isLoading, isError } = useStaffById(id)
+
+  if (isLoading) return <p>Loading...</p>
+  if (isError) return <p>Failed to load staff</p>
+  if (!staff) return null
+
+  const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : '—')
+
+  const valueOrDash = (value) =>
+    value !== null && value !== undefined && value !== '' ? value : '—'
+
   return (
     <>
       {/* Profile Card */}
       <Card className="rounded-sm py-4">
         <CardContent className="px-3 py-0 space-y-6">
           {/* Profile Header */}
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-5 min-w-0">
             <div className="shrink-0">
               <div className="rounded-md border-2 border-white p-1">
                 <img
-                  src="/img/profile/avatar-03.jpg"
-                  alt="Staff Profile"
+                  src={
+                    staff.ProfilePhoto ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      staff.FullName || 'Staff'
+                    )}`
+                  }
+                  alt={staff.FullName}
                   className="size-20 rounded-sm object-cover"
                 />
               </div>
@@ -25,13 +44,17 @@ export default function StaffDetailsAndInfoCard() {
                 Active
               </Badge>
 
-              <h2 className="text-lg font-semibold truncate">Kevin Larry</h2>
+              <h2 className="text-lg font-semibold truncate">
+                {valueOrDash(staff.FullName)}
+              </h2>
 
-              <p className="text-[10px] opacity-80">#AD1256589</p>
+              <p className="text-[10px] opacity-80">S{staff.StaffID}</p>
 
               <p className="text-xs text-muted-foreground">
-                Joined On :{' '}
-                <span className="font-medium text-foreground">10 Mar 2024</span>
+                Joined On:{' '}
+                <span className="font-medium text-foreground">
+                  {formatDate(staff.DateOfJoining)}
+                </span>
               </p>
             </div>
           </div>
@@ -41,14 +64,19 @@ export default function StaffDetailsAndInfoCard() {
             <h3 className="font-semibold text-foreground">Basic Information</h3>
 
             <div className="space-y-3 text-sm">
-              <InfoRow label="Staff ID" value="35013" />
-              <InfoRow label="Gender" value="Male" />
-              <InfoRow label="Designation" value="Technical Lead" />
-              <InfoRow label="Department" value="Admin" />
-              <InfoRow label="Date Of Birth" value="15 Aug 1987" />
-              <InfoRow label="Blood Group" value="O+" />
-              <InfoRow label="Mother Tongue" value="English" />
-              <InfoRow label="Language" value="English, Spanish" />
+              <InfoRow label="Staff ID" value={valueOrDash(staff.StaffID)} />
+              <InfoRow label="Gender" value={valueOrDash(staff.Gender)} />
+              <InfoRow label="Role" value={valueOrDash(staff.Role)} />
+              <InfoRow label="Qualification" value={valueOrDash(staff.Qualification)} />
+              <InfoRow
+                label="Experience"
+                value={
+                  staff.ExperienceYears != null ? `${staff.ExperienceYears} Years` : '—'
+                }
+              />
+              <InfoRow label="Date of Birth" value={formatDate(staff.DateOfBirth)} />
+              <InfoRow label="Nationality" value={valueOrDash(staff.Nationality)} />
+              <InfoRow label="Marital Status" value={valueOrDash(staff.MaritalStatus)} />
             </div>
           </div>
         </CardContent>
@@ -62,19 +90,21 @@ export default function StaffDetailsAndInfoCard() {
           <ContactRow
             icon={<Phone className="size-4 text-blue-500" />}
             label="Phone Number"
-            value="+1 46548 84498"
+            value={valueOrDash(staff.ContactNumber)}
           />
 
           <ContactRow
             icon={<Mail className="size-4 text-blue-500" />}
             label="Email Address"
-            value="jan@example.com"
+            value={valueOrDash(staff.Email)}
           />
         </div>
       </Card>
     </>
   )
 }
+
+/* ---------- Helpers ---------- */
 
 function InfoRow({ label, value }) {
   return (

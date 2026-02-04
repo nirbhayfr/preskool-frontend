@@ -90,7 +90,7 @@ function App() {
                 <Route path="library" element={<StudentLibraryDetails />} />
               </Route>
 
-              <Route path="teacher-details" element={<TeacherDetails />}>
+              <Route path="teacher-details/:id" element={<TeacherDetails />}>
                 <Route index element={<Navigate to="details" replace />} />
                 <Route path="details" element={<TeacherDetailsTabContent />} />
                 <Route path="attendance" element={<TeacherLeaveAndAttendance />} />
@@ -98,7 +98,7 @@ function App() {
                 <Route path="library" element={<TeacherLibraryTabContent />} />
               </Route>
 
-              <Route path="staff-details" element={<StaffDetails />}>
+              <Route path="staff-details/:id" element={<StaffDetails />}>
                 <Route index element={<Navigate to="details" replace />} />
                 <Route path="details" element={<StaffDetailsTabContent />} />
                 <Route path="payroll" element={<StaffSalary />} />

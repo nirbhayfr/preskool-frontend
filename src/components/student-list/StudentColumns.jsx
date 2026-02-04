@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { Pencil, Trash } from 'lucide-react'
+import { Mail, MessageSquare, Pencil, Trash } from 'lucide-react'
 
 import {
   AlertDialog,
@@ -13,8 +13,9 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { Link } from 'react-router-dom'
+import { CollectFeesDialog } from './CollectFeesDialog'
 
-export const studentsColumns = (onDelete, onEdit) => [
+export const studentsColumns = () => [
   {
     accessorKey: 'StudentID',
     header: 'Student ID',
@@ -94,45 +95,45 @@ export const studentsColumns = (onDelete, onEdit) => [
     cell: ({ row }) => row.original.AdmissionNo ?? '—',
   },
 
-  {
-    accessorKey: 'JoiningDate',
-    header: 'Joining Date',
-    cell: ({ row }) =>
-      row.original.JoiningDate
-        ? new Date(row.original.JoiningDate).toLocaleDateString()
-        : '—',
-  },
+  // {
+  //   accessorKey: 'JoiningDate',
+  //   header: 'Joining Date',
+  //   cell: ({ row }) =>
+  //     row.original.JoiningDate
+  //       ? new Date(row.original.JoiningDate).toLocaleDateString()
+  //       : '—',
+  // },
 
-  {
-    accessorKey: 'Program',
-    header: 'Program',
-    cell: ({ row }) => row.original.Program ?? '—',
-  },
-  {
-    accessorKey: 'YearSemester',
-    header: 'Year / Semester',
-    cell: ({ row }) => row.original.YearSemester ?? '—',
-  },
-  {
-    accessorKey: 'PreviousRecord',
-    header: 'Previous Record',
-    cell: ({ row }) => row.original.PreviousRecord ?? '—',
-  },
-  {
-    accessorKey: 'GPA',
-    header: 'GPA',
-    cell: ({ row }) => row.original.GPA ?? '—',
-  },
+  // {
+  //   accessorKey: 'Program',
+  //   header: 'Program',
+  //   cell: ({ row }) => row.original.Program ?? '—',
+  // },
+  // {
+  //   accessorKey: 'YearSemester',
+  //   header: 'Year / Semester',
+  //   cell: ({ row }) => row.original.YearSemester ?? '—',
+  // },
+  // {
+  //   accessorKey: 'PreviousRecord',
+  //   header: 'Previous Record',
+  //   cell: ({ row }) => row.original.PreviousRecord ?? '—',
+  // },
+  // {
+  //   accessorKey: 'GPA',
+  //   header: 'GPA',
+  //   cell: ({ row }) => row.original.GPA ?? '—',
+  // },
   {
     accessorKey: 'Attendance',
     header: 'Attendance',
     cell: ({ row }) => row.original.Attendance ?? '—',
   },
-  {
-    accessorKey: 'Subjects',
-    header: 'Subjects',
-    cell: ({ row }) => row.original.Subjects ?? '—',
-  },
+  // {
+  //   accessorKey: 'Subjects',
+  //   header: 'Subjects',
+  //   cell: ({ row }) => row.original.Subjects ?? '—',
+  // },
 
   { accessorKey: 'Address', header: 'Address' },
   { accessorKey: 'ContactNumber', header: 'Contact No' },
@@ -167,16 +168,16 @@ export const studentsColumns = (onDelete, onEdit) => [
         '—'
       ),
   },
-  {
-    accessorKey: 'GuardianPhoto',
-    header: 'Guardian Photo',
-    cell: ({ row }) =>
-      row.original.GuardianPhoto ? (
-        <img src={row.original.GuardianPhoto} className="h-10 w-10 rounded-full border" />
-      ) : (
-        '—'
-      ),
-  },
+  // {
+  //   accessorKey: 'GuardianPhoto',
+  //   header: 'Guardian Photo',
+  //   cell: ({ row }) =>
+  //     row.original.GuardianPhoto ? (
+  //       <img src={row.original.GuardianPhoto} className="h-10 w-10 rounded-full border" />
+  //     ) : (
+  //       '—'
+  //     ),
+  // },
 
   {
     accessorKey: 'GuardianName',
@@ -209,42 +210,18 @@ export const studentsColumns = (onDelete, onEdit) => [
     header: 'Actions',
     cell: ({ row }) => (
       <div className="flex gap-2">
-        {/* Edit */}
-        <Button
-          size="icon"
-          variant="outline"
-          onClick={() => onEdit(row.original.StudentID)}
-        >
-          <Pencil className="h-4 w-4" />
+        {/* Mail */}
+        <Button size="icon" variant="outline">
+          <Mail className="h-4 w-4" />
         </Button>
 
-        {/* Delete */}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button size="icon" variant="destructive">
-              <Trash className="h-4 w-4" />
-            </Button>
-          </AlertDialogTrigger>
+        {/* Message */}
+        <Button size="icon" variant="outline">
+          <MessageSquare className="h-4 w-4" />
+        </Button>
 
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete student?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => onDelete(row.original.StudentID)}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Collect Fees */}
+        <CollectFeesDialog studentId={row.original.StudentID} />
       </div>
     ),
   },

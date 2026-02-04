@@ -27,7 +27,9 @@ import { getAttendanceColumns } from '../student-attendance/StudentAttendanceCol
 function StudentAttendance() {
   const { id } = useParams()
 
-  const [selectedMonth, setSelectedMonth] = React.useState('2026-01')
+  const [selectedMonth, setSelectedMonth] = React.useState(() =>
+    new Date().toISOString().slice(0, 7)
+  )
 
   const { data: attendanceData, isLoading, isError } = useAttendanceMatrixByStudentId(id)
 

@@ -3,7 +3,6 @@ import {
   useReactTable,
   getCoreRowModel,
   getPaginationRowModel,
-  getFilteredRowModel,
   flexRender,
 } from '@tanstack/react-table'
 
@@ -15,147 +14,149 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 
-import { CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react'
+import { CheckCheck, X, Calendar, Clock } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 
-/* ------------------ Columns ------------------ */
+import { useStaffAttendanceMatrixById } from '@/hooks/useStaffAttendance'
+import { getAttendanceColumns } from '../student-attendance/StudentAttendanceColumns'
 
-const staffLeaveColumns = [
-  { accessorKey: 'type', header: 'Leave Type' },
-  { accessorKey: 'date', header: 'Leave Date' },
-  { accessorKey: 'days', header: 'No of Days' },
-  { accessorKey: 'appliedOn', header: 'Applied On' },
-  {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: ({ row }) => {
-      const status = row.original.status
-      return (
-        <Badge variant={status === 'Approved' ? 'default' : 'secondary'}>{status}</Badge>
-      )
-    },
-  },
-]
+function StaffAttendance() {
+  const { id } = useParams()
 
-/* ------------------ Data ------------------ */
+  // ✅ current month by default (YYYY-MM)
+  const [selectedMonth, setSelectedMonth] = React.useState(() =>
+    new Date().toISOString().slice(0, 7)
+  )
 
-const staffLeaveData = [
-  {
-    type: 'Casual Leave',
-    date: '07 May 2024 - 07 May 2024',
-    days: 1,
-    appliedOn: '07 May 2024',
-    status: 'Approved',
-  },
-  {
-    type: 'Casual Leave',
-    date: '08 May 2024 - 08 May 2024',
-    days: 1,
-    appliedOn: '04 May 2024',
-    status: 'Approved',
-  },
-  {
-    type: 'Casual Leave',
-    date: '20 May 2024 - 20 May 2024',
-    days: 1,
-    appliedOn: '19 May 2024',
-    status: 'Pending',
-  },
-  {
-    type: 'Medical Leave',
-    date: '05 May 2024 - 09 May 2024',
-    days: 5,
-    appliedOn: '05 May 2024',
-    status: 'Approved',
-  },
-  {
-    type: 'Medical Leave',
-    date: '08 May 2024 - 11 May 2024',
-    days: 4,
-    appliedOn: '08 May 2024',
-    status: 'Pending',
-  },
-  {
-    type: 'Special Leave',
-    date: '09 May 2024 - 09 May 2024',
-    days: 1,
-    appliedOn: '09 May 2024',
-    status: 'Pending',
-  },
-]
+  const { data: attendanceData, isLoading, isError } = useStaffAttendanceMatrixById(id)
 
-/* ------------------ Component ------------------ */
+  // backend shape consistency
+  const tableData = attendanceData?.Data || []
 
-function StaffLeaveAndAttendance() {
-  const [globalFilter, setGlobalFilter] = React.useState('')
+  const columns = React.useMemo(
+    () => getAttendanceColumns(selectedMonth),
+    [selectedMonth]
+  )
+
+  const { presentCount, absentCount } = React.useMemo(() => {
+    let present = 0
+    let absent = 0
+
+    tableData.forEach((row) => {
+      Object.entries(row).forEach(([key, value]) => {
+        if (!key.startsWith(selectedMonth)) return
+        if (value === 'P') present++
+        if (value === 'A') absent++
+      })
+    })
+
+    return { presentCount: present, absentCount: absent }
+  }, [tableData, selectedMonth])
 
   const table = useReactTable({
-    data: staffLeaveData,
-    columns: staffLeaveColumns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
+    data: tableData,
+    columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
   })
+
+  if (isLoading) return <p>Loading attendance...</p>
+  if (isError) return <p>Failed to load attendance</p>
+  if (!attendanceData) return null
 
   return (
     <div className="space-y-6">
-      {/* Staff Leaves */}
       <Card className="rounded-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg font-semibold">Staff Leaves</CardTitle>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-lg font-semibold">Staff Attendance</CardTitle>
 
-          <Button size="sm">Apply for Leave</Button>
+          {/* Month Selector */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Month</span>
+            <Input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-[160px]"
+            />
+          </div>
         </CardHeader>
 
         <CardContent className="pt-0 space-y-4">
-          {/* Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span>Rows Per Page</span>
-              <Select
-                value={String(table.getState().pagination.pageSize)}
-                onValueChange={(val) => table.setPageSize(Number(val))}
-              >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Legend + Summary */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3">
+              {[
+                {
+                  label: 'Present',
+                  icon: <CheckCheck className="h-4 w-4" />,
+                  bg: 'bg-emerald-700',
+                },
+                {
+                  label: 'Absent',
+                  icon: <X className="h-4 w-4" />,
+                  bg: 'bg-red-700',
+                },
+                {
+                  label: 'Late',
+                  icon: <Clock className="h-4 w-4" />,
+                  bg: 'bg-yellow-500',
+                },
+                {
+                  label: 'Half Day',
+                  icon: <Clock className="h-4 w-4" />,
+                  bg: 'bg-orange-600',
+                },
+                {
+                  label: 'Holiday',
+                  icon: <Calendar className="h-4 w-4" />,
+                  bg: 'bg-slate-400',
+                },
+              ].map(({ label, icon, bg }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-sm font-medium"
+                >
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-md text-white ${bg}`}
+                  >
+                    {icon}
+                  </span>
+                  {label}
+                </div>
+              ))}
             </div>
 
-            <Input
-              placeholder="Search"
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="max-w-xs"
-            />
+            {/* Monthly Summary */}
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                <span className="font-medium">Present: {presentCount}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-red-600" />
+                <span className="font-medium">Absent: {absentCount}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Table */}
-          <div className="rounded-md border">
+          {/* Attendance Table */}
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
+                      <TableHead
+                        key={header.id}
+                        style={{ width: header.getSize() }}
+                        className="text-center"
+                      >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     ))}
@@ -166,9 +167,9 @@ function StaffLeaveAndAttendance() {
               <TableBody>
                 {table.getRowModel().rows.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} className="border-b last:border-b-0">
+                    <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="py-3 px-4">
+                        <TableCell key={cell.id} className="p-2 text-center">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
                       ))}
@@ -177,83 +178,15 @@ function StaffLeaveAndAttendance() {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={staffLeaveColumns.length}
+                      colSpan={columns.length}
                       className="py-6 text-center text-sm"
                     >
-                      No results.
+                      No attendance data.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Prev
-            </Button>
-
-            <span className="text-sm">{table.getState().pagination.pageIndex + 1}</span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Staff Attendance */}
-      <Card className="rounded-sm">
-        <CardHeader className="flex flex-row items-center justify-between py-3 space-y-0">
-          <CardTitle className="text-lg font-semibold">Staff Attendance</CardTitle>
-
-          <p className="text-xs text-muted-foreground">Last Updated on : 25 May 2024</p>
-        </CardHeader>
-
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="flex items-center gap-3 rounded-sm border p-3">
-              <CheckCircle2 className="size-5 text-green-600" />
-              <div>
-                <p className="text-xs text-muted-foreground">Present</p>
-                <p className="text-lg font-semibold">265</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-sm border p-3">
-              <XCircle className="size-5 text-red-600" />
-              <div>
-                <p className="text-xs text-muted-foreground">Absent</p>
-                <p className="text-lg font-semibold">05</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-sm border p-3">
-              <AlertCircle className="size-5 text-yellow-600" />
-              <div>
-                <p className="text-xs text-muted-foreground">Half Day</p>
-                <p className="text-lg font-semibold">01</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-sm border p-3">
-              <Clock className="size-5 text-orange-600" />
-              <div>
-                <p className="text-xs text-muted-foreground">Late</p>
-                <p className="text-lg font-semibold">12</p>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -261,4 +194,19 @@ function StaffLeaveAndAttendance() {
   )
 }
 
-export default StaffLeaveAndAttendance
+export default StaffAttendance
+
+/* ---------- Legend ---------- */
+
+function LegendItem({ icon, label, bg }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-sm font-medium">
+      <span
+        className={`flex h-6 w-6 items-center justify-center rounded-md text-white ${bg}`}
+      >
+        {icon}
+      </span>
+      {label}
+    </div>
+  )
+}

@@ -1,167 +1,142 @@
-import { useState, useMemo } from "react";
-import { studentsColumns } from "@/components/student-list/StudentColumns";
-import StudentsHeader from "@/components/student-list/StudentsHeader";
-import TableLayout from "@/components/layout/Table";
-import { useDeleteStudent, useStudents } from "@/hooks/useStudents";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
-import { CircleLoader } from "@/components/layout/RouteLoader";
-import { handleExportPDF } from "@/utils/export";
+import { useState, useMemo } from 'react'
+import { studentsColumns } from '@/components/student-list/StudentColumns'
+import StudentsHeader from '@/components/student-list/StudentsHeader'
+import TableLayout from '@/components/layout/Table'
+import { useStudents } from '@/hooks/useStudents'
+import { toast } from 'sonner'
+import { CircleLoader } from '@/components/layout/RouteLoader'
+import { handleExportPDF } from '@/utils/export'
 
 function StudentList() {
-	const { data, isLoading, error } = useStudents();
-	const { mutate: deleteStudent } = useDeleteStudent();
-	const navigate = useNavigate();
+  const { data, isLoading, error } = useStudents()
 
-	const [searchQuery, setSearchQuery] = useState("");
-	const [filters, setFilters] = useState({
-		class: "all",
-		section: "all",
-		status: "all",
-	});
-	const [sortOrder, setSortOrder] = useState("asc");
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filters, setFilters] = useState({
+    class: 'all',
+    section: 'all',
+    status: 'all',
+  })
+  const [sortOrder, setSortOrder] = useState('asc')
 
-	const handleDelete = (id) => {
-		deleteStudent(id, {
-			onSuccess: () => {
-				toast.success("Student deleted successfully");
-			},
-			onError: () => {
-				toast.error("Failed to delete student");
-			},
-		});
-	};
+  const displayedStudents = useMemo(() => {
+    if (!data?.data) return []
 
-	const handleEdit = (id) => {
-		navigate(`/edit-student/${id}`);
-	};
+    let students = [...data.data]
 
-	const displayedStudents = useMemo(() => {
-		if (!data?.data) return [];
+    if (filters.class !== 'all') {
+      students = students.filter((s) => s.ClassID === filters.class)
+    }
+    if (filters.section !== 'all') {
+      students = students.filter((s) => s.SectionID === filters.section.toUpperCase())
+    }
+    if (filters.status !== 'all') {
+      students = students.filter((s) => s.Status === filters.status)
+    }
 
-		let students = [...data.data];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      students = students.filter(
+        (s) =>
+          s.FullName.toLowerCase().includes(q) ||
+          s.EmailAddress?.toLowerCase().includes(q) ||
+          '' ||
+          s.StudentID?.toString().includes(q) ||
+          ''
+      )
+    }
 
-		if (filters.class !== "all") {
-			students = students.filter((s) => s.ClassID === filters.class);
-		}
-		if (filters.section !== "all") {
-			students = students.filter(
-				(s) => s.SectionID === filters.section.toUpperCase(),
-			);
-		}
-		if (filters.status !== "all") {
-			students = students.filter((s) => s.Status === filters.status);
-		}
+    students.sort((a, b) => {
+      const nameA = a.FullName?.toLowerCase() || ''
+      const nameB = b.FullName?.toLowerCase() || ''
+      return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA)
+    })
 
-		if (searchQuery) {
-			const q = searchQuery.toLowerCase();
-			students = students.filter(
-				(s) =>
-					s.FullName.toLowerCase().includes(q) ||
-					s.EmailAddress?.toLowerCase().includes(q) ||
-					"" ||
-					s.StudentID?.toString().includes(q) ||
-					"",
-			);
-		}
+    return students
+  }, [data, filters, searchQuery, sortOrder])
 
-		students.sort((a, b) => {
-			const nameA = a.FullName?.toLowerCase() || "";
-			const nameB = b.FullName?.toLowerCase() || "";
-			return sortOrder === "asc"
-				? nameA.localeCompare(nameB)
-				: nameB.localeCompare(nameA);
-		});
+  const handleExport = (format) => {
+    if (!displayedStudents.length) {
+      toast.error('No students to export')
+      return
+    }
 
-		return students;
-	}, [data, filters, searchQuery, sortOrder]);
+    if (format === 'excel') {
+      const headers = [
+        'StudentID',
+        'FullName',
+        'DOB',
+        'Gender',
+        'ClassID',
+        'SectionID',
+        'Address',
+        'ContactNumber',
+        'EmailAddress',
+        'Nationality',
+        'IdentificationNumber',
+        'EnrollmentNumber',
+        'AdmissionDate',
+        'ProgramName',
+        'YearOrSemester',
+        'PreviousAcademicRecord',
+        'GPAOrMarks',
+        'AttendancePercentage',
+        'SubjectsTaken',
+        'AcademicStatus',
+        'GuardianName',
+        'GuardianRelation',
+        'GuardianContact',
+        'GuardianOccupation',
+        'GuardianAddress',
+        'PhotoUrl',
+        'Status',
+        'RollNo',
+        'AdmissionNo',
+        'JoiningDate',
+        'Program',
+        'YearSemester',
+        'PreviousRecord',
+        'GPA',
+        'Attendance',
+        'Subjects',
+        'FatherPhoto',
+        'MotherPhoto',
+        'GuardianPhoto',
+      ]
 
-	const handleExport = (format) => {
-		if (!displayedStudents.length) {
-			toast.error("No students to export");
-			return;
-		}
+      const rows = displayedStudents.map((s) =>
+        headers.map((h) => `"${s[h] ?? ''}"`).join(',')
+      )
 
-		if (format === "excel") {
-			const headers = [
-				"StudentID",
-				"FullName",
-				"DOB",
-				"Gender",
-				"ClassID",
-				"SectionID",
-				"Address",
-				"ContactNumber",
-				"EmailAddress",
-				"Nationality",
-				"IdentificationNumber",
-				"EnrollmentNumber",
-				"AdmissionDate",
-				"ProgramName",
-				"YearOrSemester",
-				"PreviousAcademicRecord",
-				"GPAOrMarks",
-				"AttendancePercentage",
-				"SubjectsTaken",
-				"AcademicStatus",
-				"GuardianName",
-				"GuardianRelation",
-				"GuardianContact",
-				"GuardianOccupation",
-				"GuardianAddress",
-				"PhotoUrl",
-				"Status",
-				"RollNo",
-				"AdmissionNo",
-				"JoiningDate",
-				"Program",
-				"YearSemester",
-				"PreviousRecord",
-				"GPA",
-				"Attendance",
-				"Subjects",
-				"FatherPhoto",
-				"MotherPhoto",
-				"GuardianPhoto",
-			];
+      const csvContent = [headers.join(','), ...rows].join('\n')
+      const blob = new Blob([csvContent], {
+        type: 'text/csv;charset=utf-8;',
+      })
+      const link = document.createElement('a')
+      console.log(link, blob, csvContent)
+      link.href = URL.createObjectURL(blob)
+      link.download = `students_export_${Date.now()}.csv`
+      link.click()
+    }
 
-			const rows = displayedStudents.map((s) =>
-				headers.map((h) => `"${s[h] ?? ""}"`).join(","),
-			);
+    if (format === 'pdf') {
+      handleExportPDF(displayedStudents, 'Students')
+    }
+  }
 
-			const csvContent = [headers.join(","), ...rows].join("\n");
-			const blob = new Blob([csvContent], {
-				type: "text/csv;charset=utf-8;",
-			});
-			const link = document.createElement("a");
-			console.log(link, blob, csvContent);
-			link.href = URL.createObjectURL(blob);
-			link.download = `students_export_${Date.now()}.csv`;
-			link.click();
-		}
+  if (isLoading) return <CircleLoader />
+  if (error) return 'Error loading students'
 
-		if (format === "pdf") {
-			handleExportPDF(displayedStudents, "Students");
-		}
-	};
-
-	if (isLoading) return <CircleLoader />;
-	if (error) return "Error loading students";
-
-	return (
-		<section className="p-6 capitalize">
-			<StudentsHeader
-				onSearch={setSearchQuery}
-				onFilterChange={setFilters}
-				onSortChange={setSortOrder}
-				onExport={handleExport}
-			/>
-			<TableLayout
-				columns={studentsColumns(handleDelete, handleEdit)}
-				data={displayedStudents}
-			/>
-		</section>
-	);
+  return (
+    <section className="p-6 capitalize">
+      <StudentsHeader
+        onSearch={setSearchQuery}
+        onFilterChange={setFilters}
+        onSortChange={setSortOrder}
+        onExport={handleExport}
+      />
+      <TableLayout columns={studentsColumns()} data={displayedStudents} />
+    </section>
+  )
 }
 
-export default StudentList;
+export default StudentList

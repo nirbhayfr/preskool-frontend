@@ -1,147 +1,125 @@
-import { CircleLoader } from "@/components/layout/RouteLoader";
-import TableLayout from "@/components/layout/Table";
-import { teachersColumns } from "@/components/teacher-list/TeachersColumns";
-import TeachersHeader from "@/components/teacher-list/TeachersHeader";
-import { useDeleteTeacher, useTeachers } from "@/hooks/useTeacher";
-import { handleExportPDF } from "@/utils/export";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { CircleLoader } from '@/components/layout/RouteLoader'
+import TableLayout from '@/components/layout/Table'
+import { teachersColumns } from '@/components/teacher-list/TeachersColumns'
+import TeachersHeader from '@/components/teacher-list/TeachersHeader'
+import { useTeachers } from '@/hooks/useTeacher'
+import { handleExportPDF } from '@/utils/export'
+import { useMemo, useState } from 'react'
+
+import { toast } from 'sonner'
 
 function TeacherList() {
-	const { data, isLoading, error } = useTeachers();
-	const { mutate: deleteTeacher } = useDeleteTeacher();
-	const navigate = useNavigate();
+  const { data, isLoading, error } = useTeachers()
 
-	const [searchQuery, setSearchQuery] = useState("");
-	const [sortOrder, setSortOrder] = useState("asc");
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortOrder, setSortOrder] = useState('asc')
 
-	const displayedTeachers = useMemo(() => {
-		if (!data?.data) return [];
+  const displayedTeachers = useMemo(() => {
+    if (!data?.data) return []
 
-		let teachers = [...data.data];
+    let teachers = [...data.data]
 
-		if (searchQuery) {
-			const q = searchQuery.toLowerCase();
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
 
-			teachers = teachers.filter(
-				(t) =>
-					t.FullName?.toLowerCase().includes(q) ||
-					t.Email?.toLowerCase().includes(q) ||
-					t.TeacherID?.toString().includes(q) ||
-					t.Subject?.toLowerCase().includes(q),
-			);
-		}
+      teachers = teachers.filter(
+        (t) =>
+          t.FullName?.toLowerCase().includes(q) ||
+          t.Email?.toLowerCase().includes(q) ||
+          t.TeacherID?.toString().includes(q) ||
+          t.Subject?.toLowerCase().includes(q)
+      )
+    }
 
-		teachers.sort((a, b) => {
-			const nameA = a.FullName?.toLowerCase() || "";
-			const nameB = b.FullName?.toLowerCase() || "";
+    teachers.sort((a, b) => {
+      const nameA = a.FullName?.toLowerCase() || ''
+      const nameB = b.FullName?.toLowerCase() || ''
 
-			return sortOrder === "asc"
-				? nameA.localeCompare(nameB)
-				: nameB.localeCompare(nameA);
-		});
+      return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA)
+    })
 
-		return teachers;
-	}, [data, searchQuery, sortOrder]);
+    return teachers
+  }, [data, searchQuery, sortOrder])
 
-	const handleDelete = (id) => {
-		deleteTeacher(id, {
-			onSuccess: () => {
-				toast.success("Teacher deleted successfully");
-			},
-			onError: () => {
-				toast.error("Failed to delete teacher");
-			},
-		});
-	};
+  const TEACHER_EXPORT_HEADERS = [
+    'TeacherID',
+    'FullName',
+    'Subject',
+    'Email',
+    'ContactNumber',
+    'Gender',
 
-	const handleEdit = (id) => {
-		navigate(`/edit-teacher/${id}`);
-	};
+    'Qualification',
+    'ExperienceYears',
 
-	const TEACHER_EXPORT_HEADERS = [
-		"TeacherID",
-		"FullName",
-		"Subject",
-		"Email",
-		"ContactNumber",
-		"Gender",
+    'Address',
+    'City',
+    'State',
+    'PostalCode',
+    'Nationality',
 
-		"Qualification",
-		"ExperienceYears",
+    'DateOfBirth',
+    'DateOfJoining',
 
-		"Address",
-		"City",
-		"State",
-		"PostalCode",
-		"Nationality",
+    'BloodGroup',
+    'MaritalStatus',
 
-		"DateOfBirth",
-		"DateOfJoining",
+    'EmergencyContactName',
+    'EmergencyContactNumber',
 
-		"BloodGroup",
-		"MaritalStatus",
+    'VehicleNumber',
+    'TransportNumber',
 
-		"EmergencyContactName",
-		"EmergencyContactNumber",
+    'Salary',
 
-		"VehicleNumber",
-		"TransportNumber",
+    'ProfilePictureUrl',
+    'ProfilePhoto',
+    'IDProofPhoto',
+  ]
 
-		"Salary",
+  const handleExport = (format) => {
+    if (!displayedTeachers.length) {
+      toast.error('No teachers to export')
+      return
+    }
 
-		"ProfilePictureUrl",
-		"ProfilePhoto",
-		"IDProofPhoto",
-	];
+    if (format === 'excel') {
+      const headers = TEACHER_EXPORT_HEADERS
 
-	const handleExport = (format) => {
-		if (!displayedTeachers.length) {
-			toast.error("No teachers to export");
-			return;
-		}
+      const rows = displayedTeachers.map((t) =>
+        headers.map((h) => `"${t[h] ?? ''}"`).join(',')
+      )
 
-		if (format === "excel") {
-			const headers = TEACHER_EXPORT_HEADERS;
+      const csvContent = [headers.join(','), ...rows].join('\n')
 
-			const rows = displayedTeachers.map((t) =>
-				headers.map((h) => `"${t[h] ?? ""}"`).join(","),
-			);
+      const blob = new Blob([csvContent], {
+        type: 'text/csv;charset=utf-8;',
+      })
 
-			const csvContent = [headers.join(","), ...rows].join("\n");
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `teachers_export_${Date.now()}.csv`
+      link.click()
+    }
 
-			const blob = new Blob([csvContent], {
-				type: "text/csv;charset=utf-8;",
-			});
+    if (format === 'pdf') {
+      handleExportPDF(displayedTeachers, 'Teachers')
+    }
+  }
 
-			const link = document.createElement("a");
-			link.href = URL.createObjectURL(blob);
-			link.download = `teachers_export_${Date.now()}.csv`;
-			link.click();
-		}
+  if (isLoading) return <CircleLoader />
+  if (error) return 'Error loading students'
 
-		if (format === "pdf") {
-			handleExportPDF(displayedTeachers, "Teachers");
-		}
-	};
-
-	if (isLoading) return <CircleLoader />;
-	if (error) return "Error loading students";
-
-	return (
-		<section className="p-6 capitalize">
-			<TeachersHeader
-				onSearch={setSearchQuery}
-				onSortChange={setSortOrder}
-				onExport={handleExport}
-			/>
-			<TableLayout
-				columns={teachersColumns(handleDelete, handleEdit)}
-				data={displayedTeachers}
-			/>
-		</section>
-	);
+  return (
+    <section className="p-6 capitalize">
+      <TeachersHeader
+        onSearch={setSearchQuery}
+        onSortChange={setSortOrder}
+        onExport={handleExport}
+      />
+      <TableLayout columns={teachersColumns()} data={displayedTeachers} />
+    </section>
+  )
 }
 
-export default TeacherList;
+export default TeacherList

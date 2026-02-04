@@ -1,6 +1,20 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { useStaffById } from '@/hooks/useStaff'
+import { useParams } from 'react-router-dom'
 
 function StaffDetailsTabContent() {
+  const { id } = useParams()
+  const { data: staff, isLoading, isError } = useStaffById(id)
+
+  if (isLoading) return <p>Loading...</p>
+  if (isError) return <p>Failed to load staff</p>
+  if (!staff) return null
+
+  const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : '—')
+
+  const valueOrDash = (value) =>
+    value !== null && value !== undefined && value !== '' ? value : '—'
+
   return (
     <div className="space-y-6">
       {/* Profile Details */}
@@ -12,18 +26,25 @@ function StaffDetailsTabContent() {
         <CardContent className="pt-0">
           <div className="rounded-md border p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5 text-sm">
-              <Info label="Father’s Name" value="Francis Saviour" />
-              <Info label="Mother Name" value="Stella Bruce" />
-              <Info label="DOB" value="25 Jan 1992" />
-              <Info label="Marital Status" value="Single" />
-              <Info label="Qualification" value="MBA" />
-              <Info label="Experience" value="2 Years" />
+              <Info label="Full Name" value={valueOrDash(staff.FullName)} />
+              <Info label="Gender" value={valueOrDash(staff.Gender)} />
+              <Info label="DOB" value={formatDate(staff.DateOfBirth)} />
+              <Info label="Marital Status" value={valueOrDash(staff.MaritalStatus)} />
+              <Info label="Qualification" value={valueOrDash(staff.Qualification)} />
+              <Info
+                label="Experience"
+                value={
+                  staff.ExperienceYears != null ? `${staff.ExperienceYears} Years` : '—'
+                }
+              />
+              <Info label="Role" value={valueOrDash(staff.Role)} />
+              <Info label="Nationality" value={valueOrDash(staff.Nationality)} />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Address + Bank Details */}
+      {/* Address + Salary Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Address */}
         <Card className="rounded-sm">
@@ -34,50 +55,66 @@ function StaffDetailsTabContent() {
           <CardContent className="pt-0 space-y-4 text-sm">
             <div>
               <p className="text-xs text-muted-foreground">Current Address</p>
-              <p className="mt-1">3495 Red Hawk Road, Buffalo Lake, MN 55314</p>
+              <p className="mt-1">
+                {valueOrDash(staff.Address)}, {valueOrDash(staff.City)},{' '}
+                {valueOrDash(staff.State)} – {valueOrDash(staff.PostalCode)}
+              </p>
             </div>
 
             <div>
               <p className="text-xs text-muted-foreground">Permanent Address</p>
-              <p className="mt-1">3495 Red Hawk Road, Buffalo Lake, MN 55314</p>
+              <p className="mt-1">
+                {valueOrDash(staff.Address)}, {valueOrDash(staff.City)},{' '}
+                {valueOrDash(staff.State)} – {valueOrDash(staff.PostalCode)}
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Bank Details */}
+        {/* Work / Salary Details */}
         <Card className="rounded-sm">
           <CardHeader>
-            <CardTitle className="font-semibold">Bank Details</CardTitle>
+            <CardTitle className="font-semibold">Work Details</CardTitle>
           </CardHeader>
 
           <CardContent className="pt-0">
             <div className="rounded-md border p-4">
               <div className="space-y-4 text-sm">
-                <Info label="Account Name" value="Bank of America" />
-                <Info label="Account Number" value="178849035684" />
-                <Info label="Bank Name" value="Bank of America" />
-                <Info label="Branch" value="Cincinnati" />
-                <Info label="IFSC" value="BOA83209832" />
+                <Info label="Staff ID" value={valueOrDash(staff.StaffID)} />
+                <Info label="Role" value={valueOrDash(staff.Role)} />
+                <Info label="Date of Joining" value={formatDate(staff.DateOfJoining)} />
+                <Info
+                  label="Salary"
+                  value={
+                    staff.Salary != null ? `₹ ${staff.Salary.toLocaleString()}` : '—'
+                  }
+                />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Other Info - Full Width */}
-      <Card className="rounded-sm md:col-span-2">
+      {/* Other Info */}
+      <Card className="rounded-sm">
         <CardHeader>
           <CardTitle className="font-semibold">Other Info</CardTitle>
         </CardHeader>
 
         <CardContent className="pt-0">
-          <div className="rounded-md border p-4">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Depending on the specific needs of your organization or system, additional
-              information may be collected or tracked. It's important to ensure that any
-              data collected complies with privacy regulations and policies to protect
-              staff members' sensitive information.
-            </p>
+          <div className="rounded-md border p-4 space-y-3 text-sm">
+            <Info
+              label="Emergency Contact"
+              value={
+                staff.EmergencyContactName || staff.EmergencyContactNumber
+                  ? `${valueOrDash(staff.EmergencyContactName)} (${valueOrDash(
+                      staff.EmergencyContactNumber
+                    )})`
+                  : '—'
+              }
+            />
+            <Info label="Vehicle Number" value={valueOrDash(staff.VehicleNumber)} />
+            <Info label="Transport Number" value={valueOrDash(staff.TransportNumber)} />
           </div>
         </CardContent>
       </Card>
@@ -86,6 +123,8 @@ function StaffDetailsTabContent() {
 }
 
 export default StaffDetailsTabContent
+
+/* ---------- Helper ---------- */
 
 function Info({ label, value }) {
   return (

@@ -24,7 +24,9 @@ import {
 } from '@/components/ui/select'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 
-import { Wallet, TrendingUp, TrendingDown, Eye } from 'lucide-react'
+import { Wallet, Eye } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { useTeacherSalaryById } from '@/hooks/useSalary'
 
 /* ------------------ Columns ------------------ */
 
@@ -46,98 +48,13 @@ const salaryColumns = [
   },
 ]
 
-/* ------------------ Data ------------------ */
-
-const data = [
-  {
-    id: 8198,
-    salaryFor: 'Apr - 2024',
-    date: '04 May 2024',
-    paymentMethod: 'Cash',
-    netSalary: '$20,000',
-  },
-  {
-    id: 8197,
-    salaryFor: 'Mar - 2024',
-    date: '05 Apr 2024',
-    paymentMethod: 'Cheque',
-    netSalary: '$19,000',
-  },
-  {
-    id: 8196,
-    salaryFor: 'Feb - 2024',
-    date: '05 Mar 2024',
-    paymentMethod: 'Cash',
-    netSalary: '$19,500',
-  },
-  {
-    id: 8198,
-    salaryFor: 'Jan - 2024',
-    date: '06 Feb 2024',
-    paymentMethod: 'Cash',
-    netSalary: '$20,000',
-  },
-  {
-    id: 8194,
-    salaryFor: 'Dec - 2023',
-    date: '03 Jan 2024',
-    paymentMethod: 'Cheque',
-    netSalary: '$19,480',
-  },
-  {
-    id: 8193,
-    salaryFor: 'Nov - 2023',
-    date: '05 Dec 2023',
-    paymentMethod: 'Cheque',
-    netSalary: '$19,480',
-  },
-  {
-    id: 8192,
-    salaryFor: 'Oct - 2023',
-    date: '03 Nov 2023',
-    paymentMethod: 'Cheque',
-    netSalary: '$19,480',
-  },
-  {
-    id: 8191,
-    salaryFor: 'Sep - 2023',
-    date: '04 Oct 2023',
-    paymentMethod: 'Cheque',
-    netSalary: '$18,000',
-  },
-  {
-    id: 8190,
-    salaryFor: 'Aug - 2023',
-    date: '06 Sep 2023',
-    paymentMethod: 'Cheque',
-    netSalary: '$20,000',
-  },
-  {
-    id: 8189,
-    salaryFor: 'Jul - 2023',
-    date: '05 Aug 2023',
-    paymentMethod: 'Cheque',
-    netSalary: '$20,000',
-  },
-  {
-    id: 8188,
-    salaryFor: 'Jun - 2023',
-    date: '06 Sep 2023',
-    paymentMethod: 'Cheque',
-    netSalary: '$20,000',
-  },
-  {
-    id: 8187,
-    salaryFor: 'May - 2023',
-    date: '05 Aug 2023',
-    paymentMethod: 'Cheque',
-    netSalary: '$20,000',
-  },
-]
-
-/* ------------------ Component ------------------ */
-
 function TeacherSalary() {
+  const { id } = useParams()
+  const { data: response, isLoading, isError } = useTeacherSalaryById(id)
+  const data = []
+
+  const teacher = response?.data
+
   const table = useReactTable({
     data,
     columns: salaryColumns,
@@ -145,49 +62,36 @@ function TeacherSalary() {
     getPaginationRowModel: getPaginationRowModel(),
   })
 
+  if (isLoading) return <p>Loading...</p>
+  if (isError) return <p>Failed to load salary</p>
+  if (!teacher) return null
+
   return (
     <div className="space-y-6">
-      {/* Totals */}
+      {/* Salary Summary */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="rounded-sm">
           <CardContent className="flex items-center gap-3 p-4">
             <Wallet className="size-6 text-primary" />
             <div>
-              <p className="text-xs text-muted-foreground">Total Net Salary</p>
-              <p className="text-lg font-semibold">$5,55,410</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-sm">
-          <CardContent className="flex items-center gap-3 p-4">
-            <TrendingUp className="size-6 text-primary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total Gross Salary</p>
-              <p className="text-lg font-semibold">$5,58,380</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-sm">
-          <CardContent className="flex items-center gap-3 p-4">
-            <TrendingDown className="size-6 text-primary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total Deduction</p>
-              <p className="text-lg font-semibold">$2,500</p>
+              <p className="text-xs text-muted-foreground">Monthly Salary</p>
+              <p className="text-lg font-semibold">
+                ₹ {teacher.Salary?.toLocaleString() || 0}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">{teacher.FullName}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Salary Table */}
+      {/* Salary History */}
       <Card className="rounded-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg font-semibold">Salary</CardTitle>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Salary History</CardTitle>
         </CardHeader>
 
         <CardContent className="pt-0 space-y-4">
-          {/* Controls */}
+          {/* Page Size */}
           <div className="flex items-center gap-2 text-sm">
             <span>Rows Per Page</span>
             <Select
@@ -200,10 +104,8 @@ function TeacherSalary() {
               <SelectContent>
                 <SelectItem value="5">5</SelectItem>
                 <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-muted-foreground">Entries</span>
           </div>
 
           {/* Table */}
@@ -222,15 +124,26 @@ function TeacherSalary() {
               </TableHeader>
 
               <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-3 px-4">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
+                {table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={salaryColumns.length}
+                      className="text-center py-6"
+                    >
+                      No salary records
+                    </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
@@ -238,8 +151,8 @@ function TeacherSalary() {
           {/* Pagination */}
           <div className="flex items-center justify-end gap-2">
             <Button
-              variant="outline"
               size="sm"
+              variant="outline"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
@@ -249,8 +162,8 @@ function TeacherSalary() {
             <span className="text-sm">{table.getState().pagination.pageIndex + 1}</span>
 
             <Button
-              variant="outline"
               size="sm"
+              variant="outline"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
