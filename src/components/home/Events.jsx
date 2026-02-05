@@ -14,7 +14,7 @@ const BORDER_COLORS = [
   'border-purple-500',
 ]
 
-export function Schedules({ title = 'Schedules' }) {
+export function Schedules({ title = 'Events' }) {
   const { data, isLoading } = useEvents()
   const { mutate: deleteEvent } = useDeleteEvent()
   const [deletingId, setDeletingId] = useState(null)
