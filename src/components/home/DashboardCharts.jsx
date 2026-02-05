@@ -14,6 +14,7 @@ import {
   Cell,
   Legend,
 } from 'recharts'
+import { CircleLoader } from '../layout/RouteLoader'
 
 export default function DashboardChartsSection() {
   const [active, setActive] = useState('Staff')
@@ -42,9 +43,8 @@ export default function DashboardChartsSection() {
     }
   }, [])
 
-  const { data: attendanceData, isLoading } = useTodayAttendanceCount()
-  const attendanceDataArray = attendanceData.Data
-  if (isLoading) return <CircleLoader />
+  const { data: attendanceData } = useTodayAttendanceCount()
+  const attendanceDataArray = attendanceData?.Data ?? []
 
   const current = attendanceDataArray.find((tab) => tab.entity === active) || {}
   const present = current.present || 0
