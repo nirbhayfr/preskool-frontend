@@ -1,152 +1,148 @@
-import { useMemo, useState } from "react";
-import { getAttendanceColumns } from "@/components/student-attendance/StudentAttendanceColumns";
-import StudentAttendanceHeader from "@/components/student-attendance/StudentAttendanceHeader";
-import { useAttendanceMatrixAll } from "@/hooks/useAttendance";
-import { CircleLoader } from "@/components/layout/RouteLoader";
-import TableLayout from "@/components/layout/Table";
-import { toast } from "sonner";
+import { useMemo, useState } from 'react'
+import { getAttendanceColumns } from '@/components/student-attendance/StudentAttendanceColumns'
+import StudentAttendanceHeader from '@/components/student-attendance/StudentAttendanceHeader'
+import { useAttendanceMatrixAll } from '@/hooks/useAttendance'
+import { CircleLoader } from '@/components/layout/RouteLoader'
+import TableLayout from '@/components/layout/Table'
+import { toast } from 'sonner'
 
 export default function StudentAttendance() {
-	const [selectedMonth, setSelectedMonth] = useState("2026-01");
-	const [selectedClass, setSelectedClass] = useState("");
-	const [selectedSection, setSelectedSection] = useState("");
-	const [search, setSearch] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
 
-	const columns = useMemo(
-		() => getAttendanceColumns(selectedMonth),
-		[selectedMonth],
-	);
+  const [selectedClass, setSelectedClass] = useState('')
+  const [selectedSection, setSelectedSection] = useState('')
+  const [search, setSearch] = useState('')
 
-	const { data, isLoading } = useAttendanceMatrixAll();
+  const columns = useMemo(() => getAttendanceColumns(selectedMonth), [selectedMonth])
 
-	const filteredData = useMemo(() => {
-		if (!data?.Data) return [];
+  const { data, isLoading } = useAttendanceMatrixAll()
 
-		const [year, month] = selectedMonth.split("-");
+  const filteredData = useMemo(() => {
+    if (!data?.Data) return []
 
-		return data.Data.filter((row) => {
-			if (search) {
-				const q = search.toLowerCase();
-				const match =
-					row.Name?.toLowerCase().includes(q) ||
-					String(row.StudentID).includes(q);
+    const [year, month] = selectedMonth.split('-')
 
-				if (!match) return false;
-			}
+    return data.Data.filter((row) => {
+      if (search) {
+        const q = search.toLowerCase()
+        const match =
+          row.Name?.toLowerCase().includes(q) || String(row.StudentID).includes(q)
 
-			if (selectedClass && row.Class !== selectedClass) {
-				return false;
-			}
+        if (!match) return false
+      }
 
-			if (selectedSection && row.Section !== selectedSection) {
-				return false;
-			}
+      if (selectedClass && row.Class !== selectedClass) {
+        return false
+      }
 
-			return true;
-		}).map((row) => {
-			const filteredRow = { ...row };
+      if (selectedSection && row.Section !== selectedSection) {
+        return false
+      }
 
-			Object.keys(filteredRow).forEach((key) => {
-				if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
-					if (!key.startsWith(`${year}-${month}`)) {
-						delete filteredRow[key];
-					}
-				}
-			});
+      return true
+    }).map((row) => {
+      const filteredRow = { ...row }
 
-			return filteredRow;
-		});
-	}, [data, search, selectedClass, selectedSection, selectedMonth]);
+      Object.keys(filteredRow).forEach((key) => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+          if (!key.startsWith(`${year}-${month}`)) {
+            delete filteredRow[key]
+          }
+        }
+      })
 
-	const handleExport = () => {
-		if (!filteredData.length) {
-			toast.error("No students to export");
-			return;
-		}
+      return filteredRow
+    })
+  }, [data, search, selectedClass, selectedSection, selectedMonth])
 
-		const attendanceMap = {
-			P: "Present",
-			A: "Absent",
-			L: "Late",
-			H: "Half Day",
-			null: "_",
-			"": "-",
-		};
+  const handleExport = () => {
+    if (!filteredData.length) {
+      toast.error('No students to export')
+      return
+    }
 
-		const dateKeys = Object.keys(filteredData[0]).filter((k) =>
-			/^\d{4}-\d{2}-\d{2}$/.test(k),
-		);
+    const attendanceMap = {
+      P: 'Present',
+      A: 'Absent',
+      L: 'Late',
+      H: 'Half Day',
+      null: '_',
+      '': '-',
+    }
 
-		const headers = [
-			"StudentID",
-			"Name",
-			"Class",
-			"Section",
-			...dateKeys,
-			"PresentCount",
-			"AbsentCount",
-			"AttendancePercentage",
-		];
+    const dateKeys = Object.keys(filteredData[0]).filter((k) =>
+      /^\d{4}-\d{2}-\d{2}$/.test(k)
+    )
 
-		const rows = filteredData.map((row) => {
-			const present = dateKeys.filter((k) => row[k] === "P").length;
-			const absent = dateKeys.filter((k) => row[k] === "A").length;
-			const total = present + absent;
-			const percentage = total
-				? Math.round((present / total) * 100)
-				: 0;
+    const headers = [
+      'StudentID',
+      'Name',
+      'Class',
+      'Section',
+      ...dateKeys,
+      'PresentCount',
+      'AbsentCount',
+      'AttendancePercentage',
+    ]
 
-			return [
-				row.StudentID,
-				row.Name,
-				row.Class,
-				row.Section,
-				...dateKeys.map(
-					(k) => attendanceMap[row[k] ?? null] ?? "Holiday",
-				),
-				present,
-				absent,
-				percentage,
-			]
-				.map((v) => `"${v ?? ""}"`)
-				.join(",");
-		});
+    const rows = filteredData.map((row) => {
+      const present = dateKeys.filter((k) => row[k] === 'P').length
+      const absent = dateKeys.filter((k) => row[k] === 'A').length
+      const total = present + absent
+      const percentage = total ? Math.round((present / total) * 100) : 0
 
-		const csvContent = [headers.join(","), ...rows].join("\n");
+      return [
+        row.StudentID,
+        row.Name,
+        row.Class,
+        row.Section,
+        ...dateKeys.map((k) => attendanceMap[row[k] ?? null] ?? 'Holiday'),
+        present,
+        absent,
+        percentage,
+      ]
+        .map((v) => `"${v ?? ''}"`)
+        .join(',')
+    })
 
-		const blob = new Blob([csvContent], {
-			type: "text/csv;charset=utf-8;",
-		});
+    const csvContent = [headers.join(','), ...rows].join('\n')
 
-		const link = document.createElement("a");
-		link.href = URL.createObjectURL(blob);
-		link.download = `attendance_${selectedMonth}_${Date.now()}.csv`;
-		link.click();
-	};
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;',
+    })
 
-	if (isLoading) return <CircleLoader />;
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `attendance_${selectedMonth}_${Date.now()}.csv`
+    link.click()
+  }
 
-	return (
-		<section className="p-6">
-			<StudentAttendanceHeader
-				selectedMonth={selectedMonth}
-				onMonthChange={setSelectedMonth}
-				selectedClass={selectedClass}
-				onClassChange={setSelectedClass}
-				selectedSection={selectedSection}
-				onSectionChange={setSelectedSection}
-				search={search}
-				onSearchChange={setSearch}
-				onExport={handleExport}
-				onClear={() => {
-					setSelectedMonth(new Date().toISOString().slice(0, 7));
-					setSelectedClass("");
-					setSelectedSection("");
-					setSearch("");
-				}}
-			/>
+  if (isLoading) return <CircleLoader />
 
-			<TableLayout columns={columns} data={filteredData} />
-		</section>
-	);
+  return (
+    <section className="p-6">
+      <StudentAttendanceHeader
+        selectedMonth={selectedMonth}
+        onMonthChange={setSelectedMonth}
+        selectedClass={selectedClass}
+        onClassChange={setSelectedClass}
+        selectedSection={selectedSection}
+        onSectionChange={setSelectedSection}
+        search={search}
+        onSearchChange={setSearch}
+        onExport={handleExport}
+        onClear={() => {
+          setSelectedMonth(new Date().toISOString().slice(0, 7))
+          setSelectedClass('')
+          setSelectedSection('')
+          setSearch('')
+        }}
+      />
+
+      <TableLayout columns={columns} data={filteredData} />
+    </section>
+  )
 }

@@ -1,28 +1,11 @@
 import * as React from 'react'
-import {
-  useReactTable,
-  getCoreRowModel,
-  getPaginationRowModel,
-  flexRender,
-} from '@tanstack/react-table'
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { useParams } from 'react-router-dom'
+import { Calendar } from '@/components/ui/calendar'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-
-import { CheckCheck, X, Clock, Calendar } from 'lucide-react'
+import { CheckCheck, X, Calendar as CalendarIcon } from 'lucide-react'
 
 import { useAttendanceMatrixByStudentId } from '@/hooks/useAttendance'
-import { useParams } from 'react-router-dom'
-
-import { getAttendanceColumns } from '../student-attendance/StudentAttendanceColumns'
 
 function StudentAttendance() {
   const { id } = useParams()
@@ -34,44 +17,34 @@ function StudentAttendance() {
   const { data: attendanceData, isLoading, isError } = useAttendanceMatrixByStudentId(id)
 
   const tableData = attendanceData?.Data || []
+  const attendanceRow = tableData[0] || {}
 
-  const columns = React.useMemo(
-    () => getAttendanceColumns(selectedMonth),
-    [selectedMonth]
-  )
+  const today = React.useMemo(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  }, [])
 
-  const { presentCount, absentCount } = React.useMemo(() => {
-    let present = 0
-    let absent = 0
-
-    tableData.forEach((row) => {
-      Object.entries(row).forEach(([key, value]) => {
-        if (!key.startsWith(selectedMonth)) return
-
-        if (value === 'P') present++
-        if (value === 'A') absent++
-      })
+  const attendanceMap = React.useMemo(() => {
+    const map = {}
+    Object.entries(attendanceRow).forEach(([key, value]) => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+        map[key] = value
+      }
     })
-
-    return { presentCount: present, absentCount: absent }
-  }, [tableData, selectedMonth])
-
-  const table = useReactTable({
-    data: tableData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  })
+    return map
+  }, [attendanceRow])
 
   if (isLoading) return <p>Loading attendance...</p>
   if (isError) return <p>Failed to load attendance</p>
-  if (!attendanceData) return null
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-sm">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-lg font-semibold">Attendance</CardTitle>
+      <Card className="rounded-xl border-muted/60">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-lg font-semibold tracking-tight">
+            Attendance
+          </CardTitle>
 
           {/* Month Selector */}
           <div className="flex items-center gap-2 text-sm">
@@ -85,84 +58,90 @@ function StudentAttendance() {
           </div>
         </CardHeader>
 
-        <CardContent className="pt-0 space-y-4">
-          {/* Legend + Monthly Summary */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Status Legend */}
-            <div className="flex flex-wrap gap-3">
-              <LegendItem
-                icon={<CheckCheck className="h-4 w-4" />}
-                label="Present"
-                bg="bg-emerald-700"
-              />
-              <LegendItem
-                icon={<X className="h-4 w-4" />}
-                label="Absent"
-                bg="bg-red-700"
-              />
-              <LegendItem
-                icon={<Calendar className="h-4 w-4" />}
-                label="Holiday"
-                bg="bg-slate-400"
-              />
-            </div>
-
-            {/* Monthly Summary */}
-            <div className="flex items-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-600" />
-                <span className="font-medium">Present: {presentCount}</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-red-600" />
-                <span className="font-medium">Absent: {absentCount}</span>
-              </div>
-            </div>
+        <CardContent className="space-y-8">
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4">
+            <LegendItem
+              icon={<CheckCheck className="h-4 w-4" />}
+              label="Present"
+              bg="bg-emerald-600"
+            />
+            <LegendItem icon={<X className="h-4 w-4" />} label="Absent" bg="bg-red-600" />
+            <LegendItem
+              icon={<CalendarIcon className="h-4 w-4" />}
+              label="Holiday"
+              bg="bg-blue-600"
+            />
           </div>
 
-          {/* ✅ TABLE — THIS WILL RENDER */}
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        style={{ width: header.getSize() }}
-                        className="text-center"
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
+          {/* Calendar */}
+          <div className="flex justify-center sm:justify-start pt-2">
+            <Calendar
+              mode="single"
+              month={new Date(`${selectedMonth}-01`)}
+              onMonthChange={(date) =>
+                setSelectedMonth(
+                  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+                )
+              }
+              modifiers={{
+                present: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'P',
+                absent: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'A',
+                holiday: (date) =>
+                  attendanceMap[date.toISOString().slice(0, 10)] === null,
+                future: (date) => date > today,
+              }}
+              modifiersClassNames={{
+                present: 'bg-emerald-600 text-white rounded-lg shadow-md',
+                absent: 'bg-red-600 text-white rounded-lg shadow-md',
+                holiday: 'bg-blue-600 text-white rounded-lg shadow-md',
+              }}
+              components={{
+                DayContent: ({ date }) => {
+                  const dateKey = date.toISOString().slice(0, 10)
+                  const isFuture = date > today
+                  const value = attendanceMap[dateKey]
 
-              <TableBody>
-                {table.getRowModel().rows.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="p-2 text-center">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="py-6 text-center text-sm"
-                    >
-                      No attendance data.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  if (isFuture)
+                    return (
+                      <span className="text-xs sm:text-sm text-muted-foreground">–</span>
+                    )
+
+                  if (!value) return null
+
+                  return <span className="text-xs sm:text-sm font-semibold">{value}</span>
+                },
+              }}
+              className="rounded-xl border border-muted/50 bg-background p-4 sm:p-5"
+              classNames={{
+                months: 'flex justify-center',
+                month: 'w-full max-w-sm',
+
+                caption: 'pb-4',
+                caption_label: 'text-base sm:text-lg font-semibold tracking-wide',
+
+                head_row: 'mb-2',
+                head_cell:
+                  'text-[11px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide',
+
+                table: 'w-full border-separate border-spacing-2 sm:border-spacing-3',
+
+                row: 'mt-1',
+
+                day: `
+      h-9 w-9 text-sm
+      sm:h-10 sm:w-10 sm:text-sm
+    `,
+
+                day_button: `
+      h-full w-full flex items-center justify-center
+      rounded-lg shadow-sm
+      transition-transform transition-colors duration-150
+      hover:scale-[1.03]
+      focus-visible:ring-2 focus-visible:ring-blue-500
+    `,
+              }}
+            />
           </div>
         </CardContent>
       </Card>
@@ -174,7 +153,7 @@ export default StudentAttendance
 
 function LegendItem({ icon, label, bg }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-sm font-medium">
+    <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-muted/60 text-sm font-medium">
       <span
         className={`flex h-6 w-6 items-center justify-center rounded-md text-white ${bg}`}
       >
