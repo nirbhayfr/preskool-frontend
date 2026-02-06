@@ -1,4 +1,27 @@
+import { useTeacher } from "@/hooks/useTeacher";
+import { decryptData } from "@/utils/crypto";
+import {   useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+
 function TeacherProfilecard() {
+	const navigate = useNavigate();
+	const user = useMemo(() => {
+    try {
+      const encrypted = localStorage.getItem('user')
+      return encrypted ? decryptData(encrypted) : null
+    } catch {
+      return null
+    }
+  }, [])
+
+ 
+
+	const { data: teacher, isLoading, isError } = useTeacher(user?.LinkedID);
+	if (isLoading) return <p>Loading...</p>
+	if (isError) return <p>Failed to load teacher</p>
+	if (!teacher) return null
+
+     console.log('teacher',teacher)
 	return (
 		<div className="relative overflow-hidden rounded-sm bg-[#202C4B] p-4 flex items-center">
 			{/* Decorative shapes */}
@@ -31,7 +54,7 @@ function TeacherProfilecard() {
 				<div className="shrink-0">
 					<div className="rounded-md border-2 border-white p-1">
 						<img
-							src="/img/teachers/teacher-05.jpg"
+							src={teacher?.ProfilePictureUrl || "/img/default-profile.png"}
 							alt="Profile"
 							className="size-20 rounded-sm object-cover"
 						/>
@@ -40,10 +63,10 @@ function TeacherProfilecard() {
 
 				{/* Profile Info */}
 				<div className="flex-1 text-white">
-					<p className="text-xs opacity-80">#T594651</p>
+					<p className="text-xs opacity-80">{teacher?.TeacherID}</p>
 
 					<h2 className="text-lg font-semibold leading-snug">
-						Henriques Morgan
+						{teacher?.FullName} 
 					</h2>
 
 					<p className="mt-1 text-sm text-blue-200">
@@ -53,11 +76,11 @@ function TeacherProfilecard() {
 
 					<p className="text-sm text-blue-200">
 						Subject :{" "}
-						<span className="font-medium">Physics</span>
+						<span className="font-medium">{teacher?.Subject}</span>
 					</p>
 				</div>
 
-				<button className="inline-flex items-center rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600 transition">
+				<button onClick={()=>navigate(`/edit-teacher/${teacher?.TeacherID}`)} className="inline-flex items-center rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600 transition">
 					Edit Profile
 				</button>
 			</div>

@@ -8,7 +8,7 @@ import { useTeacher } from '@/hooks/useTeacher'
 export default function TeacherDetailsAndInfoCard() {
   const { id } = useParams()
   const { data: teacher, isLoading, isError } = useTeacher(id)
-
+  
   if (isLoading) return <p>Loading...</p>
   if (isError) return <p>Failed to load teacher</p>
   if (!teacher) return null
