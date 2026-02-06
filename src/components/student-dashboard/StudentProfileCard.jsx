@@ -1,6 +1,24 @@
+import { useStudent } from "@/hooks/useStudents";
+import { decryptData } from "@/utils/crypto";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 function StudentProfileCard() {
+   const user = useMemo(() => {
+	   try {
+		 const encrypted = localStorage.getItem('user')
+		 return encrypted ? decryptData(encrypted) : null
+	   } catch {
+		 return null
+	   }
+	 }, [])
+
+	 const { data: student, isLoading, isError } = useStudent(user?.LinkedID);
+		if (isLoading) return <p>Loading...</p>
+		if (isError) return <p>Failed to load student</p>
+		if (!student) return null
+
+
 	return (
 		<div className="relative overflow-hidden rounded-sm bg-[#202C4B] p-4 flex items-center w-full min-w-0">
 			{/* Decorative shapes */}
@@ -34,7 +52,7 @@ function StudentProfileCard() {
 				<div className="shrink-0">
 					<div className="rounded-md border-2 border-white p-1">
 						<img
-							src="/img/students/student-01.jpg"
+							src={student?.PhotoUrl || "/img/students/student-01.jpg"}
 							alt="Student Profile"
 							className="size-20 rounded-sm object-cover"
 						/>
@@ -45,21 +63,21 @@ function StudentProfileCard() {
 				<div className="flex w-full min-w-0 flex-col gap-3 text-white sm:flex-row sm:items-center sm:justify-between">
 					<div className="min-w-0">
 						<p className="text-[10px] sm:text-xs opacity-80">
-							#ST1234546
+							{student?.StudentID}
 						</p>
 						<h2 className="text-base sm:text-xl font-semibold truncate">
-							Angelo Riana
+							{student?.FullName}
 						</h2>
 					</div>
 
 					<div className="text-left sm:text-right">
 						<p className="text-xs sm:text-sm text-blue-200">
 							Class :{" "}
-							<span className="font-medium">III, C</span>
+							<span className="font-medium">{student?.ClassID}</span>
 						</p>
 						<p className="text-xs sm:text-sm text-blue-200">
 							Roll No :{" "}
-							<span className="font-medium">36545</span>
+							<span className="font-medium">{student?.RollNo}</span>
 						</p>
 					</div>
 
@@ -73,7 +91,7 @@ function StudentProfileCard() {
 					</div>
 
 					<Link
-						to="/student-details"
+						to={`/student-details/${student?.StudentID}`}
 						className="shrink-0 rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
 					>
 						View Details
