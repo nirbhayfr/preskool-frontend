@@ -27,6 +27,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Wallet, Eye } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { useStaffSalaryById } from '@/hooks/useSalary'
+import { Skeleton } from '../ui/skeleton'
 
 const staffSalaryColumns = [
   { accessorKey: 'id', header: 'ID' },
@@ -61,7 +62,7 @@ function StaffSalary() {
     getPaginationRowModel: getPaginationRowModel(),
   })
 
-  if (isLoading) return <p>Loading...</p>
+  if (isLoading) return <StaffSalarySkeleton />
   if (isError) return <p>Failed to load staff salary</p>
   if (!staff) return null
 
@@ -176,3 +177,50 @@ function StaffSalary() {
 }
 
 export default StaffSalary
+
+function StaffSalarySkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Summary Skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="rounded-sm">
+          <CardContent className="flex items-center gap-3 p-4">
+            <Skeleton className="h-6 w-6 rounded" />
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Table Skeleton */}
+      <Card className="rounded-sm">
+        <CardHeader>
+          <Skeleton className="h-5 w-40" />
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <Skeleton className="h-8 w-32" />
+
+          <div className="rounded-md border">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex gap-4 px-4 py-3 border-b last:border-b-0">
+                {Array.from({ length: staffSalaryColumns.length }).map((_, j) => (
+                  <Skeleton key={j} className="h-4 w-full" />
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="h-4 w-6" />
+            <Skeleton className="h-8 w-16" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

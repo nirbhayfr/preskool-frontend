@@ -28,6 +28,20 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useParams } from 'react-router-dom'
 import { useFeeSubmissionsByStudent } from '@/hooks/useFeeSubmissions'
+import { Skeleton } from '../ui/skeleton'
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+
+  const d = new Date(dateStr)
+
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  })
+}
 
 function FeesTable() {
   const { id } = useParams()
@@ -35,19 +49,18 @@ function FeesTable() {
 
   const { data: feesData, isLoading, isError } = useFeeSubmissionsByStudent(id)
   const tableData = React.useMemo(() => {
-    // Transform API response to match table columns
     return (
       feesData?.data?.map((item) => ({
-        group: `${item.FeeType} (${new Date(item.SubmittedDate).toLocaleString('default', { month: 'short', year: 'numeric' })})`,
+        group: `${item.FeeType} (${formatDate(item.SubmittedDate)})`,
         code: item.TransactionID,
-        dueDate: new Date(item.SubmittedDate).toLocaleDateString(),
+        dueDate: formatDate(item.SubmittedDate),
         amount: item.OriginalAmount,
         discount: item.DiscountAmount,
         paidAmount: item.PaidAmount,
         status: item.PaymentStatus,
         mode: item.PaymentMode,
         refId: item.TransactionID,
-        datePaid: new Date(item.SubmittedDate).toLocaleDateString(),
+        datePaid: formatDate(item.SubmittedDate),
         remarks: item.Remarks,
       })) || []
     )
@@ -84,7 +97,7 @@ function FeesTable() {
     getFilteredRowModel: getFilteredRowModel(),
   })
 
-  if (isLoading) return <p>Loading...</p>
+  if (isLoading) return <FeesTableSkeleton />
   if (isError) return <p>Failed to load fee submissions</p>
   if (!feesData) return null
 
@@ -190,3 +203,48 @@ function FeesTable() {
 }
 
 export default FeesTable
+
+function FeesTableSkeleton() {
+  return (
+    <Card className="rounded-sm">
+      {/* Header */}
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-lg font-semibold">
+          <Skeleton className="h-5 w-24" />
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="pt-0 space-y-4">
+        {/* Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-9 w-20 rounded-md" />
+          </div>
+
+          <Skeleton className="h-9 w-48 rounded-md" />
+        </div>
+
+        {/* Table */}
+        <div className="rounded-md border overflow-x-auto">
+          <div className="space-y-2 p-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="grid grid-cols-11 gap-3 items-center">
+                {Array.from({ length: 11 }).map((__, j) => (
+                  <Skeleton key={j} className="h-4 w-full" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex justify-end gap-2">
+          <Skeleton className="h-8 w-16 rounded-md" />
+          <Skeleton className="h-8 w-6 rounded-md" />
+          <Skeleton className="h-8 w-16 rounded-md" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

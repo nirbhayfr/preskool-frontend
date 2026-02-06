@@ -21,14 +21,25 @@ import {
 
 import { useStudent } from '@/hooks/useStudents'
 import { useFeeStructureByClass } from '@/hooks/useFeeStructure'
+import { useCreateFeeSubmission } from '@/hooks/useFeeSubmissions'
+import { toast } from 'sonner'
 
 export function CollectFeesDialog({ studentId }) {
   const [open, setOpen] = useState(false)
+
   const [amount, setAmount] = useState('')
   const [remarks, setRemarks] = useState('')
   const [selectedGroup, setSelectedGroup] = useState('')
   const [selectedType, setSelectedType] = useState('')
+
+  const [collectionDate, setCollectionDate] = useState('')
+  const [paymentMode, setPaymentMode] = useState('')
+  const [paymentRef, setPaymentRef] = useState('')
+
   const academicYear = '2025-2026'
+
+  const { mutate: createFeeSubmission, isLoading: isSubmitting } =
+    useCreateFeeSubmission()
 
   const {
     data: student,
@@ -44,7 +55,7 @@ export function CollectFeesDialog({ studentId }) {
     refetch: refetchStructure,
   } = useFeeStructureByClass({
     classId: student?.ClassID,
-    academicYear: academicYear,
+    academicYear,
     enabled: !!student?.ClassID,
   })
 
@@ -74,15 +85,48 @@ export function CollectFeesDialog({ studentId }) {
     ? Object.entries(structure)
         .filter(([key]) => {
           if (!selectedGroup) return false
-
-          if (selectedGroup === 'tuition_fee') {
-            return key.includes('tuition_fee')
-          }
-
+          if (selectedGroup === 'tuition_fee') return key.includes('tuition_fee')
           return key === selectedGroup
         })
         .map(([key, value]) => ({ key, value }))
     : []
+
+  const handleSubmit = () => {
+    if (!selectedType || !amount || !paymentMode) return
+
+    const originalAmount = feesForGroup.find((f) => f.key === selectedType)?.value || 0
+
+    const payload = {
+      studentId: Number(student.StudentID),
+      transactionId: paymentRef || `TXN${Date.now()}`,
+      feeType: selectedType.replace('_fee', '').toUpperCase(),
+      originalAmount: Number(originalAmount),
+      discountId: null,
+      discountAmount: Number(originalAmount) - Number(amount),
+      paidAmount: Number(amount),
+      paymentMode,
+      paymentStatus: 'SUCCESS',
+      submittedBy: 'Accountant',
+      submittedDate: collectionDate || '',
+      remarks,
+    }
+
+    console.log(payload)
+
+    createFeeSubmission(payload, {
+      onSuccess: () => {
+        setOpen(false)
+        setAmount('')
+        setRemarks('')
+        setSelectedGroup('')
+        setSelectedType('')
+        setCollectionDate('')
+        setPaymentMode('')
+        setPaymentRef('')
+        toast.success('Fees Submitted Succesfully')
+      },
+    })
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -111,7 +155,7 @@ export function CollectFeesDialog({ studentId }) {
                       student.FullName || 'Student'
                     )}`
                   }
-                  alt="Student Profile"
+                  alt="Student"
                   className="size-10 rounded-full object-cover sm:size-12"
                 />
                 <div>
@@ -122,26 +166,13 @@ export function CollectFeesDialog({ studentId }) {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 sm:gap-10">
-                <div>
-                  <p className="text-xs text-muted-foreground">Total Outstanding</p>
-                  <p className="text-sm font-semibold">₹ 2000</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">Last Date</p>
-                  <p className="text-sm font-semibold">25 May 2024</p>
-                </div>
-
-                <Badge variant="destructive" className="text-xs">
-                  Unpaid
-                </Badge>
-              </div>
+              {/* <Badge variant="destructive" className="text-xs">
+                Unpaid
+              </Badge> */}
             </div>
 
-            {/* Form Grid */}
+            {/* Form */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Fees Group */}
               <InputGroup>
                 <Label>Fees Group</Label>
                 <Select value={selectedGroup} onValueChange={setSelectedGroup}>
@@ -158,15 +189,12 @@ export function CollectFeesDialog({ studentId }) {
                 </Select>
               </InputGroup>
 
-              {/* Fees Type */}
-
               <InputGroup>
                 <Label>Fees Type</Label>
                 <Select
                   value={selectedType}
                   onValueChange={(val) => {
                     setSelectedType(val)
-
                     const fee = feesForGroup.find((f) => f.key === val)
                     if (fee) setAmount(fee.value)
                   }}
@@ -175,7 +203,6 @@ export function CollectFeesDialog({ studentId }) {
                   <SelectTrigger>
                     <SelectValue placeholder="Select Type" />
                   </SelectTrigger>
-
                   <SelectContent>
                     {feesForGroup.map(({ key, value }) => (
                       <SelectItem key={key} value={key}>
@@ -186,52 +213,43 @@ export function CollectFeesDialog({ studentId }) {
                 </Select>
               </InputGroup>
 
-              {/* Amount */}
               <InputGroup>
                 <Label>Amount</Label>
                 <Input
                   type="number"
-                  placeholder="Enter Amount"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
               </InputGroup>
 
-              {/* Collection Date */}
               <InputGroup>
                 <Label>Collection Date</Label>
-                <Input type="date" />
+                <Input type="date" onChange={(e) => setCollectionDate(e.target.value)} />
               </InputGroup>
 
-              {/* Payment Type */}
               <InputGroup>
                 <Label>Payment Type</Label>
-                <Input placeholder="Select" />
+                <Input onChange={(e) => setPaymentMode(e.target.value)} />
               </InputGroup>
 
-              {/* Payment Reference */}
               <InputGroup>
                 <Label>Payment Reference No</Label>
-                <Input placeholder="Enter Reference No" />
+                <Input onChange={(e) => setPaymentRef(e.target.value)} />
               </InputGroup>
             </div>
 
-            {/* Notes */}
             <div>
               <Label>Notes</Label>
-              <Input
-                placeholder="Add Notes"
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-              />
+              <Input value={remarks} onChange={(e) => setRemarks(e.target.value)} />
             </div>
 
-            {/* Footer */}
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button>Pay Fees</Button>
+              <Button onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? 'Processing...' : 'Pay Fees'}
+              </Button>
             </div>
           </div>
         )}

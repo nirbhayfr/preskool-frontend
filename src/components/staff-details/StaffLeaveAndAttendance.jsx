@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { CheckCheck, X, Calendar as CalendarIcon, Clock } from 'lucide-react'
 
 import { useStaffAttendanceMatrixById } from '@/hooks/useStaffAttendance'
@@ -19,12 +20,6 @@ function StaffAttendanceCalendar() {
   const tableData = attendanceData?.Data || []
   const attendanceRow = tableData[0] || {}
 
-  const today = React.useMemo(() => {
-    const d = new Date()
-    d.setHours(0, 0, 0, 0)
-    return d
-  }, [])
-
   const attendanceMap = React.useMemo(() => {
     const map = {}
     Object.entries(attendanceRow).forEach(([key, value]) => {
@@ -35,16 +30,7 @@ function StaffAttendanceCalendar() {
     return map
   }, [attendanceRow])
 
-  const summaryCounts = React.useMemo(() => {
-    const counts = { P: 0, A: 0, L: 0, H: 0 }
-    Object.entries(attendanceMap).forEach(([date, value]) => {
-      if (!date.startsWith(selectedMonth)) return
-      if (value in counts) counts[value]++
-    })
-    return counts
-  }, [attendanceMap, selectedMonth])
-
-  if (isLoading) return <p>Loading attendance...</p>
+  if (isLoading) return <StaffAttendanceSkeleton />
   if (isError) return <p>Failed to load attendance</p>
 
   return (
@@ -55,7 +41,6 @@ function StaffAttendanceCalendar() {
             Staff Attendance
           </CardTitle>
 
-          {/* Month Selector */}
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Month</span>
             <Input
@@ -69,7 +54,7 @@ function StaffAttendanceCalendar() {
 
         <CardContent className="space-y-8">
           {/* Legend */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap gap-4">
             <LegendItem
               label="Present"
               icon={<CheckCheck className="h-4 w-4" />}
@@ -93,14 +78,6 @@ function StaffAttendanceCalendar() {
             />
           </div>
 
-          {/* Summary */}
-          <div className="flex flex-wrap items-center gap-6 text-sm">
-            <SummaryDot label="Present" value={summaryCounts.P} color="bg-emerald-600" />
-            <SummaryDot label="Absent" value={summaryCounts.A} color="bg-red-600" />
-            <SummaryDot label="Late" value={summaryCounts.L} color="bg-yellow-500" />
-            <SummaryDot label="Half Day" value={summaryCounts.H} color="bg-orange-600" />
-          </div>
-
           {/* Calendar */}
           <div className="flex justify-center sm:justify-start pt-2">
             <Calendar
@@ -112,50 +89,38 @@ function StaffAttendanceCalendar() {
                 )
               }
               modifiers={{
-                P: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'P',
-                A: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'A',
-                L: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'L',
-                H: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'H',
-                Holiday: (date) =>
+                present: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'P',
+                absent: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'A',
+                late: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'L',
+                halfDay: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'H',
+                holiday: (date) =>
                   attendanceMap[date.toISOString().slice(0, 10)] === null,
-                future: (date) => date > today,
               }}
               modifiersClassNames={{
-                P: 'bg-emerald-600 text-white rounded-lg shadow-md',
-                A: 'bg-red-600 text-white rounded-lg shadow-md',
-                L: 'bg-yellow-500 text-white rounded-lg shadow-md',
-                H: 'bg-orange-600 text-white rounded-lg shadow-md',
-                Holiday: 'bg-blue-600 text-white rounded-lg shadow-md',
+                present: 'bg-emerald-600 text-white rounded-full',
+                absent: 'bg-red-600 text-white rounded-full',
+                late: 'bg-yellow-500 text-white rounded-full',
+                halfDay: 'bg-orange-600 text-white rounded-full',
+                holiday: 'bg-blue-600 text-white rounded-full',
               }}
               components={{
                 DayContent: ({ date }) => {
                   const key = date.toISOString().slice(0, 10)
-                  const isFuture = date > today
                   const value = attendanceMap[key]
 
-                  if (isFuture) {
-                    return (
-                      <span className="text-xs sm:text-sm text-muted-foreground">–</span>
-                    )
-                  }
+                  if (!value) return <span>{date.getDate()}</span>
 
-                  if (!value) return null
-
-                  return <span className="text-xs sm:text-sm font-semibold">{value}</span>
+                  return <span className="font-semibold">{date.getDate()}</span>
                 },
               }}
-              className="rounded-xl border border-muted/50 bg-background p-4 sm:p-5"
+              className="bg-background border rounded-lg p-4"
               classNames={{
                 months: 'flex justify-center',
-                month: 'w-full max-w-sm',
-                caption: 'pb-4',
-                caption_label: 'text-base sm:text-lg font-semibold',
-                head_cell:
-                  'text-[11px] sm:text-xs font-medium text-muted-foreground uppercase',
-                table: 'w-full border-separate border-spacing-2 sm:border-spacing-3',
-                day: 'h-9 w-9 sm:h-10 sm:w-10 text-sm',
-                day_button:
-                  'h-full w-full flex items-center justify-center rounded-lg transition hover:scale-[1.03]',
+                month: 'space-y-4',
+                caption: 'pb-6 flex justify-center',
+                caption_label: 'text-lg font-semibold',
+                head_cell: 'text-xs font-medium text-muted-foreground uppercase',
+                table: 'border-separate border-spacing-4',
               }}
             />
           </div>
@@ -182,13 +147,25 @@ function LegendItem({ icon, label, bg }) {
   )
 }
 
-function SummaryDot({ label, value, color }) {
+function StaffAttendanceSkeleton() {
   return (
-    <div className="flex items-center gap-2">
-      <span className={`h-2 w-2 rounded-full ${color}`} />
-      <span className="font-medium">
-        {label}: {value}
-      </span>
-    </div>
+    <Card className="rounded-xl border-muted/60">
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-9 w-40" />
+      </CardHeader>
+
+      <CardContent className="space-y-8">
+        <div className="flex gap-4 flex-wrap">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-28 rounded-lg" />
+          ))}
+        </div>
+
+        <div className="flex justify-center">
+          <Skeleton className="h-[360px] w-[320px] rounded-xl" />
+        </div>
+      </CardContent>
+    </Card>
   )
 }

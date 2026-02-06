@@ -27,6 +27,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Wallet, Eye } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { useTeacherSalaryById } from '@/hooks/useSalary'
+import { Skeleton } from '../ui/skeleton'
 
 /* ------------------ Columns ------------------ */
 
@@ -62,7 +63,7 @@ function TeacherSalary() {
     getPaginationRowModel: getPaginationRowModel(),
   })
 
-  if (isLoading) return <p>Loading...</p>
+  if (isLoading) return <TeacherSalarySkeleton />
   if (isError) return <p>Failed to load salary</p>
   if (!teacher) return null
 
@@ -177,3 +178,67 @@ function TeacherSalary() {
 }
 
 export default TeacherSalary
+
+function TeacherSalarySkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Salary Summary Skeleton */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card className="rounded-sm">
+          <CardContent className="flex items-center gap-3 p-4">
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-3 w-40" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Salary History Skeleton */}
+      <Card className="rounded-sm">
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+        </CardHeader>
+
+        <CardContent className="pt-0 space-y-4">
+          {/* Rows per page */}
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-9 w-20" />
+          </div>
+
+          {/* Table Skeleton */}
+          <div className="rounded-md border overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-6 gap-4 border-b p-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-full" />
+              ))}
+            </div>
+
+            {/* Rows */}
+            {Array.from({ length: 5 }).map((_, rowIndex) => (
+              <div
+                key={rowIndex}
+                className="grid grid-cols-6 gap-4 border-b p-4 last:border-b-0"
+              >
+                {Array.from({ length: 6 }).map((_, colIndex) => (
+                  <Skeleton key={colIndex} className="h-4 w-full" />
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination Skeleton */}
+          <div className="flex items-center justify-end gap-2">
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="h-4 w-6" />
+            <Skeleton className="h-8 w-16" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

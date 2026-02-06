@@ -15,6 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useParams } from 'react-router-dom'
 import { useExamResultsByStudent } from '@/hooks/useExamResults'
+import { Skeleton } from '../ui/skeleton'
 
 function ExamsResultsCard() {
   const { id } = useParams()
@@ -78,7 +79,7 @@ function ExamsResultsCard() {
 
   return (
     <>
-      {isLoading && <p>Loading...</p>}
+      {isLoading && <ExamsResultsSkeleton />}
       {isError && <p>Failed to load student</p>}
       {!isLoading && !isError && result?.data && (
         <Card className="rounded-sm">
@@ -159,3 +160,49 @@ function ExamsResultsCard() {
 }
 
 export default ExamsResultsCard
+
+function ExamsResultsSkeleton() {
+  return (
+    <Card className="rounded-sm">
+      {/* Header */}
+      <CardHeader className="py-3">
+        <CardTitle>
+          <Skeleton className="h-5 w-32" />
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="pt-0 space-y-6">
+        {/* Table skeleton */}
+        <div className="rounded-md border overflow-x-auto">
+          <div className="p-3 space-y-3">
+            {/* Header row */}
+            <div className="grid grid-cols-5 gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-full" />
+              ))}
+            </div>
+
+            {/* Body rows */}
+            {Array.from({ length: 5 }).map((_, rowIdx) => (
+              <div key={rowIdx} className="grid grid-cols-5 gap-4">
+                {Array.from({ length: 5 }).map((__, colIdx) => (
+                  <Skeleton key={colIdx} className="h-4 w-full" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Summary section */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-5 px-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="space-y-1">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

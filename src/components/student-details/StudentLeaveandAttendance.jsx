@@ -19,12 +19,6 @@ function StudentAttendance() {
   const tableData = attendanceData?.Data || []
   const attendanceRow = tableData[0] || {}
 
-  const today = React.useMemo(() => {
-    const d = new Date()
-    d.setHours(0, 0, 0, 0)
-    return d
-  }, [])
-
   const attendanceMap = React.useMemo(() => {
     const map = {}
     Object.entries(attendanceRow).forEach(([key, value]) => {
@@ -35,7 +29,7 @@ function StudentAttendance() {
     return map
   }, [attendanceRow])
 
-  if (isLoading) return <p>Loading attendance...</p>
+  if (isLoading) return <AttendanceSkeleton />
   if (isError) return <p>Failed to load attendance</p>
 
   return (
@@ -89,57 +83,33 @@ function StudentAttendance() {
                 absent: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'A',
                 holiday: (date) =>
                   attendanceMap[date.toISOString().slice(0, 10)] === null,
-                future: (date) => date > today,
               }}
               modifiersClassNames={{
-                present: 'bg-emerald-600 text-white rounded-lg shadow-md',
-                absent: 'bg-red-600 text-white rounded-lg shadow-md',
-                holiday: 'bg-blue-600 text-white rounded-lg shadow-md',
+                present: 'bg-emerald-600 text-white rounded-full',
+                absent: 'bg-red-600 text-white rounded-full',
+                holiday: 'bg-blue-600 text-white rounded-full',
               }}
               components={{
                 DayContent: ({ date }) => {
-                  const dateKey = date.toISOString().slice(0, 10)
-                  const isFuture = date > today
-                  const value = attendanceMap[dateKey]
+                  const key = date.toISOString().slice(0, 10)
+                  const value = attendanceMap[key]
 
-                  if (isFuture)
-                    return (
-                      <span className="text-xs sm:text-sm text-muted-foreground">–</span>
-                    )
+                  if (!value) return <span>{date.getDate()}</span>
 
-                  if (!value) return null
-
-                  return <span className="text-xs sm:text-sm font-semibold">{value}</span>
+                  return <span className="font-semibold">{date.getDate()}</span>
                 },
               }}
-              className="rounded-xl border border-muted/50 bg-background p-4 sm:p-5"
+              className="bg-background border rounded-lg"
               classNames={{
                 months: 'flex justify-center',
-                month: 'w-full max-w-sm',
+                month: 'space-y-4',
 
-                caption: 'pb-4',
-                caption_label: 'text-base sm:text-lg font-semibold tracking-wide',
+                caption: 'pb-6 flex justify-center',
+                caption_label: 'text-lg font-semibold',
 
-                head_row: 'mb-2',
-                head_cell:
-                  'text-[11px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide',
+                head_cell: 'text-xs font-medium text-muted-foreground uppercase',
 
-                table: 'w-full border-separate border-spacing-2 sm:border-spacing-3',
-
-                row: 'mt-1',
-
-                day: `
-      h-9 w-9 text-sm
-      sm:h-10 sm:w-10 sm:text-sm
-    `,
-
-                day_button: `
-      h-full w-full flex items-center justify-center
-      rounded-lg shadow-sm
-      transition-transform transition-colors duration-150
-      hover:scale-[1.03]
-      focus-visible:ring-2 focus-visible:ring-blue-500
-    `,
+                table: 'border-separate border-spacing-4',
               }}
             />
           </div>
@@ -160,6 +130,35 @@ function LegendItem({ icon, label, bg }) {
         {icon}
       </span>
       {label}
+    </div>
+  )
+}
+
+function AttendanceSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div className="h-5 w-32 bg-muted rounded" />
+        <div className="h-9 w-40 bg-muted rounded" />
+      </div>
+
+      {/* Legend */}
+      <div className="flex gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded bg-muted" />
+            <div className="h-4 w-16 bg-muted rounded" />
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Skeleton */}
+      <div className="grid grid-cols-7 gap-3 max-w-sm">
+        {Array.from({ length: 35 }).map((_, i) => (
+          <div key={i} className="h-10 w-10 rounded-full bg-muted" />
+        ))}
+      </div>
     </div>
   )
 }

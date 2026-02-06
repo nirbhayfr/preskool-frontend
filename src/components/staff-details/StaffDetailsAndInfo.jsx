@@ -3,12 +3,13 @@ import { Badge } from '@/components/ui/badge'
 import { Phone, Mail } from 'lucide-react'
 import { useStaffById } from '@/hooks/useStaff'
 import { useParams } from 'react-router-dom'
+import { Skeleton } from '../ui/skeleton'
 
 export default function StaffDetailsAndInfoCard() {
   const { id } = useParams()
   const { data: staff, isLoading, isError } = useStaffById(id)
 
-  if (isLoading) return <p>Loading...</p>
+  if (isLoading) return <StaffDetailsSkeleton />
   if (isError) return <p>Failed to load staff</p>
   if (!staff) return null
 
@@ -125,5 +126,52 @@ function ContactRow({ icon, label, value }) {
         <span className="text-sm font-medium text-muted-foreground">{value}</span>
       </div>
     </div>
+  )
+}
+function StaffDetailsSkeleton() {
+  return (
+    <>
+      <Card className="rounded-sm py-4">
+        <CardContent className="px-3 space-y-6">
+          <div className="flex gap-5 items-center">
+            <Skeleton className="size-20 rounded-sm" />
+
+            <div className="flex flex-col gap-2 flex-1">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-5 w-48" />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-40" />
+
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="flex justify-between gap-4">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+            ))}
+          </div>
+
+          <Skeleton className="h-9 w-full" />
+        </CardContent>
+      </Card>
+
+      {[...Array(2)].map((_, i) => (
+        <Card key={i} className="rounded-sm">
+          <div className="p-4 space-y-4">
+            <Skeleton className="h-4 w-40" />
+            <div className="flex gap-3">
+              <Skeleton className="size-4 rounded-full" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </>
   )
 }
