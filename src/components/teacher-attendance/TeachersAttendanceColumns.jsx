@@ -1,101 +1,100 @@
-import { AttendanceCell } from "../student-attendance/AttendanceCell";
+import { AttendanceCell } from '../student-attendance/AttendanceCell'
 
 function getDaysInMonth(year, month) {
-	return new Date(year, month, 0).getDate();
+  return new Date(year, month, 0).getDate()
 }
 
 function getWeekdayInitial(dateStr) {
-	return new Date(dateStr)
-		.toLocaleDateString("en-US", { weekday: "short" })
-		.charAt(0);
+  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)
 }
 
 function countStatus(row, status) {
-	return Object.values(row).filter((v) => v === status).length;
+  return Object.values(row).filter((v) => v === status).length
 }
 
 export function getTeacherAttendanceColumns(selectedMonth) {
-	const [year, month] = selectedMonth.split("-").map(Number);
-	const daysInMonth = getDaysInMonth(year, month);
+  const [year, month] = selectedMonth.split('-').map(Number)
+  const daysInMonth = getDaysInMonth(year, month)
 
-	const dateColumns = [];
+  const dateColumns = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
-	for (let day = 1; day <= daysInMonth; day++) {
-		const dayKey = String(day).padStart(2, "0");
-		const fullDateKey = `${year}-${String(month).padStart(2, "0")}-${dayKey}`;
-		const weekday = getWeekdayInitial(fullDateKey);
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayKey = String(day).padStart(2, '0')
+    const monthKey = String(month).padStart(2, '0')
+    const fullDateKey = `${year}-${monthKey}-${dayKey}`
 
-		dateColumns.push({
-			accessorKey: fullDateKey,
-			header: () => (
-				<div className="text-center leading-tight">
-					<div>{dayKey}</div>
-					<div className="text-xs text-muted-foreground">
-						{weekday}
-					</div>
-				</div>
-			),
-			cell: ({ getValue }) => <AttendanceCell value={getValue()} />,
-			size: 48,
-		});
-	}
+    const currentDate = new Date(fullDateKey)
+    currentDate.setHours(0, 0, 0, 0)
 
-	return [
-		{
-			accessorKey: "Name",
-			header: "Teacher / Date",
-			cell: ({ row }) => (
-				<div>
-					<div className="font-medium">{row.original.Name}</div>
-					<div className="text-xs text-muted-foreground">
-						ID: {row.original.TeacherID}
-					</div>
-				</div>
-			),
-			size: 220,
-		},
+    const isFutureDate = currentDate > today
+    const weekday = getWeekdayInitial(fullDateKey)
 
-		{
-			id: "percentage",
-			header: "%",
-			cell: ({ row }) => {
-				const present = countStatus(row.original, "P");
-				const absent = countStatus(row.original, "A");
-				const total = present + absent;
+    dateColumns.push({
+      accessorKey: fullDateKey,
+      header: () => (
+        <div className="text-center leading-tight">
+          <div>{dayKey}</div>
+          <div className="text-xs text-muted-foreground">{weekday}</div>
+        </div>
+      ),
+      cell: ({ getValue }) =>
+        isFutureDate ? '-' : <AttendanceCell value={getValue()} />,
+      size: 48,
+    })
+  }
 
-				if (!total) return "—";
+  return [
+    {
+      accessorKey: 'Name',
+      header: 'Teacher / Date',
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.Name}</div>
+          <div className="text-xs text-muted-foreground">
+            ID: {row.original.TeacherID}
+          </div>
+        </div>
+      ),
+      size: 220,
+    },
 
-				return (
-					<span className="font-medium">
-						{Math.round((present / total) * 100)}%
-					</span>
-				);
-			},
-			size: 50,
-		},
+    {
+      id: 'percentage',
+      header: '%',
+      cell: ({ row }) => {
+        const present = countStatus(row.original, 'P')
+        const absent = countStatus(row.original, 'A')
+        const total = present + absent
 
-		{
-			id: "presentCount",
-			header: "P",
-			cell: ({ row }) => (
-				<span className="font-medium text-emerald-700">
-					{countStatus(row.original, "P")}
-				</span>
-			),
-			size: 40,
-		},
+        if (!total) return '—'
 
-		{
-			id: "absentCount",
-			header: "A",
-			cell: ({ row }) => (
-				<span className="font-medium text-red-700">
-					{countStatus(row.original, "A")}
-				</span>
-			),
-			size: 40,
-		},
+        return <span className="font-medium">{Math.round((present / total) * 100)}%</span>
+      },
+      size: 50,
+    },
 
-		...dateColumns,
-	];
+    {
+      id: 'presentCount',
+      header: 'P',
+      cell: ({ row }) => (
+        <span className="font-medium text-emerald-700">
+          {countStatus(row.original, 'P')}
+        </span>
+      ),
+      size: 40,
+    },
+
+    {
+      id: 'absentCount',
+      header: 'A',
+      cell: ({ row }) => (
+        <span className="font-medium text-red-700">{countStatus(row.original, 'A')}</span>
+      ),
+      size: 40,
+    },
+
+    ...dateColumns,
+  ]
 }

@@ -1,6 +1,4 @@
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Schedules } from './Schedules'
+import { Schedules } from './Events'
 import { Notices } from './Notices'
 import AddNewCard from './AddNewCard'
 import DashboardChartsSection from './DashboardCharts'
