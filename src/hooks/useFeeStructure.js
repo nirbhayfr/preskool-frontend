@@ -8,7 +8,11 @@ import {
 } from '@/api/feeStructure'
 
 // Fetch all
-export const useAllFeeStructures = () => useQuery(['fee-structures'], getAllFeeStructures)
+export const useAllFeeStructures = () =>
+  useQuery({
+    queryKey: ['fee-structures'],
+    queryFn: getAllFeeStructures,
+  })
 
 export const useFeeStructureByClass = ({ classId, academicYear, enabled = true }) => {
   return useQuery({

@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { CheckCheck, X, Calendar as CalendarIcon } from 'lucide-react'
 
 import { useAttendanceMatrixByStudentId } from '@/hooks/useAttendance'
+import { DayPicker } from 'react-day-picker'
+import 'react-day-picker/style.css'
 
 function StudentAttendance() {
   const { id } = useParams()
@@ -32,6 +34,10 @@ function StudentAttendance() {
   if (isLoading) return <AttendanceSkeleton />
   if (isError) return <p>Failed to load attendance</p>
 
+  const todayKey = new Date().toISOString().slice(0, 10)
+
+  console.log(todayKey)
+
   return (
     <div className="space-y-6">
       <Card className="rounded-xl border-muted/60">
@@ -47,7 +53,7 @@ function StudentAttendance() {
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-[160px]"
+              className="w-40"
             />
           </div>
         </CardHeader>
@@ -70,48 +76,72 @@ function StudentAttendance() {
 
           {/* Calendar */}
           <div className="flex justify-center sm:justify-start pt-2">
-            <Calendar
-              mode="single"
-              month={new Date(`${selectedMonth}-01`)}
-              onMonthChange={(date) =>
-                setSelectedMonth(
-                  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-                )
-              }
-              modifiers={{
-                present: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'P',
-                absent: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'A',
-                holiday: (date) =>
-                  attendanceMap[date.toISOString().slice(0, 10)] === null,
-              }}
-              modifiersClassNames={{
-                present: 'bg-emerald-600 text-white rounded-full',
-                absent: 'bg-red-600 text-white rounded-full',
-                holiday: 'bg-blue-600 text-white rounded-full',
-              }}
-              components={{
-                DayContent: ({ date }) => {
-                  const key = date.toISOString().slice(0, 10)
-                  const value = attendanceMap[key]
+            <div className="flex flex-col items-center justify-center">
+              <DayPicker
+                style={{
+                  '--rdp-day-width': '32px',
+                  '--rdp-day-height': '32px',
+                  '--rdp-day_button-width': '28px',
+                  '--rdp-day_button-height': '28px',
+                  '--rdp-day_button-border-radius': '9999px',
+                }}
+                month={new Date(`${selectedMonth}-01`)}
+                onMonthChange={(date) =>
+                  setSelectedMonth(
+                    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+                  )
+                }
+                hideNavigation
+                classNames={{
+                  table: 'border-separate border-spacing-8',
+                  cell: 'text-center',
+                  day_button: 'mx-auto',
+                }}
+                modifiers={{
+                  present: (date) =>
+                    attendanceMap[date.toISOString().slice(0, 10)] === 'P',
+                  absent: (date) =>
+                    attendanceMap[date.toISOString().slice(0, 10)] === 'A',
+                  holiday: (date) => {
+                    const key = date.toISOString().slice(0, 10)
+                    return attendanceMap[key] === null && key < todayKey
+                  },
+                }}
+                modifiersClassNames={{
+                  present: 'bg-emerald-600 text-white w-5 h-5 rounded-full',
+                  absent: 'bg-red-600 text-white w-9 h-9 rounded-full',
+                  holiday: 'bg-blue-600 text-white w-9 h-9 rounded-full',
+                }}
+                components={{
+                  DayButton: ({ day, ...buttonProps }) => {
+                    const key = day.date.toISOString().slice(0, 10)
+                    const status = attendanceMap[key]
+                    const isFuture = key > todayKey
 
-                  if (!value) return <span>{date.getDate()}</span>
-
-                  return <span className="font-semibold">{date.getDate()}</span>
-                },
-              }}
-              className="bg-background border rounded-lg"
-              classNames={{
-                months: 'flex justify-center',
-                month: 'space-y-4',
-
-                caption: 'pb-6 flex justify-center',
-                caption_label: 'text-lg font-semibold',
-
-                head_cell: 'text-xs font-medium text-muted-foreground uppercase',
-
-                table: 'border-separate border-spacing-4',
-              }}
-            />
+                    return (
+                      <button
+                        {...buttonProps}
+                        disabled
+                        className={`
+                          w-6 h-6 m-1 rounded-full
+                          ${
+                            status === 'P'
+                              ? 'bg-emerald-600 text-white'
+                              : status === 'A'
+                                ? 'bg-red-600 text-white'
+                                : status === null && !isFuture
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-zinc-200 text-foreground'
+                          }
+                        `}
+                      >
+                        {day.date.getDate()}
+                      </button>
+                    )
+                  },
+                }}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
