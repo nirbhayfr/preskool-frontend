@@ -40,6 +40,7 @@ import StaffDetails from './pages/StaffDetails'
 import StaffDetailsTabContent from './components/staff-details/StaffDetailsTabContent'
 import StaffSalary from './components/staff-details/StaffSalary'
 import StaffLeaveAndAttendance from './components/staff-details/StaffLeaveAndAttendance'
+import FeeStructureAndInventory from './pages/FeeStructureAndInventory'
 
 function App() {
   return (
@@ -104,6 +105,8 @@ function App() {
                 <Route path="payroll" element={<StaffSalary />} />
                 <Route path="attendance" element={<StaffLeaveAndAttendance />} />
               </Route>
+
+              <Route path="fee-structure" element={<FeeStructureAndInventory />} />
             </Route>
           </Route>
         </Routes>

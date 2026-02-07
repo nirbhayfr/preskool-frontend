@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input'
 import { CheckCheck, X, Calendar as CalendarIcon } from 'lucide-react'
 
 import { useAttendanceMatrixByStudentId } from '@/hooks/useAttendance'
-import { DayPicker, getDefaultClassNames } from 'react-day-picker'
-import { ChevronDown, ChevronLeft, ChevronRight, Circle } from 'lucide-react'
+import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/style.css'
 
 function StudentAttendance() {
@@ -16,9 +15,6 @@ function StudentAttendance() {
   const [selectedMonth, setSelectedMonth] = React.useState(() =>
     new Date().toISOString().slice(0, 7)
   )
-  const [selected, setSelected] = React.useState(undefined)
-
-  const defaultClassNames = getDefaultClassNames()
 
   const { data: attendanceData, isLoading, isError } = useAttendanceMatrixByStudentId(id)
 
@@ -38,6 +34,10 @@ function StudentAttendance() {
   if (isLoading) return <AttendanceSkeleton />
   if (isError) return <p>Failed to load attendance</p>
 
+  const todayKey = new Date().toISOString().slice(0, 10)
+
+  console.log(todayKey)
+
   return (
     <div className="space-y-6">
       <Card className="rounded-xl border-muted/60">
@@ -53,7 +53,7 @@ function StudentAttendance() {
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-[160px]"
+              className="w-40"
             />
           </div>
         </CardHeader>
@@ -78,6 +78,13 @@ function StudentAttendance() {
           <div className="flex justify-center sm:justify-start pt-2">
             <div className="flex flex-col items-center justify-center">
               <DayPicker
+                style={{
+                  '--rdp-day-width': '32px',
+                  '--rdp-day-height': '32px',
+                  '--rdp-day_button-width': '28px',
+                  '--rdp-day_button-height': '28px',
+                  '--rdp-day_button-border-radius': '9999px',
+                }}
                 month={new Date(`${selectedMonth}-01`)}
                 onMonthChange={(date) =>
                   setSelectedMonth(
@@ -86,60 +93,47 @@ function StudentAttendance() {
                 }
                 hideNavigation
                 classNames={{
-                  root: defaultClassNames.root,
-
-                  month: 'w-full space-y-4',
-
-                  /* ✅ Center month text properly */
-                  caption: 'w-full flex justify-center mb-4',
-                  caption_label: 'text-base font-semibold text-center',
-
-                  table: 'w-full',
-
-                  /* ✅ Restore spacing using gap */
-                  row: 'flex justify-between gap-2 mb-3',
-
-                  head_row: 'flex justify-between gap-2',
-                  head_cell: 'w-12 text-xs font-medium text-muted-foreground text-center',
-
-                  cell: 'flex justify-center',
-
-                  day: `group  w-10 h-10 rounded-full m-1 ${defaultClassNames.day}`,
+                  table: 'border-separate border-spacing-8',
+                  cell: 'text-center',
+                  day_button: 'mx-auto',
                 }}
                 modifiers={{
                   present: (date) =>
                     attendanceMap[date.toISOString().slice(0, 10)] === 'P',
                   absent: (date) =>
                     attendanceMap[date.toISOString().slice(0, 10)] === 'A',
-                  holiday: (date) =>
-                    attendanceMap[date.toISOString().slice(0, 10)] === null,
+                  holiday: (date) => {
+                    const key = date.toISOString().slice(0, 10)
+                    return attendanceMap[key] === null && key < todayKey
+                  },
                 }}
                 modifiersClassNames={{
-                  present: 'bg-emerald-600 text-white',
-                  absent: 'bg-red-600 text-white',
-                  holiday: 'bg-blue-600 text-white',
+                  present: 'bg-emerald-600 text-white w-5 h-5 rounded-full',
+                  absent: 'bg-red-600 text-white w-9 h-9 rounded-full',
+                  holiday: 'bg-blue-600 text-white w-9 h-9 rounded-full',
                 }}
                 components={{
                   DayButton: ({ day, ...buttonProps }) => {
                     const key = day.date.toISOString().slice(0, 10)
                     const status = attendanceMap[key]
+                    const isFuture = key > todayKey
 
                     return (
                       <button
                         {...buttonProps}
                         disabled
-                        //                   className={`
-                        //   w-6 h-6 m-1 rounded-full
-                        //   ${
-                        //     status === 'P'
-                        //       ? 'bg-emerald-600 text-white'
-                        //       : status === 'A'
-                        //         ? 'bg-red-600 text-white'
-                        //         : status === null
-                        //           ? 'bg-blue-600 text-white'
-                        //           : 'bg-zinc-200 text-foreground'
-                        //   }
-                        // `}
+                        className={`
+                          w-6 h-6 m-1 rounded-full
+                          ${
+                            status === 'P'
+                              ? 'bg-emerald-600 text-white'
+                              : status === 'A'
+                                ? 'bg-red-600 text-white'
+                                : status === null && !isFuture
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-zinc-200 text-foreground'
+                          }
+                        `}
                       >
                         {day.date.getDate()}
                       </button>
