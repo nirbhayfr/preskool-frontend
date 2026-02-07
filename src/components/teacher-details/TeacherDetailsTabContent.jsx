@@ -13,7 +13,7 @@ function TeacherDetailsTabContent() {
     const user = encryptedUser ? decryptData(encryptedUser) : null;
 
     useEffect(() => {
-        if (user?.LinkedID !== Number(id)) {
+        if (user?.LinkedID !== Number(id) && user?.Role !== "Admin") {
             toast.error("You are not authorized to view this teacher's details.");
             // Optionally, navigate to a different page
             navigate(-1)
