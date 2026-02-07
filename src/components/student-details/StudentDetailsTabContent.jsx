@@ -1,12 +1,26 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useStudent } from '@/hooks/useStudents'
+import { decryptData } from '@/utils/crypto'
 import { Phone, Mail } from 'lucide-react'
-import { useParams } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
 function StudentDetailsTabContent() {
   const { id } = useParams()
+  const navigate = useNavigate();
   const { data: student, isLoading, isError } = useStudent(id)
+    const encryptedUser = localStorage.getItem("user");
+      const user = encryptedUser ? decryptData(encryptedUser) : null;
+
+     useEffect(() => {
+        if (user?.Role !== "Teacher" && user?.LinkedID !== Number(id)) {
+            toast.error("You are not authorized to view this student's details.");
+            // Optionally, navigate to a different page
+            navigate(-1)
+        }})
+ 
 
   if (isLoading) return <StudentDetailsTabSkeleton />
   if (isError) return <p>Failed to load student</p>

@@ -1,10 +1,24 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useTeacher } from '@/hooks/useTeacher'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Skeleton } from '../ui/skeleton'
+import { decryptData } from '@/utils/crypto'
+import {  useEffect } from 'react'
+import { toast } from 'sonner'
 
 function TeacherDetailsTabContent() {
   const { id } = useParams()
+  const navigate = useNavigate();
+  const encryptedUser = localStorage.getItem("user");
+    const user = encryptedUser ? decryptData(encryptedUser) : null;
+
+    useEffect(() => {
+        if (user?.LinkedID !== Number(id)) {
+            toast.error("You are not authorized to view this teacher's details.");
+            // Optionally, navigate to a different page
+            navigate(-1)
+        }})
+
   const { data: teacher, isLoading, isError } = useTeacher(id)
 
   if (isLoading) return <TeacherDetailsTabSkeleton />

@@ -17,9 +17,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useDeleteStudent } from '@/hooks/useStudents'
 import { toast } from 'sonner'
+import { decryptData } from '@/utils/crypto'
 
 function StudentDetails() {
   const { id } = useParams()
+  const encryptedUser = localStorage.getItem("user");
+  const user = encryptedUser ? decryptData(encryptedUser) : null;
   const navigate = useNavigate()
   const { mutate: deleteStudent } = useDeleteStudent()
 
@@ -53,18 +56,22 @@ function StudentDetails() {
 
         <div className="flex gap-2">
           {/* Edit */}
-          <Button onClick={() => handleEdit(id)}>
-            <PenBoxIcon className="mr-2 h-4 w-4" />
-            Edit Profile
-          </Button>
+          {user?.Role === "Teacher" && (
+            <Button onClick={() => handleEdit(id)}>
+              <PenBoxIcon className="mr-2 h-4 w-4" />
+              Edit Profile
+            </Button>
+          )}
 
           {/* Delete */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
+              {user?.Role === "Teacher" && (
+                <Button variant="destructive">
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              )}
             </AlertDialogTrigger>
 
             <AlertDialogContent>

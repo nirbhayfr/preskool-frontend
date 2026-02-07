@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { Section } from "./AddTeacherPage";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect } from "react";
+import { decryptData } from "@/utils/crypto";
 
 const STUDENT_FIELDS = [
 	{ name: "fullName", required: true },
@@ -187,6 +188,9 @@ export default function StudentFormPage({ defaultValues }) {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const isEdit = Boolean(id);
+	const encryptedUser = localStorage.getItem("user");
+	const user = encryptedUser ? decryptData(encryptedUser) : null;
+	
 
 	const form = useForm({
 		resolver: zodResolver(studentSchema),
@@ -201,6 +205,11 @@ export default function StudentFormPage({ defaultValues }) {
 	const { mutate: saveStudent, isLoading } = useCreateStudent();
 
 	useEffect(() => {
+		if(user?.LinkedID !== Number(id)) {
+			toast.error("You are not authorized to edit this student's details.");
+			navigate(-1);
+			return;
+		}
 		if (student) {
 			const mappedStudent = {
 				studentId: student.StudentID ?? undefined,

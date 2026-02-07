@@ -24,8 +24,9 @@ import { Button } from "@/components/ui/button";
 
 import { useUpsertTeacher, useTeacher } from "@/hooks/useTeacher";
 import { toast } from "sonner";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useEffect } from "react";
+import { decryptData } from "@/utils/crypto";
 
 const teacherSchema = z.object({
 	teacherId: z.number().optional(),
@@ -165,6 +166,9 @@ function formatDateForInput(date) {
 export default function TeacherFormPage({ defaultValues }) {
 	const { id } = useParams();
 	const navigate = useNavigate();
+	const encryptedUser = localStorage.getItem("user");
+	const user = encryptedUser ? decryptData(encryptedUser) : null;
+
 	const isEdit = Boolean(id);
 
 	const form = useForm({
@@ -177,8 +181,13 @@ export default function TeacherFormPage({ defaultValues }) {
 
 	const { data: teacher } = useTeacher(id, { enabled: isEdit });
 	const { mutate: saveTeacher, isLoading } = useUpsertTeacher();
-
+	
 	useEffect(() => {
+		if(user?.LinkedID !== Number(id)) {
+			toast.error("You are not authorized to edit this teacher's details.");
+			navigate(-1);
+			return;
+		}
 		if (teacher) {
 			const mappedTeacher = {
 				teacherId: teacher.TeacherID ?? undefined,
