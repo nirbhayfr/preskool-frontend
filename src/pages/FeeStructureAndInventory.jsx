@@ -1,12 +1,22 @@
+import AddFeeInventoryModal from '@/components/fee-structure-and-inventory/AddFeeInventoryModal'
 import { feeInventoryColumns } from '@/components/fee-structure-and-inventory/FeeInventoryColumns'
 import { feeStructureColumns } from '@/components/fee-structure-and-inventory/FeeStructureColumns'
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import TableLayout from '@/components/layout/Table'
 import { Button } from '@/components/ui/button'
-import { useAllFeeInventory } from '@/hooks/useFeeInventory'
-import { useAllFeeStructures } from '@/hooks/useFeeStructure'
+import { useAllFeeInventory, useDeleteFeeInventory } from '@/hooks/useFeeInventory'
+import { useAllFeeStructures, useDeleteFeeStructure } from '@/hooks/useFeeStructure'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 function FeeStructureAndInventory() {
+  const [openFeeInventory, setOpenFeeInventory] = useState(false)
+  const [editingInventory, setEditingInventory] = useState(null)
+  const navigate = useNavigate()
+
+  const { mutate: deleteInventory } = useDeleteFeeInventory()
+  const { mutate: deleteStructure } = useDeleteFeeStructure()
   const { data: feeStructures, isLoading, isError } = useAllFeeStructures()
   const {
     data: feeInventory,
@@ -16,7 +26,39 @@ function FeeStructureAndInventory() {
   if (isLoading || isLoadingFee) return <CircleLoader />
   if (isError || isErrorFee) return 'Error loading staff'
 
-  console.log(feeInventory)
+  const onEdit = (data) => {
+    setEditingInventory(data)
+    setOpenFeeInventory(true)
+  }
+
+  const onDelete = (id) => {
+    deleteInventory(id, {
+      onSuccess: () => {
+        toast.success('Inventory deleted successfully')
+      },
+      onError: () => {
+        toast.error('Failed to delete inventory')
+      },
+    })
+  }
+
+  const onEditStructure = (data) => {
+    navigate(`/fee-structure/edit/${data.class}`, {
+      state: { academic_year: data.academic_year },
+    })
+  }
+
+  const onDeleteStructure = (id) => {
+    console.log(id)
+    deleteStructure(id, {
+      onSuccess: () => {
+        toast.success('Inventory deleted successfully')
+      },
+      onError: () => {
+        toast.error('Failed to delete inventory')
+      },
+    })
+  }
 
   return (
     <section className="p-6 space-y-8 capitalize">
@@ -25,23 +67,49 @@ function FeeStructureAndInventory() {
         <h1 className="text-2xl font-semibold">Fee Structure & Inventory</h1>
 
         <div className="flex gap-2">
-          <Button>Add Fee Structure</Button>
+          <Button onClick={() => navigate('add')}>Add Fee Structure</Button>
 
-          <Button variant="outline">Add Fee Inventory</Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setEditingInventory(null)
+              setOpenFeeInventory(true)
+            }}
+          >
+            Add Fee Inventory
+          </Button>
         </div>
       </div>
 
       {/* Fee Structure */}
       <div className="-space-y-10">
         <h2 className="text-xl font-semibold">Fee Structure</h2>
-        <TableLayout columns={feeStructureColumns()} data={feeStructures ?? []} />
+        <TableLayout
+          columns={feeStructureColumns({
+            onDelete: onDeleteStructure,
+            onEdit: onEditStructure,
+          })}
+          data={feeStructures ?? []}
+        />
       </div>
 
       {/* Fee Inventory */}
       <div className="-space-y-10">
         <h2 className="text-xl font-semibold">Fee Inventory</h2>
-        <TableLayout columns={feeInventoryColumns()} data={feeInventory ?? []} />
+        <TableLayout
+          columns={feeInventoryColumns({ onEdit, onDelete })}
+          data={feeInventory ?? []}
+        />
       </div>
+
+      <AddFeeInventoryModal
+        open={openFeeInventory}
+        editingData={editingInventory}
+        onClose={() => {
+          setOpenFeeInventory(false)
+          setEditingInventory(null)
+        }}
+      />
     </section>
   )
 }

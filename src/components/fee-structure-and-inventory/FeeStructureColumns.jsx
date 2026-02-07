@@ -1,5 +1,18 @@
 // feeStructureColumns.ts
 import { createColumnHelper } from '@tanstack/react-table'
+import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
+import { Pencil, Trash } from 'lucide-react'
 
 const columnHelper = createColumnHelper()
 
@@ -18,7 +31,7 @@ const months = [
   'mar',
 ]
 
-export const feeStructureColumns = () => [
+export const feeStructureColumns = ({ onEdit, onDelete }) => [
   columnHelper.accessor('structure_id', {
     header: 'Structure ID',
     cell: (info) => <span className="text-primary font-medium">{info.getValue()}</span>,
@@ -80,4 +93,50 @@ export const feeStructureColumns = () => [
       cell: (info) => `₹${info.getValue()}`,
     })
   ),
+
+  columnHelper.display({
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => {
+      const data = row.original
+
+      return (
+        <div className="flex gap-2">
+          {/* Edit (no logic yet) */}
+          <Button size="icon" variant="outline" onClick={() => onEdit?.(data)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+
+          {/* Delete with confirmation */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="icon" variant="destructive">
+                <Trash className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Fee Structure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the fee
+                  structure.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onDelete?.(data.structure_id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )
+    },
+  }),
 ]

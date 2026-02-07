@@ -42,6 +42,7 @@ import StaffSalary from './components/staff-details/StaffSalary'
 import StaffLeaveAndAttendance from './components/staff-details/StaffLeaveAndAttendance'
 import ClassTimeTable from './pages/ClassTimeTable'
 import FeeStructureAndInventory from './pages/FeeStructureAndInventory'
+import AddFeeStructurePage from './components/fee-structure-and-inventory/AddFeeStructurePage'
 
 function App() {
   return (
@@ -110,6 +111,11 @@ function App() {
               </Route>
 
               <Route path="fee-structure" element={<FeeStructureAndInventory />} />
+              <Route path="/fee-structure/add" element={<AddFeeStructurePage />} />
+              <Route
+                path="/fee-structure/edit/:classId"
+                element={<AddFeeStructurePage />}
+              />
             </Route>
           </Route>
         </Routes>

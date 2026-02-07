@@ -7,41 +7,54 @@ import {
   deleteFeeStructure,
 } from '@/api/feeStructure'
 
-// Fetch all
 export const useAllFeeStructures = () =>
   useQuery({
     queryKey: ['fee-structures'],
     queryFn: getAllFeeStructures,
   })
 
-export const useFeeStructureByClass = ({ classId, academicYear, enabled = true }) => {
-  return useQuery({
+export const useFeeStructureByClass = ({ classId, academicYear, enabled = true }) =>
+  useQuery({
     queryKey: ['fee-structure', classId, academicYear],
     queryFn: () => getFeeStructureByClass({ classId, academicYear }),
     enabled: !!classId && !!academicYear && enabled,
   })
-}
 
-// Create
 export const useCreateFeeStructure = () => {
   const queryClient = useQueryClient()
-  return useMutation(createFeeStructure, {
-    onSuccess: () => queryClient.invalidateQueries(['fee-structures']),
+
+  return useMutation({
+    mutationFn: createFeeStructure,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['fee-structures'],
+      })
+    },
   })
 }
 
-// Update
 export const useUpdateFeeStructure = () => {
   const queryClient = useQueryClient()
-  return useMutation(({ id, data }) => updateFeeStructure(id, data), {
-    onSuccess: () => queryClient.invalidateQueries(['fee-structures']),
+
+  return useMutation({
+    mutationFn: ({ id, data }) => updateFeeStructure(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['fee-structures'],
+      })
+    },
   })
 }
 
-// Delete
 export const useDeleteFeeStructure = () => {
   const queryClient = useQueryClient()
-  return useMutation((id) => deleteFeeStructure(id), {
-    onSuccess: () => queryClient.invalidateQueries(['fee-structures']),
+
+  return useMutation({
+    mutationFn: (id) => deleteFeeStructure(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['fee-structures'],
+      })
+    },
   })
 }
