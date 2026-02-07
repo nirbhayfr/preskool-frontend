@@ -40,6 +40,7 @@ import StaffDetails from './pages/StaffDetails'
 import StaffDetailsTabContent from './components/staff-details/StaffDetailsTabContent'
 import StaffSalary from './components/staff-details/StaffSalary'
 import StaffLeaveAndAttendance from './components/staff-details/StaffLeaveAndAttendance'
+import ClassTimeTable from './pages/ClassTimeTable'
 import FeeStructureAndInventory from './pages/FeeStructureAndInventory'
 
 function App() {
@@ -71,6 +72,8 @@ function App() {
               <Route path="/student-attendance" element={<StudentAttendance />} />
               <Route path="/teacher-attendance" element={<TeacherAttendance />} />
               <Route path="/staff-attendance" element={<StaffAttendance />} />
+
+              <Route path="/class-timetable" element={<ClassTimeTable />} />
 
               <Route
                 path="/take-teacher-attendance"
