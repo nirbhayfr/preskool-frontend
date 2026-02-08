@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/immutability */
 /* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
@@ -31,6 +32,7 @@ const data = [
         "CreatedAt": "2026-02-01T08:30:00Z",
         "UpdatedAt": "2026-02-01T08:30:00Z"
     },
+    
     {
         "TimeTableID": 2,
         "TeacherID": 102,
@@ -180,6 +182,21 @@ const data = [
         "IsActive": true,
         "CreatedAt": "2026-02-01T08:30:00Z",
         "UpdatedAt": "2026-02-01T08:30:00Z"
+    },
+    {
+        "TimeTableID": 12,
+        "TeacherID": 112,
+        "DayOfWeek": "Monday",
+        "PeriodNo": 5,
+        "StartTime": "09:00",
+        "EndTime": "09:45",
+        "ClassID": 10,
+        "SectionID": "A",
+        "SubjectID": 201,
+        "RoomID": 301,
+        "IsActive": true,
+        "CreatedAt": "2026-02-01T08:30:00Z",
+        "UpdatedAt": "2026-02-01T08:30:00Z"
     }
 ]
 
@@ -249,19 +266,49 @@ const TimeTable = () => {
 
 
             {/* Grid */}
-            <div className="grid grid-cols-6 gap-4">
-                {days.map((day) => (
-                    <div key={day}>
-                        <h3 className="text-lg font-medium mb-3">{day}</h3>
+            <div className="overflow-x-auto no-scrollbar">
+  <div
+    className="
+      flex
+      gap-4
+      snap-x snap-mandatory
+      lg:grid lg:grid-cols-6
+      lg:gap-4
+    "
+  >
+    {days.map((day) => (
+      <div
+        key={day}
+        className="
+          snap-start
+          min-w-full
+          sm:min-w-[50%]
+          md:min-w-[33.33%]
+          lg:min-w-0
+          bg-gray-50
+          rounded-xl
+          p-3
+        "
+      >
+        {/* Day header */}
+        <h3 className="text-sm font-semibold text-gray-700 mb-3 text-center">
+          {day}
+        </h3>
 
-                        <div className="space-y-3">
-                            {groupedData[day]?.map((item) => (
-                                <TimeTableCard key={item.TimeTableID} data={item} />
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
+        {/* Cards */}
+        <div className="space-y-3">
+          {groupedData[day]?.map((item) => (
+            <TimeTableCard
+              key={item.TimeTableID}
+              data={item}
+            />
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+            
         </div>
     );
 };
