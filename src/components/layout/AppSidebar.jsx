@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { decryptData } from '@/utils/crypto'
 
 const data = {
   user: {
@@ -122,10 +123,38 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }) {
-  const { state, setOpen } = useSidebar()
+function getSidebarDataByRole(role) {
+  if (role === 'Admin') return data
 
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024
+  if (role === 'Teacher') {
+    return {
+      ...data,
+      people: data.people.filter((item) => item.title === 'Student List'),
+      attendance: data.attendance.filter((item) => item.title === 'Student Attendance'),
+      attendanceMark: data.attendanceMark.filter(
+        (item) => item.title === 'Take Student Attendance'
+      ),
+      fees: [], // teachers don’t see fees
+    }
+  }
+
+  if (role === 'Student') {
+    return {
+      ...data,
+      people: [],
+      attendance: [],
+      attendanceMark: [],
+      fees: [],
+    }
+  }
+
+  return data
+}
+
+export function AppSidebar({ ...props }) {
+  const encryptedUser = localStorage.getItem('user')
+  const user = encryptedUser ? decryptData(encryptedUser) : null
+  const sidebarData = getSidebarDataByRole(user?.Role)
 
   return (
     <Sidebar
@@ -133,26 +162,14 @@ export function AppSidebar({ ...props }) {
       {...props}
       variant="inset"
       className="border text-muted-foreground"
-      // onMouseEnter={() => {
-      //   if (isDesktop && state === 'collapsed') {
-      //     setOpen(true)
-      //   }
-      // }}
-      // onMouseLeave={() => {
-      //   if (isDesktop && state === 'expanded') {
-      //     setOpen(false)
-      //   }
-      // }}
     >
       <SidebarHeader>
         <div className="flex items-center justify-between w-full">
-          {/* EXPANDED LOGO */}
           <div className="group-data-[state=collapsed]:hidden">
             <img src="/img/logo.svg" alt="logo" className="w-32 dark:hidden" />
             <img src="/img/logo-dark.svg" alt="logo" className="w-32 hidden dark:block" />
           </div>
 
-          {/* COLLAPSED LOGO (ICON) */}
           <div className="hidden group-data-[state=collapsed]:flex">
             <img src="/img/logo-small.svg" alt="logo" className="w-8 h-8 mb-6" />
           </div>
@@ -160,14 +177,28 @@ export function AppSidebar({ ...props }) {
 
         <NavUser user={data.user} />
       </SidebarHeader>
+
       <SidebarContent className="sidebar-scroll">
-        <NavSecondary items={data.main} name="main" />
-        <NavSecondary items={data.people} name="people" />
-        <NavSecondary items={data.attendance} name="attendance list" />
-        <NavSecondary items={data.attendanceMark} name="mark attendance" />
-        <NavSecondary items={data.fees} name="fees" />
+        <NavSecondary items={sidebarData.main} name="main" />
+
+        {sidebarData.people?.length > 0 && (
+          <NavSecondary items={sidebarData.people} name="people" />
+        )}
+
+        {sidebarData.attendance?.length > 0 && (
+          <NavSecondary items={sidebarData.attendance} name="attendance list" />
+        )}
+
+        {sidebarData.attendanceMark?.length > 0 && (
+          <NavSecondary items={sidebarData.attendanceMark} name="mark attendance" />
+        )}
+
+        {sidebarData.fees?.length > 0 && (
+          <NavSecondary items={sidebarData.fees} name="fees" />
+        )}
       </SidebarContent>
-      <SidebarFooter></SidebarFooter>
+
+      <SidebarFooter />
       <SidebarRail />
     </Sidebar>
   )

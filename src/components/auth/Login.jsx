@@ -37,6 +37,7 @@ export default function LoginPage() {
       setIsLoading(false)
       navigate('/')
     } catch (error) {
+      setIsLoading(false)
       console.log(error.message)
       toast.success('Login Failed')
     }

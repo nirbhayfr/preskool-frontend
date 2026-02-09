@@ -2,6 +2,10 @@ import { Button } from '@/components/ui/button'
 import { Mail, MessageSquare, Pencil, Trash } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { CollectFeesDialog } from './CollectFeesDialog'
+import { decryptData } from '@/utils/crypto'
+
+const encryptedUser = localStorage.getItem('user')
+const user = encryptedUser ? decryptData(encryptedUser) : null
 
 export const studentsColumns = () => [
   {
@@ -209,11 +213,9 @@ export const studentsColumns = () => [
         </Button>
 
         {/* Collect Fees */}
-        <CollectFeesDialog studentId={row.original.StudentID} />
-
-        <Button asChild variant="outline">
-          <Link to={`/update-result/${row.original.StudentID}`}>Update Result</Link>
-        </Button>
+        {user?.Role === 'Admin' && (
+          <CollectFeesDialog studentId={row.original.StudentID} />
+        )}
       </div>
     ),
   },

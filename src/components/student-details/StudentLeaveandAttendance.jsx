@@ -9,6 +9,13 @@ import { useAttendanceMatrixByStudentId } from '@/hooks/useAttendance'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/style.css'
 
+function toLocalDateKey(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 function StudentAttendance() {
   const { id } = useParams()
 
@@ -79,8 +86,8 @@ function StudentAttendance() {
             <div className="flex flex-col items-center justify-center">
               <DayPicker
                 style={{
-                  '--rdp-day-width': '32px',
-                  '--rdp-day-height': '32px',
+                  '--rdp-day-width': '44px',
+                  '--rdp-day-height': '44px',
                   '--rdp-day_button-width': '28px',
                   '--rdp-day_button-height': '28px',
                   '--rdp-day_button-border-radius': '9999px',
@@ -93,50 +100,54 @@ function StudentAttendance() {
                 }
                 hideNavigation
                 classNames={{
-                  table: 'border-separate border-spacing-8',
-                  cell: 'text-center',
+                  table: 'border-separate border-spacing-x-6 border-spacing-y-6',
+                  cell: 'p-1 text-center',
                   day_button: 'mx-auto',
                 }}
                 modifiers={{
-                  present: (date) =>
-                    attendanceMap[date.toISOString().slice(0, 10)] === 'P',
-                  absent: (date) =>
-                    attendanceMap[date.toISOString().slice(0, 10)] === 'A',
+                  present: (date) => attendanceMap[toLocalDateKey(date)] === 'P',
+                  absent: (date) => attendanceMap[toLocalDateKey(date)] === 'A',
                   holiday: (date) => {
-                    const key = date.toISOString().slice(0, 10)
-                    return attendanceMap[key] === null && key < todayKey
+                    const key = toLocalDateKey(date)
+
+                    return attendanceMap[key] === null && key <= todayKey
                   },
                 }}
                 modifiersClassNames={{
-                  present: 'bg-emerald-600 text-white w-5 h-5 rounded-full',
-                  absent: 'bg-red-600 text-white w-9 h-9 rounded-full',
-                  holiday: 'bg-blue-600 text-white w-9 h-9 rounded-full',
+                  present: 'bg-emerald-200 text-gray-900 w-5 h-5 rounded-full',
+                  absent: 'bg-red-200 text-gray-900 w-9 h-9 rounded-full',
+                  holiday: 'bg-blue-200 text-gray-900 w-9 h-9 rounded-full',
                 }}
                 components={{
-                  DayButton: ({ day, ...buttonProps }) => {
+                  DayButton: ({ day }) => {
                     const key = day.date.toISOString().slice(0, 10)
                     const status = attendanceMap[key]
                     const isFuture = key > todayKey
 
                     return (
-                      <button
-                        {...buttonProps}
-                        disabled
-                        className={`
-                          w-6 h-6 m-1 rounded-full
-                          ${
-                            status === 'P'
-                              ? 'bg-emerald-600 text-white'
-                              : status === 'A'
-                                ? 'bg-red-600 text-white'
-                                : status === null && !isFuture
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-zinc-200 text-foreground'
-                          }
-                        `}
-                      >
-                        {day.date.getDate()}
-                      </button>
+                      <div className="w-[10px] h-[10px] bg-black">
+                        <button
+                          disabled
+                          className="w-8 h-8 flex items-center justify-center"
+                        >
+                          <span
+                            className={`
+                            px-2 py-1 rounded-full text-xs font-medium
+                            ${
+                              status === 'P'
+                                ? 'bg-emerald-200 text-gray-900'
+                                : status === 'A'
+                                  ? 'bg-red-200 text-gray-900'
+                                  : status === null && !isFuture
+                                    ? 'bg-blue-200 text-gray-900'
+                                    : ''
+                            }
+                          `}
+                          >
+                            {day.date.getDate()}
+                          </span>
+                        </button>
+                      </div>
                     )
                   },
                 }}

@@ -1,11 +1,20 @@
 import * as React from 'react'
 import { useParams } from 'react-router-dom'
-import { Calendar } from '@/components/ui/calendar'
+import { DayPicker } from 'react-day-picker'
+import 'react-day-picker/style.css'
+
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CheckCheck, X, Calendar as CalendarIcon, Clock } from 'lucide-react'
 import { useTeacherAttendanceMatrixById } from '@/hooks/useTeacherAttendance'
+
+function toLocalDateKey(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 function TeacherAttendanceCalendar() {
   const { id } = useParams()
@@ -79,47 +88,71 @@ function TeacherAttendanceCalendar() {
 
           {/* Calendar */}
           <div className="flex justify-center sm:justify-start pt-2">
-            <Calendar
-              mode="single"
+            <DayPicker
+              style={{
+                '--rdp-day-width': '44px',
+                '--rdp-day-height': '44px',
+                '--rdp-day_button-width': '28px',
+                '--rdp-day_button-height': '28px',
+                '--rdp-day_button-border-radius': '9999px',
+              }}
               month={new Date(`${selectedMonth}-01`)}
               onMonthChange={(date) =>
                 setSelectedMonth(
                   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
                 )
               }
+              hideNavigation
+              classNames={{
+                table: 'border-separate border-spacing-x-6 border-spacing-y-6',
+                cell: 'p-1 text-center',
+                day_button: 'mx-auto',
+              }}
               modifiers={{
-                present: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'P',
-                absent: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'A',
-                late: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'L',
-                halfDay: (date) => attendanceMap[date.toISOString().slice(0, 10)] === 'H',
-                holiday: (date) =>
-                  attendanceMap[date.toISOString().slice(0, 10)] === null,
+                present: (date) => attendanceMap[toLocalDateKey(date)] === 'P',
+                absent: (date) => attendanceMap[toLocalDateKey(date)] === 'A',
+                late: (date) => attendanceMap[toLocalDateKey(date)] === 'L',
+                halfDay: (date) => attendanceMap[toLocalDateKey(date)] === 'H',
+                holiday: (date) => attendanceMap[toLocalDateKey(date)] === null,
               }}
               modifiersClassNames={{
-                present: 'bg-emerald-600 text-white rounded-full',
-                absent: 'bg-red-600 text-white rounded-full',
-                late: 'bg-yellow-500 text-white rounded-full',
-                halfDay: 'bg-orange-600 text-white rounded-full',
-                holiday: 'bg-blue-600 text-white rounded-full',
+                present: 'bg-emerald-200 text-gray-900 w-8 h-8 rounded-full',
+                absent: 'bg-red-200 text-gray-900 w-8 h-8 rounded-full',
+                late: 'bg-yellow-200 text-gray-900 w-8 h-8 rounded-full',
+                halfDay: 'bg-orange-200 text-gray-900 w-8 h-8 rounded-full',
+                holiday: 'bg-blue-200 text-gray-900 w-8 h-8 rounded-full',
               }}
               components={{
-                DayContent: ({ date }) => {
-                  const key = date.toISOString().slice(0, 10)
-                  const value = attendanceMap[key]
+                DayButton: ({ day }) => {
+                  const key = day.date.toISOString().slice(0, 10)
+                  const status = attendanceMap[key]
 
-                  if (!value) return <span>{date.getDate()}</span>
-
-                  return <span className="font-semibold">{date.getDate()}</span>
+                  return (
+                    <button disabled className="w-8 h-8 flex items-center justify-center">
+                      <span
+                        className={`
+                text-xs font-medium rounded-full
+                ${
+                  status === 'P'
+                    ? 'bg-emerald-200 text-gray-900'
+                    : status === 'A'
+                      ? 'bg-red-200 text-gray-900'
+                      : status === 'L'
+                        ? 'bg-yellow-200 text-gray-900'
+                        : status === 'H'
+                          ? 'bg-orange-200 text-gray-900'
+                          : status === null
+                            ? 'bg-blue-200 text-gray-900'
+                            : ''
+                }
+                w-8 h-8 flex items-center justify-center
+              `}
+                      >
+                        {day.date.getDate()}
+                      </span>
+                    </button>
+                  )
                 },
-              }}
-              className="bg-background border rounded-lg p-4"
-              classNames={{
-                months: 'flex justify-center',
-                month: 'space-y-4',
-                caption: 'pb-6 flex justify-center',
-                caption_label: 'text-lg font-semibold',
-                head_cell: 'text-xs font-medium text-muted-foreground uppercase',
-                table: 'border-separate border-spacing-4',
               }}
             />
           </div>

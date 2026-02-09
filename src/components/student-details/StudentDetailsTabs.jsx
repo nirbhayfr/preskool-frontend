@@ -1,12 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { User, ClipboardCheck, CreditCard, FileText, BookOpen } from 'lucide-react'
+import { decryptData } from '@/utils/crypto'
 
 const tabs = [
   { label: 'Student Details', value: 'details', icon: User },
-
   { label: 'Attendance', value: 'attendance', icon: ClipboardCheck },
-  { label: 'Fees', value: 'fees', icon: CreditCard },
+  { label: 'Fees', value: 'fees', icon: CreditCard, roles: ['Admin'] },
   { label: 'Exam & Results', value: 'exams', icon: FileText },
   { label: 'Library', value: 'library', icon: BookOpen },
 ]
@@ -14,8 +14,11 @@ const tabs = [
 function StudentDetailsTabsLayout() {
   const navigate = useNavigate()
   const location = useLocation()
+  const encryptedUser = localStorage.getItem('user')
+  const user = encryptedUser ? decryptData(encryptedUser) : null
 
   const activeTab = location.pathname.split('/').pop() ?? 'details'
+  const visibleTabs = tabs.filter((tab) => !tab.roles || tab.roles.includes(user?.Role))
 
   return (
     <div className="w-full ">
@@ -31,7 +34,7 @@ function StudentDetailsTabsLayout() {
                         rounded-xs
 					"
         >
-          {tabs.map((tab) => {
+          {visibleTabs.map((tab) => {
             const Icon = tab.icon
 
             return (
