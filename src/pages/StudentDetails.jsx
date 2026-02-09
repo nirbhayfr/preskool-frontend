@@ -56,7 +56,7 @@ function StudentDetails() {
 
         <div className="flex gap-2">
           {/* Edit */}
-          {user?.Role === "Teacher" && (
+          {user?.Role === "Admin" && (
             <Button onClick={() => handleEdit(id)}>
               <PenBoxIcon className="mr-2 h-4 w-4" />
               Edit Profile
@@ -66,7 +66,7 @@ function StudentDetails() {
           {/* Delete */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              {user?.Role === "Teacher" && (
+              {user?.Role === "Admin" && (
                 <Button variant="destructive">
                   <Trash className="mr-2 h-4 w-4" />
                   Delete
