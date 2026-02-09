@@ -133,16 +133,16 @@ export function AppSidebar({ ...props }) {
       {...props}
       variant="inset"
       className="border text-muted-foreground"
-      onMouseEnter={() => {
-        if (isDesktop && state === 'collapsed') {
-          setOpen(true)
-        }
-      }}
-      onMouseLeave={() => {
-        if (isDesktop && state === 'expanded') {
-          setOpen(false)
-        }
-      }}
+      // onMouseEnter={() => {
+      //   if (isDesktop && state === 'collapsed') {
+      //     setOpen(true)
+      //   }
+      // }}
+      // onMouseLeave={() => {
+      //   if (isDesktop && state === 'expanded') {
+      //     setOpen(false)
+      //   }
+      // }}
     >
       <SidebarHeader>
         <div className="flex items-center justify-between w-full">

@@ -1,17 +1,5 @@
 import { Button } from '@/components/ui/button'
 import { Mail, MessageSquare, Pencil, Trash } from 'lucide-react'
-
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog'
 import { Link } from 'react-router-dom'
 import { CollectFeesDialog } from './CollectFeesDialog'
 
@@ -222,6 +210,10 @@ export const studentsColumns = () => [
 
         {/* Collect Fees */}
         <CollectFeesDialog studentId={row.original.StudentID} />
+
+        <Button asChild variant="outline">
+          <Link to={`/update-result/${row.original.StudentID}`}>Update Result</Link>
+        </Button>
       </div>
     ),
   },

@@ -43,6 +43,7 @@ import StaffLeaveAndAttendance from './components/staff-details/StaffLeaveAndAtt
 import ClassTimeTable from './pages/ClassTimeTable'
 import FeeStructureAndInventory from './pages/FeeStructureAndInventory'
 import AddFeeStructurePage from './components/fee-structure-and-inventory/AddFeeStructurePage'
+import UpdateResultPage from './pages/UpdateResultPage'
 
 function App() {
   return (
@@ -116,6 +117,8 @@ function App() {
                 path="/fee-structure/edit/:classId"
                 element={<AddFeeStructurePage />}
               />
+
+              <Route path="update-result/:id" element={<UpdateResultPage />} />
             </Route>
           </Route>
         </Routes>

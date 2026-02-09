@@ -14,7 +14,7 @@ function Header() {
   const nextYear = currentYear + 1
   return (
     <header className="p-3 px-2 md:px-6 flex justify-between md:justify-end items-center w-full ">
-      <SidebarTrigger className="md:hidden" />
+      <SidebarTrigger className="mr-auto" />
       <div className="flex gap-2 items-center">
         <ClockDisplay />
 
