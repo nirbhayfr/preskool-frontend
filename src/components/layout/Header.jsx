@@ -8,8 +8,11 @@ import { ProfileMenu } from './Profile'
 import { SidebarTrigger } from '../ui/sidebar'
 import AddNew from './AddNew'
 import ClockDisplay from './ClockDisplay'
+import { decryptData } from '@/utils/crypto'
 
 function Header() {
+  const encryptedUser = localStorage.getItem('user')
+  const user = encryptedUser ? decryptData(encryptedUser) : null
   const currentYear = new Date().getFullYear()
   const nextYear = currentYear + 1
   return (
@@ -26,7 +29,7 @@ function Header() {
           </p>
         </Button>
 
-        <AddNew />
+        {user?.Role === 'Admin' && <AddNew />}
 
         <ModeToggle />
 
