@@ -66,15 +66,15 @@ function UpdateResultPage() {
   if (!student) return null
 
   return (
-    <section className="p-6 space-y-6">
+    <section className="p-4 sm:p-6 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Update Result</CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Student Info (disabled inputs) */}
-          <div className="grid grid-cols-4 gap-4">
+          {/* Student Info */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Field label="Student ID" value={student.studentId} />
             <Field label="Full Name" value={student.fullName} />
             <Field label="Class" value={student.class} />
@@ -82,7 +82,7 @@ function UpdateResultPage() {
           </div>
 
           {/* Exam Meta */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Select value={examType} onValueChange={setExamType}>
               <SelectTrigger>
                 <SelectValue placeholder="Exam Type" />
@@ -111,8 +111,12 @@ function UpdateResultPage() {
           {/* Subjects */}
           <div className="space-y-4">
             {rows.map((row, index) => (
-              <div key={index} className="grid grid-cols-3 gap-3 items-center">
+              <div
+                key={index}
+                className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
+              >
                 <Input
+                  className="sm:col-span-2"
                   placeholder="Subject"
                   value={row.subject}
                   onChange={(e) => updateRow(index, 'subject', e.target.value)}
@@ -120,12 +124,13 @@ function UpdateResultPage() {
 
                 <Input
                   type="number"
+                  className="sm:col-span-2"
                   placeholder="Marks Obtained"
                   value={row.marksObtained}
                   onChange={(e) => updateRow(index, 'marksObtained', e.target.value)}
                 />
 
-                <div className="flex justify-start">
+                <div className="flex justify-end sm:justify-center">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -141,13 +146,15 @@ function UpdateResultPage() {
             ))}
           </div>
 
-          <Button variant="secondary" onClick={addRow}>
+          <Button variant="secondary" onClick={addRow} className="w-full sm:w-auto">
             + Add Subject
           </Button>
 
           {/* Submit */}
           <div className="flex justify-end">
-            <Button onClick={handleSubmit}>Save Result</Button>
+            <Button className="w-full sm:w-auto" onClick={handleSubmit}>
+              Save Result
+            </Button>
           </div>
         </CardContent>
       </Card>
