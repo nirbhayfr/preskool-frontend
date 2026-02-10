@@ -44,6 +44,8 @@ import ClassTimeTable from './pages/ClassTimeTable'
 import FeeStructureAndInventory from './pages/FeeStructureAndInventory'
 import AddFeeStructurePage from './components/fee-structure-and-inventory/AddFeeStructurePage'
 import UpdateResultPage from './pages/UpdateResultPage'
+import TeacherSalaryPage from './pages/TeacherSalaryPage'
+import StaffSalaryPage from './pages/StaffSalaryPage'
 
 function App() {
   return (
@@ -119,6 +121,9 @@ function App() {
               />
 
               <Route path="update-result/:id" element={<UpdateResultPage />} />
+
+              <Route path="teacher-salary" element={<TeacherSalaryPage />} />
+              <Route path="staff-salary" element={<StaffSalaryPage />} />
             </Route>
           </Route>
         </Routes>

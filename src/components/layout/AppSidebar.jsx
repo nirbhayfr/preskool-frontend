@@ -10,6 +10,7 @@ import {
   Calendar,
   Clock,
   CircleDollarSign,
+  HandCoins,
 } from 'lucide-react'
 
 import {
@@ -121,6 +122,18 @@ const data = {
       icon: CircleDollarSign,
     },
   ],
+  salary: [
+    {
+      title: 'Teacher Salary',
+      url: '/teacher-salary',
+      icon: HandCoins,
+    },
+    {
+      title: 'Staff Salary',
+      url: '/staff-salary',
+      icon: HandCoins,
+    },
+  ],
 }
 
 function getSidebarDataByRole(role) {
@@ -135,6 +148,7 @@ function getSidebarDataByRole(role) {
         (item) => item.title === 'Take Student Attendance'
       ),
       fees: [], // teachers don’t see fees
+      salary: [],
     }
   }
 
@@ -145,6 +159,7 @@ function getSidebarDataByRole(role) {
       attendance: [],
       attendanceMark: [],
       fees: [],
+      salary: [],
     }
   }
 
@@ -191,6 +206,10 @@ export function AppSidebar({ ...props }) {
 
         {sidebarData.attendanceMark?.length > 0 && (
           <NavSecondary items={sidebarData.attendanceMark} name="mark attendance" />
+        )}
+
+        {sidebarData.salary?.length > 0 && (
+          <NavSecondary items={sidebarData.salary} name="salary" />
         )}
 
         {sidebarData.fees?.length > 0 && (
