@@ -20,7 +20,7 @@ const FilterDropdown = ({ filters, onApply, onReset }) => {
   };
 
   return (
-    <div className="absolute right-12 top-58 w-72 bg-white border rounded-xl shadow-lg z-50">
+    <div className="absolute right-12 top-72 w-72 bg-white border rounded-xl shadow-lg z-50">
       {/* Header */}
       <div className="px-4 py-3 border-b">
         <h3 className="font-semibold text-gray-800">Filter</h3>
