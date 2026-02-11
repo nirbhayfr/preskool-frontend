@@ -11,6 +11,8 @@ import {
   Clock,
   CircleDollarSign,
   HandCoins,
+  CalendarDays,
+  ListCheck,
 } from 'lucide-react'
 
 import {
@@ -134,6 +136,18 @@ const data = {
       icon: HandCoins,
     },
   ],
+  additional: [
+    {
+      title: 'Exam Result',
+      url: '/exam-result',
+      icon: ListCheck,
+    },
+    {
+      title: 'Class TimeTable',
+      url: '/class-timetable',
+      icon: CalendarDays,
+    },
+  ],
 }
 
 function getSidebarDataByRole(role) {
@@ -160,6 +174,7 @@ function getSidebarDataByRole(role) {
       attendanceMark: [],
       fees: [],
       salary: [],
+      additional: [],
     }
   }
 
@@ -210,6 +225,10 @@ export function AppSidebar({ ...props }) {
 
         {sidebarData.salary?.length > 0 && (
           <NavSecondary items={sidebarData.salary} name="salary" />
+        )}
+
+        {sidebarData.additional?.length > 0 && (
+          <NavSecondary items={sidebarData.additional} name="additional" />
         )}
 
         {sidebarData.fees?.length > 0 && (

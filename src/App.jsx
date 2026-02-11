@@ -36,16 +36,20 @@ import TeacherDetailsTabContent from './components/teacher-details/TeacherDetail
 import TeacherLeaveAndAttendance from './components/teacher-details/TeacherLeaveandAttendance'
 import TeacherSalary from './components/teacher-details/TeacherSalary'
 import TeacherLibraryTabContent from './components/teacher-details/TeacherLibraryDetails'
+
 import StaffDetails from './pages/StaffDetails'
 import StaffDetailsTabContent from './components/staff-details/StaffDetailsTabContent'
 import StaffSalary from './components/staff-details/StaffSalary'
 import StaffLeaveAndAttendance from './components/staff-details/StaffLeaveAndAttendance'
-import ClassTimeTable from './pages/ClassTimeTable'
+
 import FeeStructureAndInventory from './pages/FeeStructureAndInventory'
 import AddFeeStructurePage from './components/fee-structure-and-inventory/AddFeeStructurePage'
-import UpdateResultPage from './pages/UpdateResultPage'
+
 import TeacherSalaryPage from './pages/TeacherSalaryPage'
 import StaffSalaryPage from './pages/StaffSalaryPage'
+
+import ExamResultPage from './pages/ExamResultPage'
+import ClassTimeTable from './pages/ClassTimeTable'
 
 function App() {
   return (
@@ -89,7 +93,7 @@ function App() {
                 element={<TakeStudentAttendance />}
               />
 
-              <Route path="student-details/:id" element={<StudentDetails />}>
+              <Route path="/student-details/:id" element={<StudentDetails />}>
                 <Route index element={<Navigate to="details" replace />} />
                 <Route path="details" element={<StudentDetailsTabContent />} />
                 <Route path="attendance" element={<StudentLeaveandAttendance />} />
@@ -98,7 +102,7 @@ function App() {
                 <Route path="library" element={<StudentLibraryDetails />} />
               </Route>
 
-              <Route path="teacher-details/:id" element={<TeacherDetails />}>
+              <Route path="/teacher-details/:id" element={<TeacherDetails />}>
                 <Route index element={<Navigate to="details" replace />} />
                 <Route path="details" element={<TeacherDetailsTabContent />} />
                 <Route path="attendance" element={<TeacherLeaveAndAttendance />} />
@@ -106,24 +110,24 @@ function App() {
                 <Route path="library" element={<TeacherLibraryTabContent />} />
               </Route>
 
-              <Route path="staff-details/:id" element={<StaffDetails />}>
+              <Route path="/staff-details/:id" element={<StaffDetails />}>
                 <Route index element={<Navigate to="details" replace />} />
                 <Route path="details" element={<StaffDetailsTabContent />} />
                 <Route path="payroll" element={<StaffSalary />} />
                 <Route path="attendance" element={<StaffLeaveAndAttendance />} />
               </Route>
 
-              <Route path="fee-structure" element={<FeeStructureAndInventory />} />
+              <Route path="/fee-structure" element={<FeeStructureAndInventory />} />
               <Route path="/fee-structure/add" element={<AddFeeStructurePage />} />
               <Route
                 path="/fee-structure/edit/:classId"
                 element={<AddFeeStructurePage />}
               />
 
-              <Route path="update-result/:id" element={<UpdateResultPage />} />
+              <Route path="/exam-result" element={<ExamResultPage />} />
 
-              <Route path="teacher-salary" element={<TeacherSalaryPage />} />
-              <Route path="staff-salary" element={<StaffSalaryPage />} />
+              <Route path="/teacher-salary" element={<TeacherSalaryPage />} />
+              <Route path="/staff-salary" element={<StaffSalaryPage />} />
             </Route>
           </Route>
         </Routes>
