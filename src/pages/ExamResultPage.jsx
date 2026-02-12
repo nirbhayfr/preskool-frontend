@@ -8,10 +8,11 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select'
-import { classes, sections } from '@/data/basicData'
+import { classes, examTypes, sections } from '@/data/basicData'
 import { useAttendanceMatrixByClass } from '@/hooks/useAttendance'
 import StudentMarksTable from '@/components/exam-result/StudentMarksTable'
 import { toast } from 'sonner'
+import { useCreateExamResult } from '@/hooks/useExamResults'
 
 export default function ExamResultPage() {
   const [selectedClass, setSelectedClass] = useState('')
@@ -26,6 +27,7 @@ export default function ExamResultPage() {
     selectedClass,
     selectedSection
   )
+  const { mutate: createExamResult } = useCreateExamResult()
 
   const students = useMemo(() => {
     if (!studentData?.Data) return []
@@ -43,7 +45,7 @@ export default function ExamResultPage() {
       return
     }
 
-    if (!examType.trim()) {
+    if (!examType) {
       toast.warning('Exam Type is required')
       return
     }
@@ -69,17 +71,27 @@ export default function ExamResultPage() {
     }
 
     const finalPayload = marksPayload.map((item) => ({
-      ...item,
-      Class: selectedClass,
-      Section: selectedSection,
-      ExamType: examType.trim(),
-      Subject: subject.trim(),
-      MaxMarks: Number(maxMarks),
-      MinMarks: Number(minMarks),
+      studentId: item.StudentId,
+      marksObtained: item.MarksObtained,
+      class: selectedClass,
+      section: selectedSection,
+      examType: examType.trim(),
+      subject: subject.trim(),
+      maxMarks: Number(maxMarks),
+      minMarks: Number(minMarks),
     }))
 
     console.log('Final Exam Payload:', finalPayload)
-    toast.success('Console Logged The Data')
+    if (!finalPayload.length) return
+
+    createExamResult(finalPayload, {
+      onSuccess: () => {
+        toast.success('Exam results saved successfully')
+      },
+      onError: () => {
+        toast.error('Failed to save results')
+      },
+    })
   }
 
   if (isLoading) return <CircleLoader />
@@ -125,11 +137,19 @@ export default function ExamResultPage() {
 
       {/* Exam Info */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Input
-          placeholder="Exam Type"
-          value={examType}
-          onChange={(e) => setExamType(e.target.value)}
-        />
+        <Select value={examType} onValueChange={setExamType}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Exam Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {examTypes.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Input
           placeholder="Subject"
           value={subject}

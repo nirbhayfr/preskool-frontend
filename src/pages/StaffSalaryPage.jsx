@@ -4,13 +4,14 @@ import { useAllStaffMonthlySummary } from '@/hooks/useStaffAttendance'
 import TableLayout from '@/components/layout/Table'
 import { Input } from '@/components/ui/input'
 
+/* ------------------ Header ------------------ */
 function StaffSalaryHeader({ month, onMonthChange, totalStaff }) {
   return (
-    <div className="flex items-center justify-between mb-4">
-      <h2 className="text-xl font-semibold">
+    <div className="flex items-center justify-between mb-6">
+      <h2 className="text-xl font-semibold tracking-tight">
         Staff Salary Summary
         {totalStaff != null && (
-          <span className="ml-2 text-sm text-gray-500">({totalStaff})</span>
+          <span className="ml-2 text-sm text-muted-foreground">({totalStaff})</span>
         )}
       </h2>
 
@@ -24,15 +25,12 @@ function StaffSalaryHeader({ month, onMonthChange, totalStaff }) {
   )
 }
 
+/* ------------------ Count Cell ------------------ */
 const CountCell = ({ value, className = '' }) => {
   const isZero = value === 0
 
   return (
-    <span
-      className={
-        isZero ? 'text-muted-foreground font-normal' : `font-semibold ${className}`
-      }
-    >
+    <span className={isZero ? 'text-muted-foreground' : `font-semibold ${className}`}>
       {value}
     </span>
   )
@@ -61,40 +59,48 @@ export default function StaffSalaryPage() {
       },
       {
         header: 'Name',
-        accessorKey: 'staff.fullName',
-        cell: ({ getValue }) => getValue() || '—',
+        accessorFn: (row) => row.staff?.fullName ?? '—',
       },
       {
         header: 'Email',
-        accessorKey: 'staff.email',
-        cell: ({ getValue }) => getValue() || '—',
+        accessorFn: (row) => row.staff?.email ?? '—',
       },
       {
         header: 'Role',
-        accessorKey: 'staff.role',
+        accessorFn: (row) => row.staff?.role ?? '—',
+      },
+      {
+        header: 'Salary',
+        accessorFn: (row) => row.staff?.salary ?? 0,
+        cell: ({ getValue }) => {
+          const value = getValue()
+          return value ? `₹ ${Number(value).toLocaleString()}` : '—'
+        },
       },
       {
         header: 'Present',
-        accessorKey: 'summary.PresentDays',
+        accessorFn: (row) => row.summary?.PresentDays ?? 0,
         cell: ({ getValue }) => (
-          <CountCell value={getValue()} className="text-emerald-700" />
+          <CountCell value={getValue()} className="text-emerald-600" />
         ),
       },
       {
         header: 'Absent',
-        accessorKey: 'summary.AbsentDays',
-        cell: ({ getValue }) => <CountCell value={getValue()} className="text-red-700" />,
-      },
-      {
-        header: 'Half Day',
-        accessorKey: 'summary.HalfDays',
+        accessorFn: (row) => row.summary?.AbsentDays ?? 0,
         cell: ({ getValue }) => (
-          <CountCell value={getValue()} className="text-orange-600" />
+          <CountCell value={getValue()} className="text-destructive" />
         ),
       },
       {
-        header: 'Leave',
-        accessorKey: 'summary.LeaveDays',
+        header: 'Half Day',
+        accessorFn: (row) => row.summary?.HalfDays ?? 0,
+        cell: ({ getValue }) => (
+          <CountCell value={getValue()} className="text-orange-500" />
+        ),
+      },
+      {
+        header: 'Late',
+        accessorFn: (row) => row.summary?.LeaveDays ?? 0,
         cell: ({ getValue }) => (
           <CountCell value={getValue()} className="text-blue-600" />
         ),
@@ -104,14 +110,14 @@ export default function StaffSalaryPage() {
   )
 
   if (isLoading) return <CircleLoader />
-  if (error) return 'Error loading staff summary'
+  if (error) return <div className="text-destructive">Error loading staff summary</div>
 
   return (
     <section className="p-6">
       <StaffSalaryHeader
-        month={month}
+        month={data?.month ?? month}
         onMonthChange={setMonth}
-        totalStaff={tableData.length}
+        totalStaff={data?.totalStaff}
       />
 
       <TableLayout columns={columns} data={tableData} />

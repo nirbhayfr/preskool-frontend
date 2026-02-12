@@ -63,14 +63,17 @@ function FeeStructureAndInventory() {
   return (
     <section className="p-6 space-y-8 capitalize">
       {/* Header with actions */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Fee Structure & Inventory</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl sm:text-2xl font-semibold">Fee Structure & Inventory</h1>
 
-        <div className="flex gap-2">
-          <Button onClick={() => navigate('add')}>Add Fee Structure</Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-2 w-full sm:w-auto">
+          <Button className="w-full sm:w-auto" onClick={() => navigate('add')}>
+            Add Fee Structure
+          </Button>
 
           <Button
             variant="outline"
+            className="w-full sm:w-auto"
             onClick={() => {
               setEditingInventory(null)
               setOpenFeeInventory(true)
