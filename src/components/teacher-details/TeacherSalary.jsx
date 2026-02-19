@@ -52,6 +52,7 @@ const salaryColumns = [
 function TeacherSalary() {
   const { id } = useParams()
   const { data: response, isLoading, isError } = useTeacherSalaryById(id)
+
   const data = []
 
   const teacher = response?.data
@@ -66,6 +67,8 @@ function TeacherSalary() {
   if (isLoading) return <TeacherSalarySkeleton />
   if (isError) return <p>Failed to load salary</p>
   if (!teacher) return null
+
+  console.log(response)
 
   return (
     <div className="space-y-6">

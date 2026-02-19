@@ -50,6 +50,8 @@ import StaffSalaryPage from './pages/StaffSalaryPage'
 
 import ExamResultPage from './pages/ExamResultPage'
 import ClassTimeTable from './pages/ClassTimeTable'
+import PayTeacherSalary from './pages/PayTeacherSalary'
+import PayStaffSalary from './pages/PayStaffSalary'
 
 function App() {
   return (
@@ -128,6 +130,9 @@ function App() {
 
               <Route path="/teacher-salary" element={<TeacherSalaryPage />} />
               <Route path="/staff-salary" element={<StaffSalaryPage />} />
+
+              <Route path="/pay-teacher-salary" element={<PayTeacherSalary />} />
+              <Route path="/pay-staff-salary" element={<PayStaffSalary />} />
             </Route>
           </Route>
         </Routes>

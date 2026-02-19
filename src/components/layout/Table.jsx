@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 
 import {
@@ -9,18 +10,31 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-export default function TableLayout({ columns, data }) {
+const MemoRow = memo(({ row }) => {
+  return (
+    <TableRow>
+      {row.getVisibleCells().map((cell) => (
+        <TableCell key={cell.id} className="px-6 py-2">
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
+      ))}
+    </TableRow>
+  )
+})
+
+function TableLayout({ columns, data }) {
+  const coreRowModel = getCoreRowModel()
+
   const table = useReactTable({
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
+    getCoreRowModel: coreRowModel,
   })
 
   return (
     <div className="rounded-md border overflow-auto mt-12">
       <Table>
         <TableHeader className="bg-gray-100 dark:bg-stone-700">
-          {/* Header background */}
           {table.getHeaderGroups().map((group) => (
             <TableRow key={group.id}>
               {group.headers.map((header) => (
@@ -34,16 +48,12 @@ export default function TableLayout({ columns, data }) {
 
         <TableBody>
           {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className="px-6 py-2">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
+            <MemoRow key={row.id} row={row} />
           ))}
         </TableBody>
       </Table>
     </div>
   )
 }
+
+export default memo(TableLayout)

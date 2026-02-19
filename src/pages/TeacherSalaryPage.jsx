@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { useCreateTeacherSalary } from '@/hooks/useTeacherSalary'
+import { toast } from 'sonner'
 
 function TeacherSalaryHeader({ month, onMonthChange, totalTeachers }) {
   return (
@@ -36,19 +39,26 @@ const getCurrentMonth = () => {
 
 export default function TeacherSalaryPage() {
   const [month, setMonth] = useState(getCurrentMonth())
-
-  const [leaveDeduction, setLeaveDeduction] = useState(0)
   const [paidLeaves, setPaidLeaves] = useState(0)
+  const { mutate: createSalary } = useCreateTeacherSalary()
 
   const [salaryOverrides, setSalaryOverrides] = useState({})
+  const [deductionOverrides, setDeductionOverrides] = useState({})
+  const [allowanceOverrides, setAllowanceOverrides] = useState({})
 
   const { data, isLoading, error } = useAllTeachersMonthlySummary(month)
 
   const tableData = useMemo(() => data?.data ?? [], [data])
 
-  // Reset overrides when month changes
+  const daysInMonth = useMemo(() => {
+    const [year, monthStr] = month.split('-')
+    return new Date(Number(year), Number(monthStr), 0).getDate()
+  }, [month])
+
   useEffect(() => {
     setSalaryOverrides({})
+    setDeductionOverrides({})
+    setAllowanceOverrides({})
   }, [month])
 
   const calculatedRows = useMemo(() => {
@@ -58,65 +68,136 @@ export default function TeacherSalaryPage() {
       const halfDays = row.summary?.HalfDays ?? 0
       const lateDays = row.summary?.LeaveDays ?? 0
 
-      // Step 1: Convert late → half days
+      const perDaySalary = baseSalary / daysInMonth
+
+      // Leave conversion
       const halfFromLate = Math.floor(lateDays / 2)
-
-      // Step 2: Combine half days
       const totalHalfDays = halfDays + halfFromLate
-
-      // Step 3: Convert half days → leaves
       const leaveFromHalf = Math.floor(totalHalfDays / 2)
-
-      // Step 4: Total leaves
       const totalLeaves = absent + leaveFromHalf
 
-      // Step 5: Apply paid leaves
       const effectiveLeaves = Math.max(totalLeaves - paidLeaves, 0)
 
-      // Step 6: Deduction
-      const deduction = effectiveLeaves * leaveDeduction
+      const calculatedDeduction = perDaySalary * effectiveLeaves
 
-      const calculatedSalary = Math.max(baseSalary - deduction, 0)
+      const deduction = deductionOverrides[row.teacherId] ?? calculatedDeduction
 
-      const finalSalary = salaryOverrides[row.teacherId] ?? calculatedSalary
+      const allowance = allowanceOverrides[row.teacherId] ?? 0
+
+      const calculatedFinalSalary = Math.max(baseSalary + allowance - deduction, 0)
+
+      const finalSalary = salaryOverrides[row.teacherId] ?? calculatedFinalSalary
 
       return {
         ...row,
         baseSalary,
+        perDaySalary,
         totalLeaves,
         effectiveLeaves,
+        allowance,
         deduction,
         finalSalary,
       }
     })
-  }, [tableData, leaveDeduction, paidLeaves, salaryOverrides])
+  }, [
+    tableData,
+    paidLeaves,
+    salaryOverrides,
+    deductionOverrides,
+    allowanceOverrides,
+    daysInMonth,
+  ])
 
   const handleSalaryChange = (teacherId, value) => {
+    const teacherRow = calculatedRows.find((r) => r.teacherId === teacherId)
+    if (!teacherRow) return
+
+    const base = teacherRow.baseSalary
+    const allowance = teacherRow.allowance
+
+    const newFinal = Math.max(0, Number(value) || 0)
+
+    const newDeduction = Math.max(base + allowance - newFinal, 0)
+
     setSalaryOverrides((prev) => ({
       ...prev,
-      [teacherId]: Number(value),
+      [teacherId]: newFinal,
+    }))
+
+    setDeductionOverrides((prev) => ({
+      ...prev,
+      [teacherId]: Number(newDeduction.toFixed(2)),
+    }))
+  }
+
+  const handleDeductionChange = (teacherId, value) => {
+    const teacherRow = calculatedRows.find((r) => r.teacherId === teacherId)
+    if (!teacherRow) return
+
+    const base = teacherRow.baseSalary
+    const allowance = teacherRow.allowance
+    const newDeduction = Math.max(0, Number(value) || 0)
+
+    const newFinal = Math.max(base + allowance - newDeduction, 0)
+
+    setDeductionOverrides((prev) => ({
+      ...prev,
+      [teacherId]: Number(newDeduction.toFixed(2)),
+    }))
+
+    setSalaryOverrides((prev) => ({
+      ...prev,
+      [teacherId]: Number(newFinal.toFixed(2)),
+    }))
+  }
+
+  const handleAllowanceChange = (teacherId, value) => {
+    const teacherRow = calculatedRows.find((r) => r.teacherId === teacherId)
+    if (!teacherRow) return
+
+    const base = teacherRow.baseSalary
+    const deduction = teacherRow.deduction
+    const newAllowance = Math.max(0, Number(value) || 0)
+
+    const newFinal = Math.max(base + newAllowance - deduction, 0)
+
+    setAllowanceOverrides((prev) => ({
+      ...prev,
+      [teacherId]: Number(newAllowance.toFixed(2)),
+    }))
+
+    setSalaryOverrides((prev) => ({
+      ...prev,
+      [teacherId]: Number(newFinal.toFixed(2)),
     }))
   }
 
   const handleCreateSalaries = () => {
-    const payload = calculatedRows.map((row) => ({
-      teacherId: row.teacherId,
-      month,
-      baseSalary: row.baseSalary,
-      totalLeaves: row.totalLeaves,
-      effectiveLeaves: row.effectiveLeaves,
-      deduction: row.deduction,
-      finalSalary: row.finalSalary,
-      paidLeaves,
-      leaveDeduction,
-    }))
+    const payload = calculatedRows
+      .filter((row) => Number(row.finalSalary) > 0 && !isNaN(Number(row.finalSalary)))
+      .map((row) => ({
+        teacherId: row.teacherId,
+        basicSalary: Number(row.baseSalary.toFixed(2)),
+        allowances: Number(row.allowance.toFixed(2)),
+        deductions: Number(row.deduction.toFixed(2)),
+        salaryMonth: month,
+        paymentDate: null,
+        isPaid: false,
+      }))
 
     console.log('Salary Payload:', payload)
+    createSalary(payload, {
+      onSuccess: () => {
+        toast.success('Salary Created successfully')
+      },
+      onError: () => {
+        toast.error('Failed to create salary')
+      },
+    })
   }
 
   const CountCell = ({ value, className = '' }) => {
     const isZero = value === 0
-
     return (
       <span className={isZero ? 'text-muted-foreground' : `font-semibold ${className}`}>
         {value}
@@ -126,6 +207,17 @@ export default function TeacherSalaryPage() {
 
   const columns = useMemo(
     () => [
+      {
+        header: 'Status',
+        cell: () => (
+          <Badge
+            variant="secondary"
+            className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+          >
+            Active
+          </Badge>
+        ),
+      },
       {
         header: 'Teacher ID',
         accessorKey: 'teacherId',
@@ -144,9 +236,6 @@ export default function TeacherSalaryPage() {
           <span className="font-semibold">₹ {Number(getValue()).toLocaleString()}</span>
         ),
       },
-
-      // ===== 4 Attendance Entities (Styled) =====
-
       {
         header: 'Present',
         accessorFn: (row) => row.summary?.PresentDays ?? 0,
@@ -175,13 +264,9 @@ export default function TeacherSalaryPage() {
           <CountCell value={getValue()} className="text-blue-600" />
         ),
       },
-
-      // ===== Salary Computation Columns =====
-
       {
         header: 'Total Leaves',
         accessorFn: (row) => row.totalLeaves,
-        cell: ({ getValue }) => <span className="font-semibold">{getValue()}</span>,
       },
       {
         header: 'Effective Leaves',
@@ -191,12 +276,35 @@ export default function TeacherSalaryPage() {
         ),
       },
       {
+        header: 'Allowance',
+        cell: ({ row }) => (
+          <Input
+            type="number"
+            step="100"
+            min="0"
+            value={Number(row.original.allowance ?? 0).toFixed(2)}
+            onChange={(e) => {
+              const value = Math.max(0, Number(e.target.value) || 0)
+              handleAllowanceChange(row.original.teacherId, Number(value.toFixed(2)))
+            }}
+            className="w-32 font-semibold"
+          />
+        ),
+      },
+      {
         header: 'Deduction',
-        accessorFn: (row) => row.deduction,
-        cell: ({ getValue }) => (
-          <span className="font-semibold text-destructive">
-            ₹ {Number(getValue()).toLocaleString()}
-          </span>
+        cell: ({ row }) => (
+          <Input
+            type="number"
+            step="100"
+            min="0"
+            value={Number(row.original.deduction ?? 0).toFixed(2)}
+            onChange={(e) => {
+              const value = Math.max(0, Number(e.target.value) || 0)
+              handleDeductionChange(row.original.teacherId, Number(value.toFixed(2)))
+            }}
+            className="w-32 font-semibold"
+          />
         ),
       },
       {
@@ -204,14 +312,19 @@ export default function TeacherSalaryPage() {
         cell: ({ row }) => (
           <Input
             type="number"
-            value={row.original.finalSalary}
-            onChange={(e) => handleSalaryChange(row.original.teacherId, e.target.value)}
+            step="100"
+            min="0"
+            value={Number(row.original.finalSalary ?? 0).toFixed(2)}
+            onChange={(e) => {
+              const value = Math.max(0, Number(e.target.value) || 0)
+              handleSalaryChange(row.original.teacherId, Number(value.toFixed(2)))
+            }}
             className="w-32 font-semibold"
           />
         ),
       },
     ],
-    [handleSalaryChange]
+    []
   )
 
   if (isLoading) return <CircleLoader />
@@ -225,48 +338,25 @@ export default function TeacherSalaryPage() {
         totalTeachers={data?.totalTeachers}
       />
 
-      {/* Controls */}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Leave Deduction */}
-        <div className="flex flex-col gap-2 w-full">
-          <Label htmlFor="leaveDeduction">Leave Deduction Amount (₹ per Leave)</Label>
-          <Input
-            id="leaveDeduction"
-            type="number"
-            min="0"
-            value={leaveDeduction}
-            onChange={(e) => setLeaveDeduction(Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
-
-        {/* Paid Leaves */}
-        <div className="flex flex-col gap-2 w-full">
-          <Label htmlFor="paidLeaves">Paid Leaves (Allowed per Month)</Label>
-          <Input
-            id="paidLeaves"
-            type="number"
-            min="0"
-            value={paidLeaves}
-            onChange={(e) => setPaidLeaves(Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
+      <div className="max-w-sm">
+        <Label>Paid Leaves (Allowed per Month)</Label>
+        <Input
+          type="number"
+          min="0"
+          value={paidLeaves}
+          onChange={(e) => setPaidLeaves(Number(e.target.value) || 0)}
+        />
       </div>
 
-      {/* Info Card */}
       <Card>
         <CardContent className="p-4 text-sm space-y-1">
           <p>
             <strong>Salary Policy:</strong>
           </p>
           <p>• 1 Absent = 1 Leave</p>
-          <p>• 2 Half Days = 1 Leave</p>
           <p>• 2 Late = 1 Half Day</p>
-          <p>• 3 Late = 1 Leave</p>
-          <p>• Paid Leaves are deducted from total leaves</p>
-          <p>• Remaining Leaves × Leave Deduction = Salary Deduction</p>
+          <p>• 2 Half Days = 1 Leave</p>
+          <p>• Final Salary = Base + Allowance − Deduction</p>
         </CardContent>
       </Card>
 
