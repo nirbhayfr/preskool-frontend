@@ -5,6 +5,7 @@ import {
   createStaffSalary,
   updateStaffSalary,
   deleteStaffSalary,
+  bulkMarkStaffSalaryPaid,
 } from '@/api/staffSalary'
 
 export const useStaffSalaries = () =>
@@ -19,6 +20,17 @@ export const useStaffSalaryListById = (id) =>
     queryFn: () => getStaffSalaryListById(id),
     enabled: !!id,
   })
+
+export const useBulkMarkStaffSalaryPaid = () => {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: bulkMarkStaffSalaryPaid,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['staff-salary'] })
+    },
+  })
+}
 
 export const useCreateStaffSalary = () => {
   const qc = useQueryClient()

@@ -190,6 +190,18 @@ function getSidebarDataByRole(role) {
     }
   }
 
+  if (role === 'Librarian') {
+    return {
+      ...data,
+      people: [],
+      attendance: [],
+      attendanceMark: [],
+      fees: [],
+      salary: [],
+      additional: [],
+    }
+  }
+
   return data
 }
 

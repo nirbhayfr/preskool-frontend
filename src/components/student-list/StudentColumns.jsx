@@ -3,6 +3,7 @@ import { Mail, MessageSquare, Pencil, Trash } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { CollectFeesDialog } from './CollectFeesDialog'
 import { decryptData } from '@/utils/crypto'
+import { AttendanceCell } from '../student-attendance/AttendanceCell'
 
 const encryptedUser = localStorage.getItem('user')
 const user = encryptedUser ? decryptData(encryptedUser) : null
@@ -56,25 +57,12 @@ export const studentsColumns = () => [
   {
     accessorKey: 'Status',
     header: 'Status',
-    cell: ({ row }) => {
-      const status = row.original.Status?.toLowerCase()
-
-      const isActive = status === 'active'
-
-      return (
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-medium
-					${
-            isActive
-              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-          }
-				`}
-        >
-          {row.original.Status ?? 'Inactive'}
-        </span>
-      )
-    },
+    cell: ({ row }) =>
+      row.original.TodayStatus !== 'N' ? (
+        <AttendanceCell value={row.original.TodayStatus} />
+      ) : (
+        <p className="text-center">—</p>
+      ),
   },
   {
     accessorKey: 'RollNo',

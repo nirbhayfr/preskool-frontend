@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import { useAllStaffMonthlySummary } from '@/hooks/useStaffAttendance'
 import { useCreateStaffSalary } from '@/hooks/useStaffSalary'
@@ -9,8 +9,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-
-/* ---------------- Header ---------------- */
 
 function StaffSalaryHeader({ month, onMonthChange, totalStaff }) {
   return (
@@ -32,8 +30,6 @@ function StaffSalaryHeader({ month, onMonthChange, totalStaff }) {
   )
 }
 
-/* ---------------- Helpers ---------------- */
-
 const CountCell = ({ value, className = '' }) => {
   const isZero = value === 0
   return (
@@ -48,10 +44,6 @@ const getCurrentMonth = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-/* ============================ */
-/*        MAIN COMPONENT        */
-/* ============================ */
-
 export default function StaffSalaryPage() {
   const [month, setMonth] = useState(getCurrentMonth())
   const [paidLeaves, setPaidLeaves] = useState(0)
@@ -60,7 +52,7 @@ export default function StaffSalaryPage() {
   const [deductionOverrides, setDeductionOverrides] = useState({})
   const [allowanceOverrides, setAllowanceOverrides] = useState({})
 
-  const { mutate: createSalary } = useCreateStaffSalary()
+  const { mutate: createSalary, isPending } = useCreateStaffSalary()
   const { data, isLoading, error } = useAllStaffMonthlySummary(month)
 
   const tableData = useMemo(() => data?.data ?? [], [data])
@@ -80,7 +72,7 @@ export default function StaffSalaryPage() {
 
   const calculatedRows = useMemo(() => {
     return tableData.map((row) => {
-      const baseSalary = row.staff?.salary ?? 0
+      const baseSalary = Number(row.staff?.salary ?? 0)
       const absent = row.summary?.AbsentDays ?? 0
       const halfDays = row.summary?.HalfDays ?? 0
       const lateDays = row.summary?.LeaveDays ?? 0
@@ -121,20 +113,62 @@ export default function StaffSalaryPage() {
     daysInMonth,
   ])
 
-  /* ---------------- Handlers ---------------- */
+  /* ---------------- Stable Handlers ---------------- */
 
-  const handleChange = (setter, id, value) => {
-    setter((prev) => ({
+  const handleSalaryChange = useCallback((staffId, value, base, allowance) => {
+    const newFinal = Math.max(0, Number(value) || 0)
+    const newDeduction = Math.max(base + allowance - newFinal, 0)
+
+    setSalaryOverrides((prev) => ({
       ...prev,
-      [id]: Number(value) || 0,
+      [staffId]: Number(newFinal.toFixed(2)),
     }))
-  }
+
+    setDeductionOverrides((prev) => ({
+      ...prev,
+      [staffId]: Number(newDeduction.toFixed(2)),
+    }))
+  }, [])
+
+  const handleDeductionChange = useCallback((staffId, value, base, allowance) => {
+    const newDeduction = Math.max(0, Number(value) || 0)
+    const newFinal = Math.max(base + allowance - newDeduction, 0)
+
+    setDeductionOverrides((prev) => ({
+      ...prev,
+      [staffId]: Number(newDeduction.toFixed(2)),
+    }))
+
+    setSalaryOverrides((prev) => ({
+      ...prev,
+      [staffId]: Number(newFinal.toFixed(2)),
+    }))
+  }, [])
+
+  const handleAllowanceChange = useCallback((staffId, value, base, deduction) => {
+    const newAllowance = Math.max(0, Number(value) || 0)
+    const newFinal = Math.max(base + newAllowance - deduction, 0)
+
+    setAllowanceOverrides((prev) => ({
+      ...prev,
+      [staffId]: Number(newAllowance.toFixed(2)),
+    }))
+
+    setSalaryOverrides((prev) => ({
+      ...prev,
+      [staffId]: Number(newFinal.toFixed(2)),
+    }))
+  }, [])
 
   /* ---------------- Create Salaries ---------------- */
 
-  const handleCreateSalaries = () => {
+  const handleCreateSalaries = useCallback(() => {
     const payload = calculatedRows
-      .filter((row) => Number(row.finalSalary) > 0)
+      .filter((row) => {
+        const base = Number(row.baseSalary)
+        const net = Number(row.finalSalary)
+        return base > 0 && net > 0 && !isNaN(base) && !isNaN(net)
+      })
       .map((row) => ({
         staffId: row.staffId,
         basicSalary: Number(row.baseSalary.toFixed(2)),
@@ -145,11 +179,16 @@ export default function StaffSalaryPage() {
         isPaid: false,
       }))
 
+    if (!payload.length) {
+      toast.error('No valid salaries to create')
+      return
+    }
+
     createSalary(payload, {
       onSuccess: () => toast.success('Staff salary created successfully'),
       onError: () => toast.error('Failed to create staff salary'),
     })
-  }
+  }, [calculatedRows, month, createSalary])
 
   /* ---------------- Columns ---------------- */
 
@@ -173,13 +212,6 @@ export default function StaffSalaryPage() {
       {
         header: 'Role',
         accessorFn: (row) => row.staff?.role ?? '—',
-      },
-      {
-        header: 'Base Salary',
-        accessorFn: (row) => row.baseSalary,
-        cell: ({ getValue }) => (
-          <span className="font-semibold">₹ {Number(getValue()).toLocaleString()}</span>
-        ),
       },
       {
         header: 'Present',
@@ -212,12 +244,22 @@ export default function StaffSalaryPage() {
       {
         header: 'Total Leaves',
         accessorFn: (row) => row.totalLeaves,
+        cell: ({ getValue }) => (
+          <span className="font-semibold text-red-500">{getValue()}</span>
+        ),
       },
       {
         header: 'Effective Leaves',
         accessorFn: (row) => row.effectiveLeaves,
         cell: ({ getValue }) => (
-          <span className="font-semibold text-red-500">{getValue()}</span>
+          <span className="font-semibold text-red-700">{getValue()}</span>
+        ),
+      },
+      {
+        header: 'Base Salary',
+        accessorFn: (row) => row.baseSalary,
+        cell: ({ getValue }) => (
+          <span className="font-semibold">₹ {Number(getValue()).toLocaleString()}</span>
         ),
       },
       {
@@ -228,15 +270,15 @@ export default function StaffSalaryPage() {
             step="100"
             min="0"
             value={Number(row.original.allowance ?? 0).toFixed(2)}
-            onChange={(e) => {
-              const value = Math.max(0, Number(e.target.value) || 0)
-              handleChange(
-                setAllowanceOverrides,
+            onChange={(e) =>
+              handleAllowanceChange(
                 row.original.staffId,
-                Number(value.toFixed(2))
+                e.target.value,
+                row.original.baseSalary,
+                row.original.deduction
               )
-            }}
-            className="w-28 font-semibold"
+            }
+            className="w-28 font-semibold text-emerald-600"
           />
         ),
       },
@@ -248,15 +290,15 @@ export default function StaffSalaryPage() {
             step="100"
             min="0"
             value={Number(row.original.deduction ?? 0).toFixed(2)}
-            onChange={(e) => {
-              const value = Math.max(0, Number(e.target.value) || 0)
-              handleChange(
-                setDeductionOverrides,
+            onChange={(e) =>
+              handleDeductionChange(
                 row.original.staffId,
-                Number(value.toFixed(2))
+                e.target.value,
+                row.original.baseSalary,
+                row.original.allowance
               )
-            }}
-            className="w-28 font-semibold"
+            }
+            className="w-28 font-semibold text-destructive"
           />
         ),
       },
@@ -268,20 +310,21 @@ export default function StaffSalaryPage() {
             step="100"
             min="0"
             value={Number(row.original.finalSalary ?? 0).toFixed(2)}
-            onChange={(e) => {
-              const value = Math.max(0, Number(e.target.value) || 0)
-              handleChange(
-                setSalaryOverrides,
+            onChange={(e) =>
+              handleSalaryChange(
                 row.original.staffId,
-                Number(value.toFixed(2))
+                e.target.value,
+                row.original.baseSalary,
+                row.original.allowance
               )
-            }}
-            className="w-32 font-semibold"
+            }
+            className="w-32 font-semibold text-blue-200"
           />
         ),
       },
     ],
-    []
+
+    [handleSalaryChange, handleDeductionChange, handleAllowanceChange]
   )
 
   if (isLoading) return <CircleLoader />
@@ -320,7 +363,9 @@ export default function StaffSalaryPage() {
       <TableLayout columns={columns} data={calculatedRows} />
 
       <div className="flex justify-end">
-        <Button onClick={handleCreateSalaries}>Create Salaries</Button>
+        <Button onClick={handleCreateSalaries} disabled={isPending}>
+          {isPending ? 'Creating...' : 'Create Salaries'}
+        </Button>
       </div>
     </section>
   )

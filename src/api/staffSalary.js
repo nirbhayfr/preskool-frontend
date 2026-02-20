@@ -10,6 +10,13 @@ export const getStaffSalaryListById = async (id) => {
   return data.data
 }
 
+export const bulkMarkStaffSalaryPaid = async (staffIds) => {
+  const { data } = await api.post('/staff-salary/bulk-mark-paid', {
+    staffIds,
+  })
+  return data
+}
+
 export const createStaffSalary = async (payload) => {
   const { data } = await api.post('/staff-salary', payload)
   return data

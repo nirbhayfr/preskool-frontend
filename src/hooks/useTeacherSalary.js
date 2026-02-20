@@ -5,6 +5,7 @@ import {
   createTeacherSalary,
   updateTeacherSalary,
   deleteTeacherSalary,
+  bulkMarkTeacherSalaryPaid,
 } from '@/api/teacherSalary'
 
 export const useTeacherSalaries = () =>
@@ -27,6 +28,17 @@ export const useCreateTeacherSalary = () => {
     mutationFn: createTeacherSalary,
     onSuccess: () => {
       qc.invalidateQueries(['teacher-salary'])
+    },
+  })
+}
+
+export const useBulkMarkTeacherSalaryPaid = () => {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: bulkMarkTeacherSalaryPaid,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['teacher-salary'] })
     },
   })
 }

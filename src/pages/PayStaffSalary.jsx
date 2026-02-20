@@ -5,7 +5,14 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useStaffSalaries } from '@/hooks/useStaffSalary'
+import { Spinner } from '@/components/ui/spinner'
+
+import {
+  useBulkMarkStaffSalaryPaid,
+  useStaffSalaries,
+  useDeleteStaffSalary,
+} from '@/hooks/useStaffSalary'
+import { toast } from 'sonner'
 
 function PayStaffSalaryHeader({ month, onMonthChange, total }) {
   return (
@@ -38,6 +45,8 @@ export default function PayStaffSalaryPage() {
   const [month, setMonth] = useState(getCurrentMonth())
 
   const { data, isLoading, error } = useStaffSalaries()
+  const { mutate: bulkPay, isPending: isPaying } = useBulkMarkStaffSalaryPaid()
+  const { mutate: deleteSalary, isPending: isDeleting } = useDeleteStaffSalary()
 
   const salaries = data?.data ?? []
 
@@ -45,16 +54,29 @@ export default function PayStaffSalaryPage() {
     return salaries.filter((s) => s.SalaryMonth === month)
   }, [salaries, month])
 
-  const handlePay = useCallback((salary) => {
-    console.log(salary)
-  }, [])
+  const handlePay = useCallback(
+    (salary) => {
+      bulkPay([salary.StaffID], {
+        onSuccess: () => toast.success('Staff salary marked as paid'),
+        onError: () => toast.error('Failed to mark staff salary as paid'),
+      })
+    },
+    [bulkPay]
+  )
+
+  const handleDelete = useCallback(
+    (salary) => {
+      deleteSalary(salary.SalaryID, {
+        onSuccess: () => toast.success('Staff salary deleted successfully'),
+        onError: () => toast.error('Failed to delete staff salary'),
+      })
+    },
+    [deleteSalary]
+  )
 
   const columns = useMemo(
     () => [
-      {
-        header: 'Staff ID',
-        accessorKey: 'StaffID',
-      },
+      { header: 'Staff ID', accessorKey: 'StaffID' },
       {
         header: 'Name',
         accessorKey: 'FullName',
@@ -62,10 +84,7 @@ export default function PayStaffSalaryPage() {
           <span className="font-medium text-primary">{getValue()}</span>
         ),
       },
-      {
-        header: 'Month',
-        accessorKey: 'SalaryMonth',
-      },
+      { header: 'Month', accessorKey: 'SalaryMonth' },
       {
         header: 'Basic',
         accessorKey: 'BasicSalary',
@@ -115,18 +134,34 @@ export default function PayStaffSalaryPage() {
       },
       {
         header: 'Action',
-        cell: ({ row }) => (
-          <Button
-            size="sm"
-            disabled={row.original.IsPaid}
-            onClick={() => handlePay(row.original)}
-          >
-            Pay
-          </Button>
-        ),
+        cell: ({ row }) => {
+          const isPaid = row.original.IsPaid
+          return (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                disabled={isPaid || isPaying}
+                onClick={() => handlePay(row.original)}
+              >
+                {isPaying ? <Spinner /> : 'Pay'}
+              </Button>
+
+              {!isPaid && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={isDeleting}
+                  onClick={() => handleDelete(row.original)}
+                >
+                  {isDeleting ? <Spinner /> : 'Delete'}
+                </Button>
+              )}
+            </div>
+          )
+        },
       },
     ],
-    [handlePay]
+    [handlePay, handleDelete, isPaying, isDeleting]
   )
 
   if (isLoading) return <CircleLoader />

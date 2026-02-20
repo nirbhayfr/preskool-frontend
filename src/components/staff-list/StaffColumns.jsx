@@ -1,17 +1,8 @@
 import { Button } from '@/components/ui/button'
-import { Mail, MessageSquare, Pencil, Trash } from 'lucide-react'
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog'
+import { Mail, MessageSquare } from 'lucide-react'
+
 import { Link } from 'react-router-dom'
+import { AttendanceCell } from '../student-attendance/AttendanceCell'
 
 export const staffColumns = () => [
   {
@@ -53,6 +44,16 @@ export const staffColumns = () => [
     accessorKey: 'Role',
     header: 'Role',
     cell: ({ row }) => row.original.Role ?? '-',
+  },
+  {
+    accessorKey: 'Status',
+    header: 'Status',
+    cell: ({ row }) =>
+      row.original.TodayStatus !== 'N' ? (
+        <AttendanceCell value={row.original.TodayStatus} />
+      ) : (
+        <p className="text-center">—</p>
+      ),
   },
   {
     accessorKey: 'Email',
@@ -163,23 +164,15 @@ export const staffColumns = () => [
   {
     id: 'actions',
     header: 'Actions',
-    cell: ({ row }) => (
+    cell: () => (
       <div className="flex gap-2">
         {/* Mail */}
-        <Button
-          size="icon"
-          variant="outline"
-          // onClick={() => onMail(row.original.StudentID)}
-        >
+        <Button size="icon" variant="outline">
           <Mail className="h-4 w-4" />
         </Button>
 
         {/* Message */}
-        <Button
-          size="icon"
-          variant="outline"
-          // onClick={() => onMessage(row.original.StudentID)}
-        >
+        <Button size="icon" variant="outline">
           <MessageSquare className="h-4 w-4" />
         </Button>
       </div>

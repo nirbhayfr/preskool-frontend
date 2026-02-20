@@ -10,6 +10,13 @@ export const getTeacherSalaryListById = async (id) => {
   return data.data
 }
 
+export const bulkMarkTeacherSalaryPaid = async (teacherIds) => {
+  const { data } = await api.post('/teacher-salary/bulk-mark-paid', {
+    teacherIds,
+  })
+  return data
+}
+
 export const createTeacherSalary = async (payload) => {
   const { data } = await api.post('/teacher-salary', payload)
   return data

@@ -42,10 +42,6 @@ export default function TeacherSalaryPage() {
   const [paidLeaves, setPaidLeaves] = useState(0)
   const { mutate: createSalary } = useCreateTeacherSalary()
 
-  const [salaryOverrides, setSalaryOverrides] = useState({})
-  const [deductionOverrides, setDeductionOverrides] = useState({})
-  const [allowanceOverrides, setAllowanceOverrides] = useState({})
-
   const { data, isLoading, error } = useAllTeachersMonthlySummary(month)
 
   const tableData = useMemo(() => data?.data ?? [], [data])
@@ -55,14 +51,17 @@ export default function TeacherSalaryPage() {
     return new Date(Number(year), Number(monthStr), 0).getDate()
   }, [month])
 
-  useEffect(() => {
-    setSalaryOverrides({})
-    setDeductionOverrides({})
-    setAllowanceOverrides({})
-  }, [month])
+  // ✅ Single editable state
+  const [rows, setRows] = useState([])
 
-  const calculatedRows = useMemo(() => {
-    return tableData.map((row) => {
+  // Initialize rows when data changes
+  useEffect(() => {
+    if (!tableData.length) {
+      setRows([])
+      return
+    }
+
+    const mapped = tableData.map((row) => {
       const baseSalary = row.teacher?.salary ?? 0
       const absent = row.summary?.AbsentDays ?? 0
       const halfDays = row.summary?.HalfDays ?? 0
@@ -70,7 +69,6 @@ export default function TeacherSalaryPage() {
 
       const perDaySalary = baseSalary / daysInMonth
 
-      // Leave conversion
       const halfFromLate = Math.floor(lateDays / 2)
       const totalHalfDays = halfDays + halfFromLate
       const leaveFromHalf = Math.floor(totalHalfDays / 2)
@@ -78,103 +76,56 @@ export default function TeacherSalaryPage() {
 
       const effectiveLeaves = Math.max(totalLeaves - paidLeaves, 0)
 
-      const calculatedDeduction = perDaySalary * effectiveLeaves
-
-      const deduction = deductionOverrides[row.teacherId] ?? calculatedDeduction
-
-      const allowance = allowanceOverrides[row.teacherId] ?? 0
-
-      const calculatedFinalSalary = Math.max(baseSalary + allowance - deduction, 0)
-
-      const finalSalary = salaryOverrides[row.teacherId] ?? calculatedFinalSalary
+      const deduction = perDaySalary * effectiveLeaves
+      const finalSalary = Math.max(baseSalary - deduction, 0)
 
       return {
         ...row,
         baseSalary,
-        perDaySalary,
         totalLeaves,
         effectiveLeaves,
-        allowance,
+        allowance: 0,
         deduction,
         finalSalary,
       }
     })
-  }, [
-    tableData,
-    paidLeaves,
-    salaryOverrides,
-    deductionOverrides,
-    allowanceOverrides,
-    daysInMonth,
-  ])
 
-  const handleSalaryChange = (teacherId, value) => {
-    const teacherRow = calculatedRows.find((r) => r.teacherId === teacherId)
-    if (!teacherRow) return
+    setRows(mapped)
+  }, [tableData, daysInMonth, paidLeaves])
 
-    const base = teacherRow.baseSalary
-    const allowance = teacherRow.allowance
+  // ✅ Stable row updater
+  const updateRow = (teacherId, field, value) => {
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.teacherId !== teacherId) return row
 
-    const newFinal = Math.max(0, Number(value) || 0)
+        const updated = {
+          ...row,
+          [field]: Number(value) || 0,
+        }
 
-    const newDeduction = Math.max(base + allowance - newFinal, 0)
+        if (field === 'allowance' || field === 'deduction') {
+          updated.finalSalary = Math.max(
+            updated.baseSalary + updated.allowance - updated.deduction,
+            0
+          )
+        }
 
-    setSalaryOverrides((prev) => ({
-      ...prev,
-      [teacherId]: newFinal,
-    }))
+        if (field === 'finalSalary') {
+          updated.deduction = Math.max(
+            updated.baseSalary + updated.allowance - updated.finalSalary,
+            0
+          )
+        }
 
-    setDeductionOverrides((prev) => ({
-      ...prev,
-      [teacherId]: Number(newDeduction.toFixed(2)),
-    }))
-  }
-
-  const handleDeductionChange = (teacherId, value) => {
-    const teacherRow = calculatedRows.find((r) => r.teacherId === teacherId)
-    if (!teacherRow) return
-
-    const base = teacherRow.baseSalary
-    const allowance = teacherRow.allowance
-    const newDeduction = Math.max(0, Number(value) || 0)
-
-    const newFinal = Math.max(base + allowance - newDeduction, 0)
-
-    setDeductionOverrides((prev) => ({
-      ...prev,
-      [teacherId]: Number(newDeduction.toFixed(2)),
-    }))
-
-    setSalaryOverrides((prev) => ({
-      ...prev,
-      [teacherId]: Number(newFinal.toFixed(2)),
-    }))
-  }
-
-  const handleAllowanceChange = (teacherId, value) => {
-    const teacherRow = calculatedRows.find((r) => r.teacherId === teacherId)
-    if (!teacherRow) return
-
-    const base = teacherRow.baseSalary
-    const deduction = teacherRow.deduction
-    const newAllowance = Math.max(0, Number(value) || 0)
-
-    const newFinal = Math.max(base + newAllowance - deduction, 0)
-
-    setAllowanceOverrides((prev) => ({
-      ...prev,
-      [teacherId]: Number(newAllowance.toFixed(2)),
-    }))
-
-    setSalaryOverrides((prev) => ({
-      ...prev,
-      [teacherId]: Number(newFinal.toFixed(2)),
-    }))
+        return updated
+      })
+    )
   }
 
   const handleCreateSalaries = () => {
-    const payload = calculatedRows
-      .filter((row) => Number(row.finalSalary) > 0 && !isNaN(Number(row.finalSalary)))
+    const payload = rows
+      .filter((row) => Number(row.finalSalary) > 0)
       .map((row) => ({
         teacherId: row.teacherId,
         basicSalary: Number(row.baseSalary.toFixed(2)),
@@ -185,14 +136,9 @@ export default function TeacherSalaryPage() {
         isPaid: false,
       }))
 
-    console.log('Salary Payload:', payload)
     createSalary(payload, {
-      onSuccess: () => {
-        toast.success('Salary Created successfully')
-      },
-      onError: () => {
-        toast.error('Failed to create salary')
-      },
+      onSuccess: () => toast.success('Salary Created successfully'),
+      onError: () => toast.error('Failed to create salary'),
     })
   }
 
@@ -210,10 +156,7 @@ export default function TeacherSalaryPage() {
       {
         header: 'Status',
         cell: () => (
-          <Badge
-            variant="secondary"
-            className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-          >
+          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
             Active
           </Badge>
         ),
@@ -267,12 +210,15 @@ export default function TeacherSalaryPage() {
       {
         header: 'Total Leaves',
         accessorFn: (row) => row.totalLeaves,
+        cell: ({ getValue }) => (
+          <span className="font-semibold text-red-500">{getValue()}</span>
+        ),
       },
       {
         header: 'Effective Leaves',
         accessorFn: (row) => row.effectiveLeaves,
         cell: ({ getValue }) => (
-          <span className="font-semibold text-red-500">{getValue()}</span>
+          <span className="font-semibold text-red-700">{getValue()}</span>
         ),
       },
       {
@@ -280,14 +226,13 @@ export default function TeacherSalaryPage() {
         cell: ({ row }) => (
           <Input
             type="number"
-            step="100"
             min="0"
+            step="100"
             value={Number(row.original.allowance ?? 0).toFixed(2)}
-            onChange={(e) => {
-              const value = Math.max(0, Number(e.target.value) || 0)
-              handleAllowanceChange(row.original.teacherId, Number(value.toFixed(2)))
-            }}
-            className="w-32 font-semibold"
+            onChange={(e) =>
+              updateRow(row.original.teacherId, 'allowance', e.target.value)
+            }
+            className="w-28 font-semibold text-emerald-600"
           />
         ),
       },
@@ -296,14 +241,13 @@ export default function TeacherSalaryPage() {
         cell: ({ row }) => (
           <Input
             type="number"
-            step="100"
             min="0"
+            step="100"
             value={Number(row.original.deduction ?? 0).toFixed(2)}
-            onChange={(e) => {
-              const value = Math.max(0, Number(e.target.value) || 0)
-              handleDeductionChange(row.original.teacherId, Number(value.toFixed(2)))
-            }}
-            className="w-32 font-semibold"
+            onChange={(e) =>
+              updateRow(row.original.teacherId, 'deduction', e.target.value)
+            }
+            className="w-28 font-semibold text-destructive"
           />
         ),
       },
@@ -312,14 +256,13 @@ export default function TeacherSalaryPage() {
         cell: ({ row }) => (
           <Input
             type="number"
-            step="100"
             min="0"
+            step="100"
             value={Number(row.original.finalSalary ?? 0).toFixed(2)}
-            onChange={(e) => {
-              const value = Math.max(0, Number(e.target.value) || 0)
-              handleSalaryChange(row.original.teacherId, Number(value.toFixed(2)))
-            }}
-            className="w-32 font-semibold"
+            onChange={(e) =>
+              updateRow(row.original.teacherId, 'finalSalary', e.target.value)
+            }
+            className="w-32 font-semibold text-blue-200"
           />
         ),
       },
@@ -360,7 +303,7 @@ export default function TeacherSalaryPage() {
         </CardContent>
       </Card>
 
-      <TableLayout columns={columns} data={calculatedRows} />
+      <TableLayout columns={columns} data={rows} />
 
       <div className="flex justify-end">
         <Button onClick={handleCreateSalaries}>Create Salaries</Button>

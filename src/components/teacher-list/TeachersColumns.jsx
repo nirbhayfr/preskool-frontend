@@ -1,18 +1,8 @@
 import { Button } from '@/components/ui/button'
-import { Mail, MessageSquare, Pencil, Trash } from 'lucide-react'
+import { Mail, MessageSquare } from 'lucide-react'
 
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog'
 import { Link } from 'react-router-dom'
+import { AttendanceCell } from '../student-attendance/AttendanceCell'
 
 const formatValue = (value) => value ?? '—'
 
@@ -54,6 +44,16 @@ export const teachersColumns = () => [
     accessorKey: 'Gender',
     header: 'Gender',
     cell: ({ row }) => formatValue(row.original.Gender),
+  },
+  {
+    accessorKey: 'Status',
+    header: 'Status',
+    cell: ({ row }) =>
+      row.original.TodayStatus !== 'N' ? (
+        <AttendanceCell value={row.original.TodayStatus} />
+      ) : (
+        <p className="text-center">—</p>
+      ),
   },
   {
     accessorKey: 'DateOfBirth',
@@ -159,7 +159,7 @@ export const teachersColumns = () => [
   {
     id: 'actions',
     header: 'Actions',
-    cell: ({ row }) => (
+    cell: () => (
       <div className="flex gap-2">
         {/* Mail */}
         <Button
