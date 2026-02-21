@@ -14,6 +14,7 @@ import {
   CalendarDays,
   ListCheck,
   Banknote,
+  BookMarked,
 } from 'lucide-react'
 
 import {
@@ -160,6 +161,14 @@ const data = {
       icon: CalendarDays,
     },
   ],
+
+  library: [
+    {
+      title: 'Book List',
+      url: '/book-list',
+      icon: BookMarked,
+    },
+  ],
 }
 
 function getSidebarDataByRole(role) {
@@ -175,6 +184,7 @@ function getSidebarDataByRole(role) {
       ),
       fees: [], // teachers don’t see fees
       salary: [],
+      library: [],
     }
   }
 
@@ -187,6 +197,7 @@ function getSidebarDataByRole(role) {
       fees: [],
       salary: [],
       additional: [],
+      library: [],
     }
   }
 
@@ -257,6 +268,10 @@ export function AppSidebar({ ...props }) {
 
         {sidebarData.fees?.length > 0 && (
           <NavSecondary items={sidebarData.fees} name="fees" />
+        )}
+
+        {sidebarData.library?.length > 0 && (
+          <NavSecondary items={sidebarData.library} name="library" />
         )}
       </SidebarContent>
 

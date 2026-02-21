@@ -53,6 +53,8 @@ import ClassTimeTable from './pages/ClassTimeTable'
 import PayTeacherSalary from './pages/PayTeacherSalary'
 import PayStaffSalary from './pages/PayStaffSalary'
 
+import BookList from './pages/BookList'
+
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
@@ -130,9 +132,10 @@ function App() {
 
               <Route path="/teacher-salary" element={<TeacherSalaryPage />} />
               <Route path="/staff-salary" element={<StaffSalaryPage />} />
-
               <Route path="/pay-teacher-salary" element={<PayTeacherSalary />} />
               <Route path="/pay-staff-salary" element={<PayStaffSalary />} />
+
+              <Route path="/book-list" element={<BookList />} />
             </Route>
           </Route>
         </Routes>
