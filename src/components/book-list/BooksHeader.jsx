@@ -17,7 +17,7 @@ export default function BooksHeader({
   setIsIsbnOpen,
 }) {
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <h1 className="text-xl font-semibold">Books Management</h1>
 
       <div className="flex flex-wrap items-center gap-2">

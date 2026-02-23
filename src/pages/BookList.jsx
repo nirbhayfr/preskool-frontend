@@ -79,6 +79,7 @@ function BookList() {
           purchasePrice: formData.PurchasePrice,
           vendorName: formData.VendorName,
           status: formData.Status,
+          bookImage: formData.BookImage,
         },
       },
       {
@@ -113,12 +114,12 @@ function BookList() {
         purchasePrice: formData.PurchasePrice,
         vendorName: formData.VendorName,
         status: formData.AvailableCopies > 0 ? 'Available' : 'Not Available',
+        bookImage: formData.BookImage,
       },
       {
         onSuccess: () => {
           toast.success('Book added successfully')
           setIsAddOpen(false)
-          QueryClient.invalidateQueries({ queryKey: ['books'] })
         },
         onError: (error) => {
           toast.error(error?.response?.data?.message || 'Failed to add book')

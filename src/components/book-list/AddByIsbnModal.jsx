@@ -72,22 +72,21 @@ export default function AddByIsbnModal({ open, onClose, onSubmit }) {
         PurchasePrice: '',
         VendorName: '',
         Status: 'Available',
+        BookImage: bookData.cover?.medium || '',
       }
 
       await onSubmit(payload)
 
-      toast.success('Book added to inventory')
+      // toast.success('Book added to inventory')
       setBookData(null)
       setIsbn('')
       onClose()
     } catch {
-      toast.error('Failed to add book')
+      // toast.error('Failed to add book')
     } finally {
       setAdding(false)
     }
   }
-
-  console.log(bookData?.cover)
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

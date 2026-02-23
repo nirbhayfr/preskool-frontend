@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -26,6 +32,7 @@ export default function EditBookModal({ open, onClose, book, onSubmit, loading }
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Book</DialogTitle>
+          <DialogDescription>Edit New Book</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
@@ -36,6 +43,15 @@ export default function EditBookModal({ open, onClose, book, onSubmit, loading }
               id="BookTitle"
               name="BookTitle"
               value={form.BookTitle || ''}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label>Book Image</Label>
+            <Input
+              name="BookImage"
+              value={form.BookImage || ''}
               onChange={handleChange}
             />
           </div>

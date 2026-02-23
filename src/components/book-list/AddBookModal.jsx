@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -8,6 +14,7 @@ export default function AddBookModal({ open, onClose, onSubmit, loading }) {
   const initialState = {
     ISBN: '',
     BookTitle: '',
+    BookImage: '',
     AuthorName: '',
     PublisherName: '',
     Category: '',
@@ -57,6 +64,7 @@ export default function AddBookModal({ open, onClose, onSubmit, loading }) {
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Book</DialogTitle>
+          <DialogDescription>Add New Book</DialogDescription>
         </DialogHeader>
 
         <form
@@ -78,6 +86,11 @@ export default function AddBookModal({ open, onClose, onSubmit, loading }) {
               onChange={handleChange}
               required
             />
+          </div>
+
+          <div>
+            <Label>Book Image</Label>
+            <Input name="BookImage" value={formData.BookImage} onChange={handleChange} />
           </div>
 
           {/* Author */}

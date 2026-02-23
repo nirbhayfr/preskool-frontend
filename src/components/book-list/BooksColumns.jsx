@@ -26,6 +26,31 @@ export const booksColumns = (onEdit) => [
     header: 'Author',
   },
   {
+    accessorKey: 'BookImage',
+    header: '',
+    size: 70, // if using tanstack table
+    cell: ({ row }) => {
+      const { BookImage, BookTitle } = row.original
+
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        BookTitle || 'Book'
+      )}&background=random&color=fff&size=128`
+
+      return (
+        <div className="w-[60px] min-w-[60px] flex justify-center shrink-0">
+          <img
+            src={BookImage || avatarUrl}
+            alt={BookTitle}
+            className="h-12 w-10 object-cover rounded-xs border"
+            onError={(e) => {
+              e.currentTarget.src = avatarUrl
+            }}
+          />
+        </div>
+      )
+    },
+  },
+  {
     accessorKey: 'Category',
     header: 'Category',
   },
