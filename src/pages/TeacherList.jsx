@@ -110,6 +110,8 @@ function TeacherList() {
   if (isLoading) return <CircleLoader />
   if (error) return 'Error loading students'
 
+  console.log(data)
+
   return (
     <section className="p-6 capitalize">
       <TeachersHeader

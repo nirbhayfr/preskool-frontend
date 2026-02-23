@@ -1,4 +1,4 @@
-import { Search, ArrowUpDown, Download, Filter } from 'lucide-react'
+import { Search, ArrowUpDown, Download, Filter, ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,6 +13,8 @@ export default function BooksHeader({
   onSortChange,
   onExport,
   onFilterChange,
+  setIsAddOpen,
+  setIsIsbnOpen,
 }) {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -87,6 +89,25 @@ export default function BooksHeader({
           <Download className="h-4 w-4" />
           Export Excel
         </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="text-white flex items-center gap-2">
+              Add Book
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => setIsAddOpen(true)}>
+              Add Manually
+            </DropdownMenuItem>
+
+            <DropdownMenuItem onClick={() => setIsIsbnOpen(true)}>
+              Add by ISBN Number
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )

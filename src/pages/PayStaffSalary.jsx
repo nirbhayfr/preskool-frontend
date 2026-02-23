@@ -14,21 +14,30 @@ import {
 } from '@/hooks/useStaffSalary'
 import { toast } from 'sonner'
 
-function PayStaffSalaryHeader({ month, onMonthChange, total }) {
+function PayStaffSalaryHeader({ month, onMonthChange, total, search, onSearchChange }) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-      <h2 className="text-xl font-semibold tracking-tight">
-        Pay Staff Salaries
-        {total != null && (
-          <span className="ml-2 text-sm text-muted-foreground">({total})</span>
-        )}
-      </h2>
+    <div className="flex flex-col gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 className="text-xl font-semibold tracking-tight">
+          Pay Staff Salaries
+          {total != null && (
+            <span className="ml-2 text-sm text-muted-foreground">({total})</span>
+          )}
+        </h2>
+
+        <Input
+          type="month"
+          value={month}
+          onChange={(e) => onMonthChange(e.target.value)}
+          className="w-full sm:w-48"
+        />
+      </div>
 
       <Input
-        type="month"
-        value={month}
-        onChange={(e) => onMonthChange(e.target.value)}
-        className="w-full sm:w-48"
+        placeholder="Search by Staff ID or Name..."
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="w-full sm:w-72"
       />
     </div>
   )
@@ -42,6 +51,7 @@ const getCurrentMonth = () => {
 }
 
 export default function PayStaffSalaryPage() {
+  const [search, setSearch] = useState('')
   const [month, setMonth] = useState(getCurrentMonth())
 
   const { data, isLoading, error } = useStaffSalaries()
@@ -51,8 +61,16 @@ export default function PayStaffSalaryPage() {
   const salaries = data?.data ?? []
 
   const filteredData = useMemo(() => {
-    return salaries.filter((s) => s.SalaryMonth === month)
-  }, [salaries, month])
+    return salaries.filter((s) => {
+      const matchesMonth = s.SalaryMonth === month
+
+      const matchesSearch =
+        s.FullName?.toLowerCase().includes(search.toLowerCase()) ||
+        String(s.StaffID).includes(search)
+
+      return matchesMonth && matchesSearch
+    })
+  }, [salaries, month, search])
 
   const handlePay = useCallback(
     (salary) => {
@@ -173,6 +191,8 @@ export default function PayStaffSalaryPage() {
         month={month}
         onMonthChange={setMonth}
         total={filteredData.length}
+        search={search}
+        onSearchChange={setSearch}
       />
 
       <Card>

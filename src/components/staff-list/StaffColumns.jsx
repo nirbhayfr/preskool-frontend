@@ -46,14 +46,14 @@ export const staffColumns = () => [
     cell: ({ row }) => row.original.Role ?? '-',
   },
   {
-    accessorKey: 'Status',
-    header: 'Status',
-    cell: ({ row }) =>
-      row.original.TodayStatus !== 'N' ? (
-        <AttendanceCell value={row.original.TodayStatus} />
-      ) : (
-        <p className="text-center">—</p>
-      ),
+    accessorKey: 'TodayStatus',
+    header: 'Today Status',
+    cell: ({ row }) => {
+      const value =
+        row.original.TodayStatus === 'N' ? undefined : row.original.TodayStatus
+
+      return <AttendanceCell value={value} />
+    },
   },
   {
     accessorKey: 'Email',

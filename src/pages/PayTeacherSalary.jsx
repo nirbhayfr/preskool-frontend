@@ -14,26 +14,34 @@ import {
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
 
-function PayTeacherSalaryHeader({ month, onMonthChange, total }) {
+function PayTeacherSalaryHeader({ month, onMonthChange, total, search, onSearchChange }) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-      <h2 className="text-xl font-semibold tracking-tight">
-        Pay Teacher Salaries
-        {total != null && (
-          <span className="ml-2 text-sm text-muted-foreground">({total})</span>
-        )}
-      </h2>
+    <div className="flex flex-col gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 className="text-xl font-semibold tracking-tight">
+          Pay Teacher Salaries
+          {total != null && (
+            <span className="ml-2 text-sm text-muted-foreground">({total})</span>
+          )}
+        </h2>
+
+        <Input
+          type="month"
+          value={month}
+          onChange={(e) => onMonthChange(e.target.value)}
+          className="w-full sm:w-48"
+        />
+      </div>
 
       <Input
-        type="month"
-        value={month}
-        onChange={(e) => onMonthChange(e.target.value)}
-        className="w-full sm:w-48"
+        placeholder="Search by Teacher ID or Name..."
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="w-full sm:w-72"
       />
     </div>
   )
 }
-
 const getCurrentMonth = () => {
   const now = new Date()
   const year = now.getFullYear()
@@ -42,6 +50,7 @@ const getCurrentMonth = () => {
 }
 
 export default function PayTeacherSalaryPage() {
+  const [search, setSearch] = useState('')
   const [month, setMonth] = useState(getCurrentMonth())
 
   const { data, isLoading, error } = useTeacherSalaries()
@@ -51,8 +60,16 @@ export default function PayTeacherSalaryPage() {
   const salaries = data?.data ?? []
 
   const filteredData = useMemo(() => {
-    return salaries.filter((s) => s.SalaryMonth === month)
-  }, [salaries, month])
+    return salaries.filter((s) => {
+      const matchesMonth = s.SalaryMonth === month
+
+      const matchesSearch =
+        s.FullName?.toLowerCase().includes(search.toLowerCase()) ||
+        String(s.TeacherID).includes(search)
+
+      return matchesMonth && matchesSearch
+    })
+  }, [salaries, month, search])
 
   const handlePay = useCallback(
     (salary) => {
@@ -83,6 +100,7 @@ export default function PayTeacherSalaryPage() {
           <span className="font-medium text-primary">{row.original.TeacherID}</span>
         ),
       },
+      { header: 'Name', accessorKey: 'FullName' },
       { header: 'Month', accessorKey: 'SalaryMonth' },
       {
         header: 'Basic',
@@ -113,6 +131,12 @@ export default function PayTeacherSalaryPage() {
         cell: ({ getValue }) => (
           <span className="font-semibold">₹ {Number(getValue()).toLocaleString()}</span>
         ),
+      },
+      {
+        header: 'Payment Date',
+        accessorKey: 'PaymentDate',
+        cell: ({ getValue }) =>
+          getValue() ? new Date(getValue()).toLocaleDateString() : '-',
       },
       {
         header: 'Status',
@@ -161,12 +185,16 @@ export default function PayTeacherSalaryPage() {
   if (isLoading) return <CircleLoader />
   if (error) return <div className="text-destructive">Error loading teacher salaries</div>
 
+  console.log(data)
+
   return (
     <section className="p-6 space-y-6">
       <PayTeacherSalaryHeader
         month={month}
         onMonthChange={setMonth}
         total={filteredData.length}
+        search={search}
+        onSearchChange={setSearch}
       />
 
       <Card>

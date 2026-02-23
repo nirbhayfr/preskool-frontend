@@ -105,6 +105,8 @@ function StaffList() {
   if (isLoading) return <CircleLoader />
   if (error) return 'Error loading staff'
 
+  console.log(data)
+
   return (
     <section className="p-6 capitalize">
       <StaffHeader

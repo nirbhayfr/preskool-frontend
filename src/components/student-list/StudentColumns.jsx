@@ -43,6 +43,36 @@ export const studentsColumns = () => [
     header: 'Full Name',
     cell: ({ row }) => <span className="capitalize">{row.original.FullName}</span>,
   },
+  {
+    accessorKey: 'Status',
+    header: 'Status',
+    cell: ({ row }) => {
+      const status = row.original.Status
+
+      return (
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-semibold
+          ${
+            status === 'Active'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
+          }`}
+        >
+          {status ?? 'Inactive'}
+        </span>
+      )
+    },
+  },
+  {
+    accessorKey: 'TodayStatus',
+    header: 'Today Status',
+    cell: ({ row }) => {
+      const value =
+        row.original.TodayStatus === 'N' ? undefined : row.original.TodayStatus
+
+      return <AttendanceCell value={value} />
+    },
+  },
   { accessorKey: 'Gender', header: 'Gender' },
 
   {
@@ -54,16 +84,7 @@ export const studentsColumns = () => [
 
   { accessorKey: 'ClassID', header: 'Class' },
   { accessorKey: 'SectionID', header: 'Section' },
-  {
-    accessorKey: 'Status',
-    header: 'Status',
-    cell: ({ row }) =>
-      row.original.TodayStatus !== 'N' ? (
-        <AttendanceCell value={row.original.TodayStatus} />
-      ) : (
-        <p className="text-center">—</p>
-      ),
-  },
+
   {
     accessorKey: 'RollNo',
     header: 'Roll No',
@@ -75,45 +96,25 @@ export const studentsColumns = () => [
     cell: ({ row }) => row.original.AdmissionNo ?? '—',
   },
 
-  // {
-  //   accessorKey: 'JoiningDate',
-  //   header: 'Joining Date',
-  //   cell: ({ row }) =>
-  //     row.original.JoiningDate
-  //       ? new Date(row.original.JoiningDate).toLocaleDateString()
-  //       : '—',
-  // },
-
-  // {
-  //   accessorKey: 'Program',
-  //   header: 'Program',
-  //   cell: ({ row }) => row.original.Program ?? '—',
-  // },
-  // {
-  //   accessorKey: 'YearSemester',
-  //   header: 'Year / Semester',
-  //   cell: ({ row }) => row.original.YearSemester ?? '—',
-  // },
-  // {
-  //   accessorKey: 'PreviousRecord',
-  //   header: 'Previous Record',
-  //   cell: ({ row }) => row.original.PreviousRecord ?? '—',
-  // },
-  // {
-  //   accessorKey: 'GPA',
-  //   header: 'GPA',
-  //   cell: ({ row }) => row.original.GPA ?? '—',
-  // },
+  {
+    accessorKey: 'GuardianPhoto',
+    header: 'Guardian Photo',
+    cell: ({ row }) =>
+      row.original.GuardianPhoto ? (
+        <img
+          src={row.original.GuardianPhoto}
+          className="h-10 w-10 rounded-full border"
+          alt="Guardian"
+        />
+      ) : (
+        '—'
+      ),
+  },
   {
     accessorKey: 'Attendance',
     header: 'Attendance',
     cell: ({ row }) => row.original.Attendance ?? '—',
   },
-  // {
-  //   accessorKey: 'Subjects',
-  //   header: 'Subjects',
-  //   cell: ({ row }) => row.original.Subjects ?? '—',
-  // },
 
   { accessorKey: 'Address', header: 'Address' },
   { accessorKey: 'ContactNumber', header: 'Contact No' },

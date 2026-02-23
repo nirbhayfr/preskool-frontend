@@ -194,10 +194,10 @@ export default function StaffSalaryPage() {
 
   const columns = useMemo(
     () => [
-      {
-        header: 'Status',
-        cell: () => <Badge className="bg-emerald-100 text-emerald-700">Active</Badge>,
-      },
+      // {
+      //   header: 'Status',
+      //   cell: () => <Badge className="bg-emerald-100 text-emerald-700">Active</Badge>,
+      // },
       {
         header: 'Staff ID',
         accessorKey: 'staffId',

@@ -153,14 +153,14 @@ export default function TeacherSalaryPage() {
 
   const columns = useMemo(
     () => [
-      {
-        header: 'Status',
-        cell: () => (
-          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
-            Active
-          </Badge>
-        ),
-      },
+      // {
+      //   header: 'Status',
+      //   cell: () => (
+      //     <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+      //       Active
+      //     </Badge>
+      //   ),
+      // },
       {
         header: 'Teacher ID',
         accessorKey: 'teacherId',

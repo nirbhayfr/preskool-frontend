@@ -15,6 +15,7 @@ import {
   ListCheck,
   Banknote,
   BookMarked,
+  Package,
 } from 'lucide-react'
 
 import {
@@ -159,6 +160,11 @@ const data = {
       title: 'Class TimeTable',
       url: '/class-timetable',
       icon: CalendarDays,
+    },
+    {
+      title: 'Inventory',
+      url: '/inventory',
+      icon: Package,
     },
   ],
 

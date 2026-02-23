@@ -54,6 +54,7 @@ import PayTeacherSalary from './pages/PayTeacherSalary'
 import PayStaffSalary from './pages/PayStaffSalary'
 
 import BookList from './pages/BookList'
+import InventoryPage from './pages/InventoryPage'
 
 function App() {
   return (
@@ -129,6 +130,7 @@ function App() {
               />
 
               <Route path="/exam-result" element={<ExamResultPage />} />
+              <Route path="inventory" element={<InventoryPage />} />
 
               <Route path="/teacher-salary" element={<TeacherSalaryPage />} />
               <Route path="/staff-salary" element={<StaffSalaryPage />} />
