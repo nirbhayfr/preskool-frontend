@@ -16,6 +16,8 @@ import {
   Banknote,
   BookMarked,
   Package,
+  ReceiptText,
+  BookOpenCheck,
 } from 'lucide-react'
 
 import {
@@ -126,6 +128,11 @@ const data = {
       url: '/fee-structure',
       icon: CircleDollarSign,
     },
+    {
+      title: 'Pending Fee',
+      url: '/pending-fees',
+      icon: ReceiptText,
+    },
   ],
   salary: [
     {
@@ -173,6 +180,11 @@ const data = {
       title: 'Book List',
       url: '/book-list',
       icon: BookMarked,
+    },
+    {
+      title: 'Book Issues',
+      url: '/book-issues',
+      icon: BookOpenCheck,
     },
   ],
 }

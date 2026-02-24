@@ -44,6 +44,7 @@ import StaffLeaveAndAttendance from './components/staff-details/StaffLeaveAndAtt
 
 import FeeStructureAndInventory from './pages/FeeStructureAndInventory'
 import AddFeeStructurePage from './components/fee-structure-and-inventory/AddFeeStructurePage'
+import PendingFeesPage from './pages/PendingFeesPage'
 
 import TeacherSalaryPage from './pages/TeacherSalaryPage'
 import StaffSalaryPage from './pages/StaffSalaryPage'
@@ -55,6 +56,7 @@ import PayStaffSalary from './pages/PayStaffSalary'
 
 import BookList from './pages/BookList'
 import InventoryPage from './pages/InventoryPage'
+import BookIssues from './pages/BookIssues'
 
 function App() {
   return (
@@ -128,6 +130,7 @@ function App() {
                 path="/fee-structure/edit/:classId"
                 element={<AddFeeStructurePage />}
               />
+              <Route path="/pending-fees" element={<PendingFeesPage />} />
 
               <Route path="/exam-result" element={<ExamResultPage />} />
               <Route path="inventory" element={<InventoryPage />} />
@@ -138,6 +141,7 @@ function App() {
               <Route path="/pay-staff-salary" element={<PayStaffSalary />} />
 
               <Route path="/book-list" element={<BookList />} />
+              <Route path="/book-issues" element={<BookIssues />} />
             </Route>
           </Route>
         </Routes>
