@@ -3,6 +3,7 @@ import { Mail, MessageSquare } from 'lucide-react'
 
 import { Link } from 'react-router-dom'
 import { AttendanceCell } from '../student-attendance/AttendanceCell'
+import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
 
 export const staffColumns = () => [
   {
@@ -20,19 +21,42 @@ export const staffColumns = () => [
 
   {
     accessorKey: 'ProfilePhoto',
-    header: 'Profile',
-    cell: ({ row }) => (
-      <img
-        src={
-          row.original.ProfilePhoto ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            row.original.FullName || 'Staff'
-          )}`
-        }
-        className="h-10 w-10 rounded-full object-cover border"
-        alt="Profile"
-      />
-    ),
+    header: 'Profile Photo',
+    cell: ({ row }) => {
+      const { ProfilePhoto, FullName } = row.original
+
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        FullName || 'Staff'
+      )}&size=256`
+
+      const imageUrl = ProfilePhoto || avatarUrl
+
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <img
+              src={imageUrl}
+              alt={FullName}
+              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
+              onError={(e) => {
+                e.currentTarget.src = avatarUrl
+              }}
+            />
+          </DialogTrigger>
+
+          <DialogContent className="max-w-md p-4">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={imageUrl}
+                alt={FullName}
+                className="max-h-[70vh] rounded-md object-contain"
+              />
+              <p className="font-medium">{FullName}</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
   },
 
   {

@@ -38,6 +38,7 @@ export function AddEditInventoryDialog({ item, onClose }) {
     condition: '',
     lastMaintenanceDate: '',
     status: 'Active',
+    inventoryImage: '',
   })
 
   useEffect(() => {
@@ -55,6 +56,7 @@ export function AddEditInventoryDialog({ item, onClose }) {
           ? item.LastMaintenanceDate.split('T')[0]
           : '',
         status: item.Status ?? 'Active',
+        inventoryImage: item.InventoryImage ?? '',
       })
     }
   }, [item, isEdit])
@@ -76,6 +78,7 @@ export function AddEditInventoryDialog({ item, onClose }) {
       condition: form.condition,
       lastMaintenanceDate: form.lastMaintenanceDate || null,
       status: form.status,
+      inventoryImage: form.inventoryImage,
     }
 
     if (isEdit) {
@@ -120,6 +123,14 @@ export function AddEditInventoryDialog({ item, onClose }) {
             <Input
               value={form.itemName}
               onChange={(e) => handleChange('itemName', e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label>Inventory Image</Label>
+            <Input
+              value={form.inventoryImage}
+              onChange={(e) => handleChange('inventoryImage', e.target.value)}
             />
           </div>
 

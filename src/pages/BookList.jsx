@@ -131,6 +131,8 @@ function BookList() {
   if (isLoading) return <CircleLoader />
   if (error) return <div>Error loading books</div>
 
+  console.log(data)
+
   return (
     <section className="p-6 capitalize">
       <BooksHeader

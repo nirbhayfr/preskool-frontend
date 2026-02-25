@@ -14,31 +14,88 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export const bookIssuesColumns = (onDelete, onEdit) => [
   {
     accessorKey: 'BookTitle',
     header: 'Book',
   },
+
+  {
+    accessorKey: 'IssuedToId',
+    header: 'Issued To ID',
+    cell: ({ row }) => (
+      <Link
+        to={`/student-details/${row.original.IssuedToId}`}
+        className="text-primary font-medium"
+      >
+        {row.original.IssuedToId}
+      </Link>
+    ),
+  },
+
   {
     accessorKey: 'IssuedToType',
     header: 'Type',
   },
+
   {
     accessorKey: 'IssueDate',
     header: 'Issue Date',
     cell: ({ row }) => new Date(row.original.IssueDate).toLocaleDateString(),
   },
+
   {
     accessorKey: 'DueDate',
     header: 'Due Date',
     cell: ({ row }) => new Date(row.original.DueDate).toLocaleDateString(),
   },
+
+  {
+    accessorKey: 'ReturnDate',
+    header: 'Return Date',
+    cell: ({ row }) => {
+      const returnDate = row.original.ReturnDate
+
+      if (!returnDate) {
+        return <span className="text-muted-foreground">—</span>
+      }
+
+      return new Date(returnDate).toLocaleDateString()
+    },
+  },
+
   {
     accessorKey: 'FineAmount',
     header: 'Fine',
     cell: ({ row }) => `₹ ${row.original.FineAmount}`,
   },
+
+  // ✅ NEW — Fine Paid Status (only if fine > 0)
+  {
+    id: 'FinePaidStatus',
+    header: 'Fine Status',
+    cell: ({ row }) => {
+      const { FineAmount, FinePaid } = row.original
+
+      if (!FineAmount || Number(FineAmount) === 0) {
+        return <span className="text-muted-foreground">—</span>
+      }
+
+      return (
+        <Badge
+          variant="outline"
+          className={
+            FinePaid ? 'border-green-500 text-green-600' : 'border-red-500 text-red-600'
+          }
+        >
+          {FinePaid ? 'Paid' : 'Unpaid'}
+        </Badge>
+      )
+    },
+  },
+
   {
     accessorKey: 'IssueStatus',
     header: 'Status',
@@ -59,6 +116,7 @@ export const bookIssuesColumns = (onDelete, onEdit) => [
       )
     },
   },
+
   {
     header: 'Actions',
     cell: ({ row }) => {

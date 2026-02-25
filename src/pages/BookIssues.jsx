@@ -86,6 +86,8 @@ function BookIssues() {
   if (isLoading) return <CircleLoader />
   if (error) return <div>Error loading issues</div>
 
+  console.log(data)
+
   return (
     <section className="p-6">
       <BookIssuesHeader

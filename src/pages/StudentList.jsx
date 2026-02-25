@@ -6,8 +6,10 @@ import { useStudents } from '@/hooks/useStudents'
 import { toast } from 'sonner'
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import { handleExportPDF } from '@/utils/export'
+import IssueBookDialog from '@/components/book-issues/IssueBookDialog'
 
 function StudentList() {
+  const [selectedStudent, setSelectedStudent] = useState(null)
   const { data, isLoading, error } = useStudents()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -136,7 +138,18 @@ function StudentList() {
         onSortChange={setSortOrder}
         onExport={handleExport}
       />
-      <TableLayout columns={studentsColumns()} data={displayedStudents} />
+      <TableLayout
+        columns={studentsColumns(setSelectedStudent)}
+        data={displayedStudents}
+      />
+
+      {selectedStudent && (
+        <IssueBookDialog
+          student={selectedStudent}
+          open={!!selectedStudent}
+          onClose={() => setSelectedStudent(null)}
+        />
+      )}
     </section>
   )
 }

@@ -15,6 +15,8 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { useDeleteBook } from '@/hooks/useBook'
 import { toast } from 'sonner'
 
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+
 export const booksColumns = (onEdit) => [
   {
     accessorKey: 'BookTitle',
@@ -28,24 +30,40 @@ export const booksColumns = (onEdit) => [
   {
     accessorKey: 'BookImage',
     header: '',
-    size: 70, // if using tanstack table
+    size: 70,
     cell: ({ row }) => {
       const { BookImage, BookTitle } = row.original
 
       const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
         BookTitle || 'Book'
-      )}&background=random&color=fff&size=128`
+      )}&background=random&color=fff&size=256`
+
+      const imageUrl = BookImage || avatarUrl
 
       return (
         <div className="w-[60px] min-w-[60px] flex justify-center shrink-0">
-          <img
-            src={BookImage || avatarUrl}
-            alt={BookTitle}
-            className="h-12 w-10 object-cover rounded-xs border"
-            onError={(e) => {
-              e.currentTarget.src = avatarUrl
-            }}
-          />
+          <Dialog>
+            <DialogTrigger asChild>
+              <img
+                src={imageUrl}
+                alt={BookTitle}
+                className="h-12 w-10 object-cover rounded-sm border cursor-pointer hover:scale-105 transition"
+                onError={(e) => {
+                  e.currentTarget.src = avatarUrl
+                }}
+              />
+            </DialogTrigger>
+
+            <DialogContent className="max-w-3xl p-4">
+              <div className="flex justify-center">
+                <img
+                  src={imageUrl}
+                  alt={BookTitle}
+                  className="max-h-[80vh] object-contain rounded-md"
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       )
     },

@@ -53,6 +53,8 @@ export default function InventoryPage() {
   if (isLoading) return <CircleLoader />
   if (error) return <div>Error loading inventory</div>
 
+  console.log(data)
+
   return (
     <section className="p-6 space-y-6">
       <InventoryHeader

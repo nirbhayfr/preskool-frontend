@@ -28,9 +28,6 @@ export default function BookIssuesHeader({ onSearch, onMonthChange, month }) {
           className="w-[160px]"
           onChange={(e) => onMonthChange(e.target.value)}
         />
-
-        {/* Add Issue Button */}
-        <Button>+ Add Issue (Not Implemented Yet)</Button>
       </div>
     </div>
   )

@@ -11,6 +11,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function EditBookIssueModal({ open, onClose, issue, onSubmit, loading }) {
   const [formData, setFormData] = useState(null)
@@ -125,15 +132,24 @@ export default function EditBookIssueModal({ open, onClose, issue, onSubmit, loa
 
           <div>
             <Label>Status</Label>
-            <select
-              name="IssueStatus"
+            <Select
               value={formData.IssueStatus}
-              onChange={handleChange}
-              className="w-full border rounded-md h-9 px-2"
+              onValueChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  IssueStatus: value,
+                }))
+              }
             >
-              <option value="Issued">Issued</option>
-              <option value="Returned">Returned</option>
-            </select>
+              <SelectTrigger className="w-full h-9">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="Issued">Issued</SelectItem>
+                <SelectItem value="Returned">Returned</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

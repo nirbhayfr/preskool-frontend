@@ -222,7 +222,7 @@ function getSidebarDataByRole(role) {
   if (role === 'Librarian') {
     return {
       ...data,
-      people: [],
+      people: data.people.filter((item) => item.title === 'Student List'),
       attendance: [],
       attendanceMark: [],
       fees: [],

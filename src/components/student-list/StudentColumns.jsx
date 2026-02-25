@@ -4,11 +4,13 @@ import { Link } from 'react-router-dom'
 import { CollectFeesDialog } from './CollectFeesDialog'
 import { decryptData } from '@/utils/crypto'
 import { AttendanceCell } from '../student-attendance/AttendanceCell'
+import IssueBookDialog from '../book-issues/IssueBookDialog'
+import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
 
 const encryptedUser = localStorage.getItem('user')
 const user = encryptedUser ? decryptData(encryptedUser) : null
 
-export const studentsColumns = () => [
+export const studentsColumns = (setSelectedStudent) => [
   {
     accessorKey: 'StudentID',
     header: 'Student ID',
@@ -25,17 +27,41 @@ export const studentsColumns = () => [
   {
     accessorKey: 'PhotoUrl',
     header: 'Profile',
-    cell: ({ row }) => (
-      <img
-        src={
-          row.original.PhotoUrl ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            row.original.FullName || 'Student'
-          )}`
-        }
-        className="h-10 w-10 rounded-full object-cover border"
-      />
-    ),
+    cell: ({ row }) => {
+      const { PhotoUrl, FullName } = row.original
+
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        FullName || 'Student'
+      )}&size=256`
+
+      const imageUrl = PhotoUrl || avatarUrl
+
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <img
+              src={imageUrl}
+              alt={FullName}
+              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
+              onError={(e) => {
+                e.currentTarget.src = avatarUrl
+              }}
+            />
+          </DialogTrigger>
+
+          <DialogContent className="max-w-md p-4">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={imageUrl}
+                alt={FullName}
+                className="max-h-[70vh] rounded-md object-contain"
+              />
+              <p className="font-medium">{FullName}</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
   },
 
   {
@@ -95,21 +121,6 @@ export const studentsColumns = () => [
     header: 'Admission No',
     cell: ({ row }) => row.original.AdmissionNo ?? '—',
   },
-
-  {
-    accessorKey: 'GuardianPhoto',
-    header: 'Guardian Photo',
-    cell: ({ row }) =>
-      row.original.GuardianPhoto ? (
-        <img
-          src={row.original.GuardianPhoto}
-          className="h-10 w-10 rounded-full border"
-          alt="Guardian"
-        />
-      ) : (
-        '—'
-      ),
-  },
   {
     accessorKey: 'Attendance',
     header: 'Attendance',
@@ -132,33 +143,79 @@ export const studentsColumns = () => [
   {
     accessorKey: 'FatherPhoto',
     header: 'Father Photo',
-    cell: ({ row }) =>
-      row.original.FatherPhoto ? (
-        <img src={row.original.FatherPhoto} className="h-10 w-10 rounded-full border" />
-      ) : (
-        '—'
-      ),
+    cell: ({ row }) => {
+      const { FatherPhoto, GuardianName } = row.original
+
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        GuardianName || 'Father'
+      )}&size=256`
+
+      const imageUrl = FatherPhoto || avatarUrl
+
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <img
+              src={imageUrl}
+              alt="Father"
+              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
+              onError={(e) => {
+                e.currentTarget.src = avatarUrl
+              }}
+            />
+          </DialogTrigger>
+
+          <DialogContent className="max-w-md p-4">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={imageUrl}
+                alt="Father"
+                className="max-h-[70vh] rounded-md object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
   },
   {
     accessorKey: 'MotherPhoto',
     header: 'Mother Photo',
-    cell: ({ row }) =>
-      row.original.MotherPhoto ? (
-        <img src={row.original.MotherPhoto} className="h-10 w-10 rounded-full border" />
-      ) : (
-        '—'
-      ),
+    cell: ({ row }) => {
+      const { MotherPhoto, GuardianName } = row.original
+
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        GuardianName || 'Mother'
+      )}&size=256`
+
+      const imageUrl = MotherPhoto || avatarUrl
+
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <img
+              src={imageUrl}
+              alt="Mother"
+              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
+              onError={(e) => {
+                e.currentTarget.src = avatarUrl
+              }}
+            />
+          </DialogTrigger>
+
+          <DialogContent className="max-w-md p-4">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={imageUrl}
+                alt="Mother"
+                className="max-h-[70vh] rounded-md object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
   },
-  // {
-  //   accessorKey: 'GuardianPhoto',
-  //   header: 'Guardian Photo',
-  //   cell: ({ row }) =>
-  //     row.original.GuardianPhoto ? (
-  //       <img src={row.original.GuardianPhoto} className="h-10 w-10 rounded-full border" />
-  //     ) : (
-  //       '—'
-  //     ),
-  // },
 
   {
     accessorKey: 'GuardianName',
@@ -204,6 +261,16 @@ export const studentsColumns = () => [
         {/* Collect Fees */}
         {user?.Role === 'Admin' && (
           <CollectFeesDialog studentId={row.original.StudentID} />
+        )}
+
+        {(user?.Role === 'Admin' || user?.Role === 'Librarian') && (
+          <Button
+            size="sm"
+            className="text-xs"
+            onClick={() => setSelectedStudent(row.original)}
+          >
+            Issue Book
+          </Button>
         )}
       </div>
     ),
