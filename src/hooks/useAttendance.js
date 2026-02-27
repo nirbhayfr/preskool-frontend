@@ -1,84 +1,84 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import {
-	getStudentAttendance,
-	getAttendanceMatrixAll,
-	getAttendanceMatrixByClass,
-	getAttendanceMatrixByStudentId,
-	writeTodayAttendance,
-	writeAttendanceByDate,
-	getTodayAttendanceCount,
-	getAttendanceCountByDate,
-} from "@/api/attendance";
+  getStudentAttendance,
+  getAttendanceMatrixAll,
+  getAttendanceMatrixByClass,
+  getAttendanceMatrixByStudentId,
+  writeTodayAttendance,
+  writeAttendanceByDate,
+  getTodayAttendanceCount,
+  getAttendanceCountByDate,
+} from '@/api/attendance'
 
 export const useStudentAttendance = () =>
-	useQuery({
-		queryKey: ["student-attendance"],
-		queryFn: getStudentAttendance,
-	});
+  useQuery({
+    queryKey: ['student-attendance'],
+    queryFn: getStudentAttendance,
+  })
 
 export const useAttendanceMatrixAll = () =>
-	useQuery({
-		queryKey: ["attendance-matrix", "all"],
-		queryFn: getAttendanceMatrixAll,
-	});
+  useQuery({
+    queryKey: ['attendance-matrix', 'all'],
+    queryFn: getAttendanceMatrixAll,
+  })
 
 export const useAttendanceMatrixByClass = (classId, section) =>
-	useQuery({
-		queryKey: ["attendance-matrix", "class", classId, section],
-		queryFn: () => getAttendanceMatrixByClass(classId, section),
-		enabled: !!classId && !!section,
-	});
+  useQuery({
+    queryKey: ['attendance-matrix', 'class', classId, section],
+    queryFn: () => getAttendanceMatrixByClass(classId, section),
+    enabled: !!classId,
+  })
 
 export const useAttendanceMatrixByStudentId = (studentId) =>
-	useQuery({
-		queryKey: ["attendance-matrix", "student", studentId],
-		queryFn: () => getAttendanceMatrixByStudentId(studentId),
-		enabled: !!studentId,
-	});
+  useQuery({
+    queryKey: ['attendance-matrix', 'student', studentId],
+    queryFn: () => getAttendanceMatrixByStudentId(studentId),
+    enabled: !!studentId,
+  })
 
 export const useWriteTodayAttendance = () => {
-	const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
-	return useMutation({
-		mutationFn: writeTodayAttendance,
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: ["attendance-matrix"],
-			});
-			queryClient.invalidateQueries({
-				queryKey: ["attendance-count"],
-			});
-		},
-	});
-};
+  return useMutation({
+    mutationFn: writeTodayAttendance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['attendance-matrix'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['attendance-count'],
+      })
+    },
+  })
+}
 
 export const useWriteAttendanceByDate = () => {
-	const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
-	return useMutation({
-		mutationFn: writeAttendanceByDate,
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: ["attendance-matrix"],
-			});
-			queryClient.invalidateQueries({
-				queryKey: ["attendance-count"],
-			});
-		},
-	});
-};
+  return useMutation({
+    mutationFn: writeAttendanceByDate,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['attendance-matrix'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['attendance-count'],
+      })
+    },
+  })
+}
 
 export const useTodayAttendanceCount = () =>
-	useQuery({
-		queryKey: ["attendance-count", "today"],
-		queryFn: getTodayAttendanceCount,
-	});
+  useQuery({
+    queryKey: ['attendance-count', 'today'],
+    queryFn: getTodayAttendanceCount,
+  })
 
 export const useAttendanceCountByDate = (date) =>
-	useQuery({
-		queryKey: ["attendance-count", "date", date],
-		queryFn: () => getAttendanceCountByDate(date),
-		enabled: Boolean(date),
-		staleTime: 0,
-	});
+  useQuery({
+    queryKey: ['attendance-count', 'date', date],
+    queryFn: () => getAttendanceCountByDate(date),
+    enabled: Boolean(date),
+    staleTime: 0,
+  })

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { useAttendanceCountByDate } from '@/hooks/useAttendance'
 import { CircleLoader } from '../layout/RouteLoader'
 import { cn } from '@/lib/utils'
+import { Link } from 'react-router-dom'
 
 const entityMap = {
   Student: { img: '/img/icons/student.svg', color: 'emerald' },
@@ -19,6 +20,12 @@ const badgeColors = {
   blue: 'bg-blue-600',
   amber: 'bg-amber-600',
   red: 'bg-red-600',
+}
+
+const entityRouteMap = {
+  Student: '/student-list',
+  Teacher: '/teacher-list',
+  Staff: '/staff-list',
 }
 
 const imgColors = {
@@ -64,65 +71,67 @@ export default function AttendanceSummaryCards() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 mt-4 px-2">
         {enrichedDataArray.map((item, i) => (
-          <Card key={i} className="relative overflow-hidden py-3 rounded-sm">
-            <CardContent className="px-4 space-y-3">
-              {/* Top Row */}
-              <div className="flex items-start justify-between">
-                <div className="flex gap-4">
-                  <div
-                    className={`h-12 w-12 flex items-center justify-center ${imgColors[item.color]}`}
-                  >
-                    <img src={item.img} alt="" className="h-10 w-10" />
+          <Link key={i} to={entityRouteMap[item.entity]} className="block">
+            <Card key={i} className="relative overflow-hidden py-3 rounded-sm">
+              <CardContent className="px-4 space-y-3">
+                {/* Top Row */}
+                <div className="flex items-start justify-between">
+                  <div className="flex gap-4">
+                    <div
+                      className={`h-12 w-12 flex items-center justify-center ${imgColors[item.color]}`}
+                    >
+                      <img src={item.img} alt="" className="h-10 w-10" />
+                    </div>
+
+                    <div>
+                      <h2 className="text-2xl font-semibold">{item.total}</h2>
+                      <p className="text-sm text-muted-foreground">Total {item.entity}</p>
+                    </div>
                   </div>
 
-                  <div>
-                    <h2 className="text-2xl font-semibold">{item.total}</h2>
-                    <p className="text-sm text-muted-foreground">Total {item.entity}</p>
-                  </div>
+                  <Badge
+                    className={`${badgeColors[item.color]} rounded-sm text-white font-semibold`}
+                  >
+                    {item.inactivePercent.toFixed(2)}%
+                  </Badge>
                 </div>
 
-                <Badge
-                  className={`${badgeColors[item.color]} rounded-sm text-white font-semibold`}
+                {/* Bottom Row */}
+                <div
+                  className={cn(
+                    'grid mt-3 border-t pt-2 text-[11px] sm:text-sm',
+                    item.entity === 'Student'
+                      ? 'grid-cols-2 divide-x'
+                      : 'grid-cols-2 sm:grid-cols-4 divide-x'
+                  )}
                 >
-                  {item.inactivePercent.toFixed(2)}%
-                </Badge>
-              </div>
+                  <p className="font-semibold px-2 flex items-center gap-1 whitespace-nowrap">
+                    <span className="text-muted-foreground">Present:</span>
+                    <span className="text-green-600">{item.present}</span>
+                  </p>
 
-              {/* Bottom Row */}
-              <div
-                className={cn(
-                  'grid mt-3 border-t pt-2 text-[11px] sm:text-sm',
-                  item.entity === 'Student'
-                    ? 'grid-cols-2 divide-x'
-                    : 'grid-cols-2 sm:grid-cols-4 divide-x'
-                )}
-              >
-                <p className="font-semibold px-2 flex items-center gap-1 whitespace-nowrap">
-                  <span className="text-muted-foreground">Present:</span>
-                  <span className="text-green-600">{item.present}</span>
-                </p>
+                  <p className="font-semibold px-2 flex items-center gap-1 whitespace-nowrap">
+                    <span className="text-muted-foreground">Absent:</span>
+                    <span className="text-red-600">{item.absent}</span>
+                  </p>
 
-                <p className="font-semibold px-2 flex items-center gap-1 whitespace-nowrap">
-                  <span className="text-muted-foreground">Absent:</span>
-                  <span className="text-red-600">{item.absent}</span>
-                </p>
+                  {item.entity !== 'Student' && (
+                    <>
+                      <p className="font-semibold px-2 flex items-center gap-1 whitespace-nowrap max-sm:mt-1">
+                        <span className="text-muted-foreground">Late:</span>
+                        <span className="text-yellow-600">{item.late ?? 0}</span>
+                      </p>
 
-                {item.entity !== 'Student' && (
-                  <>
-                    <p className="font-semibold px-2 flex items-center gap-1 whitespace-nowrap max-sm:mt-1">
-                      <span className="text-muted-foreground">Late:</span>
-                      <span className="text-yellow-600">{item.late ?? 0}</span>
-                    </p>
-
-                    <p className="font-semibold px-2 flex items-center gap-1 whitespace-nowrap max-sm:mt-1">
-                      <span className="text-muted-foreground">Half-day:</span>
-                      <span className="text-orange-600">{item.halfday ?? 0}</span>
-                    </p>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                      <p className="font-semibold px-2 flex items-center gap-1 whitespace-nowrap max-sm:mt-1">
+                        <span className="text-muted-foreground">Half-day:</span>
+                        <span className="text-orange-600">{item.halfday ?? 0}</span>
+                      </p>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>

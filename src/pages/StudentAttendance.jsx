@@ -1,12 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getAttendanceColumns } from '@/components/student-attendance/StudentAttendanceColumns'
 import StudentAttendanceHeader from '@/components/student-attendance/StudentAttendanceHeader'
 import { useAttendanceMatrixAll } from '@/hooks/useAttendance'
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import TableLayout from '@/components/layout/Table'
 import { toast } from 'sonner'
+import { decryptData } from '@/utils/crypto'
 
 export default function StudentAttendance() {
+  const encryptedUser = localStorage.getItem('user')
+  const user = encryptedUser ? decryptData(encryptedUser) : null
+  const isTeacher = user?.Role === 'Teacher'
+
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -120,6 +125,13 @@ export default function StudentAttendance() {
     link.click()
   }
 
+  useEffect(() => {
+    if (isTeacher) {
+      setSelectedClass(user?.Class || '')
+      setSelectedSection(user?.Section || '')
+    }
+  }, [isTeacher, user])
+
   if (isLoading) return <CircleLoader />
 
   return (
@@ -140,6 +152,8 @@ export default function StudentAttendance() {
           setSelectedSection('')
           setSearch('')
         }}
+        disableClass={isTeacher}
+        disableSection={isTeacher}
       />
 
       <TableLayout columns={columns} data={filteredData} />

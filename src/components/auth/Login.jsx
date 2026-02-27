@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { Spinner } from '../ui/spinner'
 import { installApp } from '../extra/InstallButton'
 import { useIsPWA } from '@/hooks/usePWA'
+import { getTeacherById } from '@/api/teacher'
 
 export default function LoginPage() {
   const isPWA = useIsPWA()
@@ -25,24 +26,39 @@ export default function LoginPage() {
       toast.warning('Fill both the fields')
       return
     }
+
     try {
       setIsLoading(true)
+
       const res = await loginUser({
         Username: username,
         Password: password,
       })
+      localStorage.setItem('token', res.token)
 
-      const encryptedUser = encryptData(res.user)
+      let enrichedUser = { ...res.user }
+
+      if (res.user.Role === 'Teacher') {
+        const teacherData = await getTeacherById(res.user.LinkedID)
+
+        enrichedUser = {
+          ...enrichedUser,
+          Class: teacherData?.Class || null,
+          Section: teacherData?.Section || null,
+        }
+      }
+
+      const encryptedUser = encryptData(enrichedUser)
 
       localStorage.setItem('user', encryptedUser)
-      localStorage.setItem('token', res.token)
-      toast.success('Logged In Succesfully')
-      setIsLoading(false)
+
+      toast.success('Logged In Successfully')
       navigate('/')
     } catch (error) {
+      console.error(error)
+      toast.error('Login Failed')
+    } finally {
       setIsLoading(false)
-      console.log(error.message)
-      toast.success('Login Failed')
     }
   }
 

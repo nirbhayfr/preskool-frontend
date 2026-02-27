@@ -82,6 +82,16 @@ export const teachersColumns = () => [
     },
   },
   {
+    accessorKey: 'Class',
+    header: 'Class',
+    cell: ({ row }) => formatValue(row.original.Class),
+  },
+  {
+    accessorKey: 'Section',
+    header: 'Section',
+    cell: ({ row }) => formatValue(row.original.Section),
+  },
+  {
     accessorKey: 'DateOfBirth',
     header: 'DOB',
     cell: ({ row }) =>

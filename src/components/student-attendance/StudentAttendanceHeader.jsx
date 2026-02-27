@@ -22,6 +22,8 @@ export default function StudentAttendanceHeader({
   onSearchChange,
   onClear,
   onExport,
+  disableClass,
+  disableSection,
 }) {
   return (
     <div className="space-y-6">
@@ -86,7 +88,11 @@ export default function StudentAttendanceHeader({
 
         <div className="flex w-full sm:w-auto gap-4">
           {/* CLASS */}
-          <Select value={selectedClass} onValueChange={onClassChange}>
+          <Select
+            value={selectedClass}
+            onValueChange={onClassChange}
+            disabled={disableClass}
+          >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Class" />
             </SelectTrigger>
@@ -100,7 +106,11 @@ export default function StudentAttendanceHeader({
           </Select>
 
           {/* SECTION */}
-          <Select value={selectedSection} onValueChange={onSectionChange}>
+          <Select
+            value={selectedSection}
+            onValueChange={onSectionChange}
+            disabled={disableSection}
+          >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Section" />
             </SelectTrigger>

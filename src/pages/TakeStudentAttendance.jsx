@@ -1,134 +1,138 @@
-import { CircleLoader } from "@/components/layout/RouteLoader";
-import TableLayout from "@/components/layout/Table";
-import { TakeStudentAttendanceColumns } from "@/components/take-student-attendance/TakeStudentAttendanceColumns";
-import TakeStudentAttendanceHeader from "@/components/take-student-attendance/TakeStudentAttendanceHeader";
-import { Button } from "@/components/ui/button";
+import { CircleLoader } from '@/components/layout/RouteLoader'
+import TableLayout from '@/components/layout/Table'
+import { TakeStudentAttendanceColumns } from '@/components/take-student-attendance/TakeStudentAttendanceColumns'
+import TakeStudentAttendanceHeader from '@/components/take-student-attendance/TakeStudentAttendanceHeader'
+import { Button } from '@/components/ui/button'
 import {
-	useWriteAttendanceByDate,
-	useAttendanceMatrixByClass,
-} from "@/hooks/useAttendance";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { classes, sections } from "@/data/basicData";
+  useWriteAttendanceByDate,
+  useAttendanceMatrixByClass,
+} from '@/hooks/useAttendance'
+import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { decryptData } from '@/utils/crypto'
 
 export default function TakeStudentAttendance() {
-	const today = new Date().toISOString().slice(0, 10);
+  const encryptedUser = localStorage.getItem('user')
+  const user = encryptedUser ? decryptData(encryptedUser) : null
+  const isTeacher = user?.Role === 'Teacher'
 
-	const [selectedClass, setSelectedClass] = useState(classes[0] || "");
-	const [selectedSection, setSelectedSection] = useState(sections[0] || "");
-	const [selectedDate, setSelectedDate] = useState(today);
-	const [sortBy, setSortBy] = useState("name");
+  const today = new Date().toISOString().slice(0, 10)
 
-	const [attendanceMap, setAttendanceMap] = useState([]);
+  const [selectedClass, setSelectedClass] = useState('')
+  const [selectedSection, setSelectedSection] = useState('')
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [sortBy, setSortBy] = useState('name')
 
-	const { data: matrixData, isLoading } = useAttendanceMatrixByClass(
-		selectedClass,
-		selectedSection,
-	);
+  const [attendanceMap, setAttendanceMap] = useState([])
 
-	const writeMutation = useWriteAttendanceByDate();
+  const { data: matrixData, isLoading } = useAttendanceMatrixByClass(
+    selectedClass,
+    selectedSection
+  )
 
-	const displayedStudents = useMemo(() => {
-		if (!matrixData?.Data) return [];
+  const writeMutation = useWriteAttendanceByDate()
 
-		const rows = [...matrixData.Data];
+  const displayedStudents = useMemo(() => {
+    if (!matrixData?.Data) return []
 
-		if (sortBy === "name") {
-			rows.sort((a, b) => (a.Name || "").localeCompare(b.Name || ""));
-		}
+    const rows = [...matrixData.Data]
 
-		if (sortBy === "id") {
-			rows.sort((a, b) => a.StudentID - b.StudentID);
-		}
+    if (sortBy === 'name') {
+      rows.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''))
+    }
 
-		return rows;
-	}, [matrixData, sortBy]);
+    if (sortBy === 'id') {
+      rows.sort((a, b) => a.StudentID - b.StudentID)
+    }
 
-	useEffect(() => {
-		if (!matrixData?.Data || !selectedDate) return;
+    return rows
+  }, [matrixData, sortBy])
 
-		const mapped = matrixData.Data.filter((row) => row[selectedDate]).map(
-			(row) => ({
-				studentId: row.StudentID,
-				status: row[selectedDate],
-			}),
-		);
+  useEffect(() => {
+    if (!matrixData?.Data || !selectedDate) return
 
-		setAttendanceMap(mapped);
-	}, [matrixData, selectedDate]);
+    const mapped = matrixData.Data.filter((row) => row[selectedDate]).map((row) => ({
+      studentId: row.StudentID,
+      status: row[selectedDate],
+    }))
 
-	if (isLoading) return <CircleLoader />;
+    setAttendanceMap(mapped)
+  }, [matrixData, selectedDate])
 
-	console.log(matrixData);
+  useEffect(() => {
+    if (isTeacher) {
+      setSelectedClass(user?.Class || '')
+      setSelectedSection(user?.Section || '')
+    }
+  }, [isTeacher, user])
 
-	const handleSubmit = async () => {
-		try {
-			if (!selectedClass || !selectedSection) {
-				toast.error("Class and Section are required");
-				return;
-			}
+  if (isLoading) return <CircleLoader />
 
-			const payload = attendanceMap.map((x) => ({
-				studentID: x.studentId,
-				status: x.status,
-			}));
+  console.log(matrixData)
 
-			await writeMutation.mutateAsync({
-				date: selectedDate,
-				data: payload,
-			});
+  const handleSubmit = async () => {
+    try {
+      if (!selectedClass) {
+        toast.error('Class is required')
+        return
+      }
 
-			toast.success("Student attendance saved successfully");
-		} catch (err) {
-			console.error(err);
-			toast.error("Failed to save student attendance");
-		}
-	};
+      const payload = attendanceMap.map((x) => ({
+        studentID: x.studentId,
+        status: x.status,
+      }))
 
-	return (
-		<section className="p-6 space-y-6">
-			<TakeStudentAttendanceHeader
-				selectedDate={selectedDate}
-				sortBy={sortBy}
-				selectedClass={selectedClass}
-				selectedSection={selectedSection}
-				onDateChange={setSelectedDate}
-				onSortChange={setSortBy}
-				onClassChange={setSelectedClass}
-				onSectionChange={setSelectedSection}
-			/>
+      await writeMutation.mutateAsync({
+        date: selectedDate,
+        data: payload,
+      })
 
-			<TableLayout
-				columns={TakeStudentAttendanceColumns(
-					attendanceMap,
-					setAttendanceMap,
-				)}
-				data={displayedStudents}
-			/>
+      toast.success('Student attendance saved successfully')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to save student attendance')
+    }
+  }
 
-			<div className="flex">
-				<div className="ml-auto space-x-2">
-					<Button
-						onClick={() => {
-							if (!displayedStudents.length) return;
-							const allPresent = displayedStudents.map(
-								(s) => ({
-									studentId: s.StudentID,
-									status: "P",
-								}),
-							);
-							setAttendanceMap(allPresent);
-							toast.success(
-								"All students marked as Present",
-							);
-						}}
-					>
-						Mark All Present
-					</Button>
+  return (
+    <section className="p-6 space-y-6">
+      <TakeStudentAttendanceHeader
+        selectedDate={selectedDate}
+        sortBy={sortBy}
+        selectedClass={selectedClass}
+        selectedSection={selectedSection}
+        onDateChange={setSelectedDate}
+        onSortChange={setSortBy}
+        onClassChange={setSelectedClass}
+        onSectionChange={setSelectedSection}
+        disableClass={isTeacher}
+        disableSection={isTeacher}
+      />
 
-					<Button onClick={handleSubmit}>Submit</Button>
-				</div>
-			</div>
-		</section>
-	);
+      <TableLayout
+        columns={TakeStudentAttendanceColumns(attendanceMap, setAttendanceMap)}
+        data={displayedStudents}
+      />
+
+      <div className="flex">
+        <div className="ml-auto space-x-2">
+          <Button
+            onClick={() => {
+              if (!displayedStudents.length) return
+              const allPresent = displayedStudents.map((s) => ({
+                studentId: s.StudentID,
+                status: 'P',
+              }))
+              setAttendanceMap(allPresent)
+              toast.success('All students marked as Present')
+            }}
+          >
+            Mark All Present
+          </Button>
+
+          <Button onClick={handleSubmit}>Submit</Button>
+        </div>
+      </div>
+    </section>
+  )
 }

@@ -28,6 +28,8 @@ const teacherSchema = z.object({
   email: z.string().email(),
   contactNumber: z.string(),
   gender: z.string().min(1),
+  class: z.string().min(1, 'Class is required'),
+  section: z.string().min(1, 'Section is required'),
 
   profilePictureUrl: z.string().optional(),
   profilePhoto: z.string().optional(),
@@ -63,6 +65,8 @@ const TEACHER_FIELDS = [
   { name: 'contactNumber', required: true },
   { name: 'gender', required: true },
 
+  { name: 'class', required: true },
+  { name: 'section', required: true },
   { name: 'qualification' },
   { name: 'experienceYears' },
 
@@ -184,6 +188,8 @@ export default function TeacherFormPage({ defaultValues }) {
         email: teacher.Email ?? '',
         contactNumber: teacher.ContactNumber ?? '',
         gender: teacher.Gender ?? '',
+        class: teacher.Class ?? '',
+        section: teacher.Section ?? '',
         profilePictureUrl: teacher.ProfilePictureUrl ?? '',
         profilePhoto: teacher.ProfilePhoto ?? '',
         idProofPhoto: teacher.IDProofPhoto ?? '',
@@ -277,6 +283,8 @@ export default function TeacherFormPage({ defaultValues }) {
           </Section>
 
           <Section title="Professional Information" icon={Briefcase}>
+            <InputField form={form} name="class" />
+            <InputField form={form} name="section" />
             <InputField form={form} name="subject" />
             <InputField form={form} name="qualification" />
             <InputField form={form} name="experienceYears" />
