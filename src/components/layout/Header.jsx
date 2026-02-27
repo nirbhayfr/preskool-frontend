@@ -9,6 +9,7 @@ import { SidebarTrigger } from '../ui/sidebar'
 import AddNew from './AddNew'
 import ClockDisplay from './ClockDisplay'
 import { decryptData } from '@/utils/crypto'
+import { installApp } from '../extra/InstallButton'
 
 function Header() {
   const encryptedUser = localStorage.getItem('user')
@@ -34,6 +35,8 @@ function Header() {
         <ModeToggle />
 
         <FullscreenButton />
+
+        <Button onClick={installApp}>Install App</Button>
 
         <ProfileMenu />
       </div>
