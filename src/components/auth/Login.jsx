@@ -10,8 +10,10 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Spinner } from '../ui/spinner'
 import { installApp } from '../extra/InstallButton'
+import { useIsPWA } from '@/hooks/usePWA'
 
 export default function LoginPage() {
+  const isPWA = useIsPWA()
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [username, setUsername] = useState('')
@@ -173,11 +175,12 @@ export default function LoginPage() {
             </CardContent>
           </Card>
 
-          <div className="mt-6 flex justify-center">
-            <Button
-              onClick={installApp}
-              variant="outline"
-              className="
+          {!isPWA && (
+            <div className="mt-6 flex justify-center">
+              <Button
+                onClick={installApp}
+                variant="outline"
+                className="
                 flex items-center gap-2
                 rounded-xl
                 px-4 py-2
@@ -187,13 +190,15 @@ export default function LoginPage() {
                 hover:shadow-md
                 active:scale-95
               "
-            >
-              <span className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                Download App
-              </span>
-            </Button>
-          </div>
+              >
+                <span className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Download App
+                </span>
+              </Button>
+            </div>
+          )}
+
           {/* Footer */}
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Copyright © 2026 - Preskool
