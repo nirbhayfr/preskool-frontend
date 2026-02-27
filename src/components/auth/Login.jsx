@@ -1,4 +1,4 @@
-import { User, EyeOff, Eye } from 'lucide-react'
+import { User, EyeOff, Eye, Download } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { encryptData } from '@/utils/crypto'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Spinner } from '../ui/spinner'
+import { installApp } from '../extra/InstallButton'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -107,7 +108,6 @@ export default function LoginPage() {
             <img src="/img/logo.svg" alt="logo" className="w-32 dark:hidden" />
             <img src="/img/logo-dark.svg" alt="logo" className="w-32 hidden dark:block" />
           </div>
-
           {/* Login Card */}
           <Card>
             <CardContent className="p-6">
@@ -173,6 +173,27 @@ export default function LoginPage() {
             </CardContent>
           </Card>
 
+          <div className="mt-6 flex justify-center">
+            <Button
+              onClick={installApp}
+              variant="outline"
+              className="
+                flex items-center gap-2
+                rounded-xl
+                px-4 py-2
+                text-sm font-medium
+                shadow-sm
+                transition-all duration-200
+                hover:shadow-md
+                active:scale-95
+              "
+            >
+              <span className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Download App
+              </span>
+            </Button>
+          </div>
           {/* Footer */}
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Copyright © 2026 - Preskool

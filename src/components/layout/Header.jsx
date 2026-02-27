@@ -1,4 +1,4 @@
-import { Calendar, Clock } from 'lucide-react'
+import { Calendar, Clock, Download } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 
@@ -36,9 +36,18 @@ function Header() {
 
         <FullscreenButton />
 
-        <Button onClick={installApp}>Install App</Button>
-
         <ProfileMenu />
+
+        <Button onClick={installApp} className="flex items-center justify-center gap-2">
+          {/* Mobile: Icon only */}
+          <Download className="h-5 w-5 sm:hidden" />
+
+          {/* Desktop: Icon + Text */}
+          <span className="hidden sm:flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Install App
+          </span>
+        </Button>
       </div>
     </header>
   )
