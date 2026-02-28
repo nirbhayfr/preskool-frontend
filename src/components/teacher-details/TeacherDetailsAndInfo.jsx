@@ -5,8 +5,18 @@ import { Mail, MapPin, Phone, Home } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTeacher } from '@/hooks/useTeacher'
 import { Skeleton } from '../ui/skeleton'
+import { useMemo } from 'react'
+import { decryptData } from '@/utils/crypto'
 
 export default function TeacherDetailsAndInfoCard() {
+  const user = useMemo(() => {
+    try {
+      const encrypted = localStorage.getItem('user')
+      return encrypted ? decryptData(encrypted) : null
+    } catch {
+      return null
+    }
+  }, [])
   const navigate = useNavigate()
   const { id } = useParams()
   const { data: teacher, isLoading, isError } = useTeacher(id)
@@ -86,12 +96,14 @@ export default function TeacherDetailsAndInfoCard() {
             </div>
           </div>
 
-          <Button
-            className="w-full"
-            onClick={() => navigate(`/edit-teacher/${teacher?.TeacherID}`)}
-          >
-            Edit Details
-          </Button>
+          {user?.Role !== 'Teacher' && (
+            <Button
+              className="w-full"
+              onClick={() => navigate(`/edit-teacher/${teacher?.TeacherID}`)}
+            >
+              Edit Details
+            </Button>
+          )}
         </CardContent>
       </Card>
 

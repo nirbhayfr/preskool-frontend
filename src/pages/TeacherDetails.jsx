@@ -16,8 +16,18 @@ import {
 import { Button } from '@/components/ui/button'
 import { useDeleteTeacher } from '@/hooks/useTeacher'
 import { toast } from 'sonner'
+import { useMemo } from 'react'
+import { decryptData } from '@/utils/crypto'
 
 function TeacherDetails() {
+  const user = useMemo(() => {
+    try {
+      const encrypted = localStorage.getItem('user')
+      return encrypted ? decryptData(encrypted) : null
+    } catch {
+      return null
+    }
+  }, [])
   const { id } = useParams()
   const navigate = useNavigate()
   const { mutate: deleteTeacher } = useDeleteTeacher()
@@ -51,42 +61,44 @@ function TeacherDetails() {
           </p>
         </div>
 
-        <div className="flex gap-2">
-          {/* Edit */}
-          <Button onClick={() => handleEdit(id)}>
-            <PenBoxIcon className="mr-2 h-4 w-4" />
-            Edit Profile
-          </Button>
+        {user?.Role !== 'Teacher' && (
+          <div className="flex gap-2">
+            {/* Edit */}
+            <Button onClick={() => handleEdit(id)}>
+              <PenBoxIcon className="mr-2 h-4 w-4" />
+              Edit Profile
+            </Button>
 
-          {/* Delete */}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => handleDelete(id)}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
+            {/* Delete */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash className="mr-2 h-4 w-4" />
                   Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+                </Button>
+              </AlertDialogTrigger>
+
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDelete(id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-12 gap-6 mt-6">

@@ -28,6 +28,7 @@ import { Wallet, Eye } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { useTeacherSalaryById } from '@/hooks/useSalary'
 import { Skeleton } from '../ui/skeleton'
+import { useTeacherSalaryListById } from '@/hooks/useTeacherSalary'
 
 /* ------------------ Columns ------------------ */
 
@@ -52,6 +53,11 @@ const salaryColumns = [
 function TeacherSalary() {
   const { id } = useParams()
   const { data: response, isLoading, isError } = useTeacherSalaryById(id)
+  // const {
+  //   data: list,
+  //   isLoading: isListLoading,
+  //   isError: isListError,
+  // } = useTeacherSalaryListById(id)
 
   const data = []
 
@@ -68,7 +74,7 @@ function TeacherSalary() {
   if (isError) return <p>Failed to load salary</p>
   if (!teacher) return null
 
-  console.log(response)
+  // console.log(list)
 
   return (
     <div className="space-y-6">

@@ -200,6 +200,7 @@ function getSidebarDataByRole(role) {
       attendanceMark: data.attendanceMark.filter(
         (item) => item.title === 'Take Student Attendance'
       ),
+      additional: data.additional.filter((item) => item.title !== 'Inventory'),
       fees: [], // teachers don’t see fees
       salary: [],
       library: [],
