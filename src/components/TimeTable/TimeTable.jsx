@@ -83,70 +83,76 @@ export default function TimeTable() {
 
   return (
     <div className="bg-card rounded-xl shadow-sm p-5">
-      <div className="flex items-center justify-between mb-5 border-b border-border pb-5">
-        <h2 className="text-lg font-semibold text-foreground">Time Table</h2>
+      <div className="border-b border-border pb-5 mb-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          {/* Title */}
+          <h2 className="text-lg font-semibold text-foreground">Time Table</h2>
 
-        <div className="flex gap-4 items-end">
-          {/* Class Filter */}
-          {/* Class Filter */}
-          <div className="space-y-2">
-            <Label>Class</Label>
-            <Select
-              value={filters.classId}
-              onValueChange={(value) =>
-                setFilters((prev) => ({ ...prev, classId: value }))
-              }
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {classes.map((cls) => (
-                  <SelectItem key={cls} value={cls}>
-                    Class {cls}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-end gap-4 w-full lg:w-auto">
+            {/* Class Filter */}
+            <div className="space-y-2 w-full">
+              <Label>Class</Label>
+              <Select
+                value={filters.classId}
+                onValueChange={(value) =>
+                  setFilters((prev) => ({ ...prev, classId: value }))
+                }
+              >
+                <SelectTrigger className="w-full lg:w-36">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {classes.map((cls) => (
+                    <SelectItem key={cls} value={cls}>
+                      Class {cls}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Section Filter */}
+            <div className="space-y-2 w-full">
+              <Label>Section</Label>
+              <Select
+                value={filters.sectionId}
+                onValueChange={(value) =>
+                  setFilters((prev) => ({ ...prev, sectionId: value }))
+                }
+              >
+                <SelectTrigger className="w-full lg:w-36">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {sections.map((sec) => (
+                    <SelectItem key={sec} value={sec}>
+                      Section {sec}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Reset Button */}
+            <div className="w-full lg:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full lg:w-auto"
+                onClick={() =>
+                  setFilters({
+                    classId: '',
+                    sectionId: '',
+                  })
+                }
+              >
+                Reset
+              </Button>
+            </div>
           </div>
-
-          {/* Section Filter */}
-          <div className="space-y-2">
-            <Label>Section</Label>
-            <Select
-              value={filters.sectionId}
-              onValueChange={(value) =>
-                setFilters((prev) => ({ ...prev, sectionId: value }))
-              }
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {sections.map((sec) => (
-                  <SelectItem key={sec} value={sec}>
-                    Section {sec}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Reset */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setFilters({
-                classId: '',
-                sectionId: '',
-              })
-            }
-          >
-            Reset
-          </Button>
         </div>
       </div>
 
