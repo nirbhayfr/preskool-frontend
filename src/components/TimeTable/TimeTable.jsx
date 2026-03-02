@@ -1,12 +1,8 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-'use client'
-
 import { useRef, useEffect, useState, useMemo } from 'react'
 import TimeTableCard from './TimeTableCard'
-import { Funnel } from 'lucide-react'
 import { useTeacherTimeTables } from '@/hooks/useTeacherTimeTable'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+
 import {
   Select,
   SelectContent,
@@ -19,7 +15,7 @@ import { classes, sections } from '@/data/basicData'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-const TimeTable = () => {
+export default function TimeTable() {
   const [filters, setFilters] = useState({
     classId: 'all',
     sectionId: 'all',
@@ -181,5 +177,3 @@ const TimeTable = () => {
     </div>
   )
 }
-
-export default TimeTable
