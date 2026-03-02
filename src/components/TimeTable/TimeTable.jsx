@@ -1,162 +1,185 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react-hooks/immutability */
-/* eslint-disable no-unused-vars */
-import { useRef, useEffect, useState } from "react";
-import TimeTableCard from "./TimeTableCard";
-import { ChevronDown, Funnel } from "lucide-react";
-import FilterDropdown from "./FilterDropdown";
-import { useTeachers } from "@/hooks/useTeacherTimeTable";
+'use client'
 
+import { useRef, useEffect, useState, useMemo } from 'react'
+import TimeTableCard from './TimeTableCard'
+import { Funnel } from 'lucide-react'
+import { useTeacherTimeTables } from '@/hooks/useTeacherTimeTable'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { classes, sections } from '@/data/basicData'
 
-const days = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-];
-
-
-
+const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 const TimeTable = () => {
-    const [groupedData, setGroupedData] = useState({});
-    const [showFilter, setShowFilter] = useState(false);
-    const [filters, setFilters] = useState({
-        classId: "",
-        sectionId: "",
-    });
-    const dayRefs = useRef({});
+  const [filters, setFilters] = useState({
+    classId: 'all',
+    sectionId: 'all',
+  })
 
-    const { data: teacher, isLoading, isError } = useTeachers();
+  const dayRefs = useRef({})
+  const { data: timetable, isLoading, isError } = useTeacherTimeTables()
 
-    const handleApplyFilter = (newFilters) => {
-        setFilters(newFilters);
-        setShowFilter(false);
+  const filteredData = useMemo(() => {
+    if (!timetable?.data) return []
 
-        // 👉 call API again or filter existing data
-        // console.log("Applied Filters:", newFilters);
-    };
+    return timetable.data.filter((item) => {
+      const classMatch =
+        filters.classId === 'all' || !filters.classId
+          ? true
+          : item.ClassID === filters.classId
 
-    const handleReset = () => {
-        setFilters({ classId: "", sectionId: "" });
-    };
+      const sectionMatch =
+        filters.sectionId === 'all' || !filters.sectionId
+          ? true
+          : item.SectionID === filters.sectionId
 
-    useEffect(() => {
-        if (teacher?.data) {
-            fetchTimeTable();
-        }
+      return classMatch && sectionMatch
+    })
+  }, [timetable, filters])
 
-    }, [teacher]);
+  const groupedData = useMemo(() => {
+    return filteredData.reduce((acc, item) => {
+      const day = item.DayOfWeek
 
-   useEffect(() => {
-  if (!teacher?.data) return;
+      if (!acc[day]) acc[day] = []
 
-  const today = new Date().toLocaleString("en-US", {
-    weekday: "long",
-  });
+      acc[day].push(item)
 
-  const el = dayRefs.current[today];
+      // Sort by PeriodNo
+      acc[day].sort((a, b) => a.PeriodNo - b.PeriodNo)
 
-  if (el) {
-    setTimeout(() => {
-      el.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest",
-      });
-    }, 100); // wait for DOM paint
-  }
-}, [teacher]);
+      return acc
+    }, {})
+  }, [filteredData])
 
+  useEffect(() => {
+    if (!filteredData.length) return
 
-    const fetchTimeTable = async () => {
-        const grouped = groupByDay(teacher?.data);
-        // console.log('grouped', grouped);
-        setGroupedData(grouped);
+    const today = new Date().toLocaleString('en-US', {
+      weekday: 'long',
+    })
 
-    };
+    const el = dayRefs.current[today]
 
-    const groupByDay = (data) => {
-        return data.reduce((acc, item) => {
-            const day = item.DayOfWeek;
-            if (!acc[day]) acc[day] = [];
-            acc[day].push(item);
-            return acc;
-        }, {});
-    };
+    if (el) {
+      setTimeout(() => {
+        el.scrollIntoView({
+          behavior: 'smooth',
+          inline: 'center',
+          block: 'nearest',
+        })
+      }, 100)
+    }
+  }, [filteredData])
 
-    // if (loading) return <p>Loading...</p>;
+  if (isLoading) return <p>Loading...</p>
+  if (isError) return <p>Failed to load timetable</p>
+  if (!timetable) return null
 
+  return (
+    <div className="bg-card rounded-xl shadow-sm p-5">
+      <div className="flex items-center justify-between mb-5 border-b border-border pb-5">
+        <h2 className="text-lg font-semibold text-foreground">Time Table</h2>
 
-    if (isLoading) return <p>Loading...</p>;
-    if (isError) return <p>Failed to load teacher</p>
-    if (!teacher) return null
-    return (
-  <div className="bg-card rounded-xl shadow-sm p-6">
-    {/* Timetable Header */}
-    <div className="flex items-center justify-between mb-6 border-b border-border pb-6">
-      <h2 className="text-xl font-semibold text-foreground">
-        Time Table
-      </h2>
+        <div className="flex gap-4 items-end">
+          {/* Class Filter */}
+          {/* Class Filter */}
+          <div className="space-y-2">
+            <Label>Class</Label>
+            <Select
+              value={filters.classId}
+              onValueChange={(value) =>
+                setFilters((prev) => ({ ...prev, classId: value }))
+              }
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {classes.map((cls) => (
+                  <SelectItem key={cls} value={cls}>
+                    Class {cls}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <button
-        onClick={() => setShowFilter((prev) => !prev)}
-        className="
-          flex items-center gap-2
-          bg-secondary
-          text-secondary-foreground
-          px-4 py-2
-          rounded-md
-          text-sm
-          hover:bg-secondary/80
-          transition
-        "
-      >
-        <Funnel className="w-4 h-4" />
-        Filter
-        <ChevronDown className="w-4 h-4" />
-      </button>
-    </div>
+          {/* Section Filter */}
+          <div className="space-y-2">
+            <Label>Section</Label>
+            <Select
+              value={filters.sectionId}
+              onValueChange={(value) =>
+                setFilters((prev) => ({ ...prev, sectionId: value }))
+              }
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {sections.map((sec) => (
+                  <SelectItem key={sec} value={sec}>
+                    Section {sec}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-    {showFilter && (
-      <FilterDropdown
-        filters={filters}
-        onApply={handleApplyFilter}
-        onReset={handleReset}
-      />
-    )}
+          {/* Reset */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setFilters({
+                classId: '',
+                sectionId: '',
+              })
+            }
+          >
+            Reset
+          </Button>
+        </div>
+      </div>
 
-    {/* Grid */}
-    <div className="mt-6 overflow-x-auto no-scrollbar">
-  <div className="flex gap-6 min-w-max snap-x snap-mandatory">
-    {days.map((day) => (
-      <div
-        key={day}
-        ref={(el) => (dayRefs.current[day] = el)}
-        className="min-w-70 shrink-0 flex flex-col snap-start"
-      >
-        <h3 className="text-lg font-semibold text-foreground mb-5">
-          {day}
-        </h3>
+      {/* ================= GRID ================= */}
+      <div className="mt-5 overflow-x-auto no-scrollbar">
+        <div className="flex gap-4 min-w-max snap-x snap-mandatory">
+          {days.map((day) => (
+            <div
+              key={day}
+              ref={(el) => (dayRefs.current[day] = el)}
+              className="min-w-60 shrink-0 flex flex-col snap-start"
+            >
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3">{day}</h3>
 
-        <div className="space-y-4">
-          {groupedData[day]?.map((item) => (
-            <TimeTableCard
-              key={item.TimeTableID}
-              data={item}
-            />
+              <div className="space-y-3">
+                {groupedData[day]?.length ? (
+                  groupedData[day].map((item) => (
+                    <TimeTableCard key={item.TimeTableID} data={item} />
+                  ))
+                ) : (
+                  <p className="text-xs text-muted-foreground">No classes</p>
+                )}
+              </div>
+            </div>
           ))}
         </div>
       </div>
-    ))}
-  </div>
-</div>
+    </div>
+  )
+}
 
-
-  </div>
-);
-};
-
-export default TimeTable;
+export default TimeTable
