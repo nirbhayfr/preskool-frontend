@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import AddTimeTableModal from '@/components/timeTable/AddTimeTableModal'
-
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import TimeTable from '@/components/timeTable/TimeTable'
+import AddTimeTableModal from '@/components/timeTable/AddTimeTableModal'
 
 const ClassTimeTable = () => {
   const [openModal, setOpenModal] = useState(false)
