@@ -1,4 +1,9 @@
-import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
 
 import {
   Table,
@@ -14,6 +19,7 @@ export default function TableLayout({ columns, data }) {
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   })
 
   return (

@@ -124,7 +124,7 @@ const data = {
 
   fees: [
     {
-      title: 'Fee Structure',
+      title: 'Fee Structure & Transport',
       url: '/fee-structure',
       icon: CircleDollarSign,
     },

@@ -6,14 +6,30 @@ import { decryptData } from '@/utils/crypto'
 import { AttendanceCell } from '../student-attendance/AttendanceCell'
 import IssueBookDialog from '../book-issues/IssueBookDialog'
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
+import IdCardPDF from '../pdfs/IdCardPDF'
+import { pdf } from '@react-pdf/renderer'
+import SearchHeader from '../layout/SearchHeader'
 
 const encryptedUser = localStorage.getItem('user')
 const user = encryptedUser ? decryptData(encryptedUser) : null
 
+const handlePrintId = async (student) => {
+  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    student.FullName || 'Student'
+  )}&size=256`
+
+  const imageUrl = student.PhotoUrl || avatarUrl
+
+  const blob = await pdf(<IdCardPDF student={student} photo={imageUrl} />).toBlob()
+
+  const url = URL.createObjectURL(blob)
+  window.open(url)
+}
+
 export const studentsColumns = (setSelectedStudent) => [
   {
     accessorKey: 'StudentID',
-    header: 'Student ID',
+    header: ({ column }) => <SearchHeader column={column} title="Student ID" />,
     cell: ({ row }) => (
       <Link
         to={`/student-details/${row.original.StudentID}`}
@@ -66,7 +82,7 @@ export const studentsColumns = (setSelectedStudent) => [
 
   {
     accessorKey: 'FullName',
-    header: 'Full Name',
+    header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
     cell: ({ row }) => <span className="capitalize">{row.original.FullName}</span>,
   },
   {
@@ -99,7 +115,18 @@ export const studentsColumns = (setSelectedStudent) => [
       return <AttendanceCell value={value} />
     },
   },
-  { accessorKey: 'Gender', header: 'Gender' },
+  {
+    accessorKey: 'ClassID',
+    header: ({ column }) => <SearchHeader column={column} title="Class" />,
+  },
+  {
+    accessorKey: 'SectionID',
+    header: ({ column }) => <SearchHeader column={column} title="Section" />,
+  },
+  {
+    accessorKey: 'Gender',
+    header: ({ column }) => <SearchHeader column={column} title="Gender" />,
+  },
 
   {
     accessorKey: 'DOB',
@@ -108,13 +135,130 @@ export const studentsColumns = (setSelectedStudent) => [
       row.original.DOB ? new Date(row.original.DOB).toLocaleDateString() : '—',
   },
 
-  { accessorKey: 'ClassID', header: 'Class' },
-  { accessorKey: 'SectionID', header: 'Section' },
-
   {
     accessorKey: 'RollNo',
     header: 'Roll No',
     cell: ({ row }) => row.original.RollNo ?? '—',
+  },
+  {
+    accessorKey: 'IdentificationNumber',
+    header: 'ID Number',
+    cell: ({ row }) => row.original.IdentificationNumber ?? '—',
+  },
+  {
+    accessorKey: 'EnrollmentNumber',
+    header: 'Enrollment No',
+    cell: ({ row }) => row.original.EnrollmentNumber ?? '—',
+  },
+  {
+    accessorKey: 'AdmissionDate',
+    header: 'Admission Date',
+    cell: ({ row }) =>
+      row.original.AdmissionDate
+        ? new Date(row.original.AdmissionDate).toLocaleDateString()
+        : '—',
+  },
+
+  {
+    accessorKey: 'PreviousAcademicRecord',
+    header: 'Previous Record',
+    cell: ({ row }) => row.original.PreviousAcademicRecord ?? '—',
+  },
+
+  {
+    accessorKey: 'AttendancePercentage',
+    header: 'Attendance %',
+    cell: ({ row }) =>
+      row.original.AttendancePercentage ? `${row.original.AttendancePercentage}%` : '—',
+  },
+
+  {
+    accessorKey: 'AcademicStatus',
+    header: 'Academic Status',
+    cell: ({ row }) => row.original.AcademicStatus ?? '—',
+  },
+  {
+    accessorKey: 'ParentEmail',
+    header: 'Parent Email',
+    cell: ({ row }) => row.original.ParentEmail ?? '—',
+  },
+  {
+    accessorKey: 'HouseName',
+    header: 'House',
+    cell: ({ row }) => row.original.HouseName ?? '—',
+  },
+  {
+    accessorKey: 'Caste',
+    header: 'Caste',
+    cell: ({ row }) => row.original.Cast ?? '—',
+  },
+  {
+    accessorKey: 'PendingFee',
+    header: 'Pending Fee',
+    cell: ({ row }) => (row.original.PendingFee ? `₹${row.original.PendingFee}` : '₹0'),
+  },
+  {
+    accessorKey: 'Route',
+    header: 'Transport Route',
+    cell: ({ row }) => row.original.Route ?? '—',
+  },
+  {
+    accessorKey: 'TransportStatus',
+    header: 'Transport',
+    cell: ({ row }) => (
+      <span
+        className={`px-2 py-1 text-xs rounded-full ${
+          row.original.TransportStatus === 'Yes'
+            ? 'bg-green-100 text-green-700'
+            : 'bg-red-100 text-red-700'
+        }`}
+      >
+        {row.original.TransportStatus ?? 'No'}
+      </span>
+    ),
+  },
+  {
+    accessorKey: 'VehicleNo',
+    header: 'Vehicle No',
+    cell: ({ row }) => row.original.VehicleNo ?? '—',
+  },
+  {
+    accessorKey: 'GuardianPhoto',
+    header: 'Guardian Photo',
+    cell: ({ row }) => {
+      const { GuardianPhoto, GuardianName } = row.original
+
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        GuardianName || 'Guardian'
+      )}&size=256`
+
+      const imageUrl = GuardianPhoto || avatarUrl
+
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <img
+              src={imageUrl}
+              alt="Guardian"
+              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
+              onError={(e) => {
+                e.currentTarget.src = avatarUrl
+              }}
+            />
+          </DialogTrigger>
+
+          <DialogContent className="max-w-md p-4">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={imageUrl}
+                alt="Guardian"
+                className="max-h-[70vh] rounded-md object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
   },
   {
     accessorKey: 'AdmissionNo',
@@ -270,6 +414,17 @@ export const studentsColumns = (setSelectedStudent) => [
             onClick={() => setSelectedStudent(row.original)}
           >
             Issue Book
+          </Button>
+        )}
+
+        {user?.Role === 'Admin' && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs"
+            onClick={() => handlePrintId(row.original)}
+          >
+            Print ID
           </Button>
         )}
       </div>
