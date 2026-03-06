@@ -30,7 +30,11 @@ const handlePrintId = async (student) => {
 export const advancedFilter = (row, columnId, filterValue) => {
   if (!filterValue) return true
 
-  const rowValue = row.getValue(columnId)
+  let rowValue = row.getValue(columnId)
+
+  if (columnId === 'Status' && (rowValue === null || rowValue === undefined)) {
+    rowValue = 'Inactive'
+  }
 
   if (rowValue === undefined || rowValue === null) return false
 
