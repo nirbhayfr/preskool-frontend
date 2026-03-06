@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
 import IdCardPDF from '../pdfs/IdCardPDF'
 import { pdf } from '@react-pdf/renderer'
 import SearchHeader from '../layout/SearchHeader'
+import { classes, sections } from '@/data/basicData'
 
 const encryptedUser = localStorage.getItem('user')
 const user = encryptedUser ? decryptData(encryptedUser) : null
@@ -26,10 +27,51 @@ const handlePrintId = async (student) => {
   window.open(url)
 }
 
+export const advancedFilter = (row, columnId, filterValue) => {
+  if (!filterValue) return true
+
+  const rowValue = row.getValue(columnId)
+
+  if (rowValue === undefined || rowValue === null) return false
+
+  const value = String(rowValue).toLowerCase()
+  const search = String(filterValue.value ?? '').toLowerCase()
+
+  switch (filterValue.operator) {
+    case 'equals':
+      return value === search
+
+    case 'notEquals':
+      return value !== search
+
+    case 'startsWith':
+      return value.startsWith(search)
+
+    case 'endsWith':
+      return value.endsWith(search)
+
+    case 'greaterThan':
+      return Number(rowValue) > Number(filterValue.value)
+
+    case 'lessThan':
+      return Number(rowValue) < Number(filterValue.value)
+
+    case 'empty':
+      return value === ''
+
+    case 'notEmpty':
+      return value !== ''
+
+    default:
+      return value.includes(search)
+  }
+}
+
 export const studentsColumns = (setSelectedStudent) => [
   {
     accessorKey: 'StudentID',
     header: ({ column }) => <SearchHeader column={column} title="Student ID" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => (
       <Link
         to={`/student-details/${row.original.StudentID}`}
@@ -84,10 +126,19 @@ export const studentsColumns = (setSelectedStudent) => [
     accessorKey: 'FullName',
     header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
     cell: ({ row }) => <span className="capitalize">{row.original.FullName}</span>,
+    filterFn: advancedFilter,
   },
   {
     accessorKey: 'Status',
-    header: 'Status',
+    header: ({ column }) => (
+      <SearchHeader
+        column={column}
+        title="Status"
+        type="select"
+        options={['Active', 'Inactive']}
+      />
+    ),
+    filterFn: advancedFilter,
     cell: ({ row }) => {
       const status = row.original.Status
 
@@ -117,15 +168,22 @@ export const studentsColumns = (setSelectedStudent) => [
   },
   {
     accessorKey: 'ClassID',
-    header: ({ column }) => <SearchHeader column={column} title="Class" />,
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Class" type="select" options={classes} />
+    ),
+    filterFn: advancedFilter,
   },
   {
     accessorKey: 'SectionID',
-    header: ({ column }) => <SearchHeader column={column} title="Section" />,
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Section" type="select" options={sections} />
+    ),
+    filterFn: advancedFilter,
   },
   {
     accessorKey: 'Gender',
     header: ({ column }) => <SearchHeader column={column} title="Gender" />,
+    filterFn: advancedFilter,
   },
 
   {
@@ -194,7 +252,10 @@ export const studentsColumns = (setSelectedStudent) => [
   },
   {
     accessorKey: 'PendingFee',
-    header: 'Pending Fee',
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Pending Fee" type="number" />
+    ),
+    filterFn: advancedFilter,
     cell: ({ row }) => (row.original.PendingFee ? `₹${row.original.PendingFee}` : '₹0'),
   },
   {
@@ -204,7 +265,15 @@ export const studentsColumns = (setSelectedStudent) => [
   },
   {
     accessorKey: 'TransportStatus',
-    header: 'Transport',
+    header: ({ column }) => (
+      <SearchHeader
+        column={column}
+        title="Transport"
+        type="select"
+        options={['Yes', 'No']}
+      />
+    ),
+    filterFn: advancedFilter,
     cell: ({ row }) => (
       <span
         className={`px-2 py-1 text-xs rounded-full ${
