@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTodayAttendanceCount } from '@/hooks/useAttendance'
 import { cn } from '@/lib/utils'
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   BarChart,
   Bar,
@@ -17,57 +17,58 @@ import {
 import { useStudentStrength } from '@/hooks/useStudents'
 import { Skeleton } from '@/components/ui/skeleton'
 import { classes } from '@/data/basicData'
-import { CircleLoader } from '../layout/RouteLoader'
 
 export default function DashboardChartsSection() {
   const { data, isLoading } = useStudentStrength()
 
   const [active, setActive] = useState('Staff')
-  const [width, setWidth] = useState(0)
 
-  const containerRef = useRef(null)
-  const resizeTimeout = useRef(null)
+  const { chartData, sections } = useMemo(() => {
+    if (!data) return { chartData: [], sections: [] }
 
-  useEffect(() => {
-    if (!containerRef.current) return
+    const sectionSet = new Set()
 
-    const handleResize = () => {
-      if (resizeTimeout.current) clearTimeout(resizeTimeout.current)
+    data.forEach((cls) => {
+      cls.sections.forEach((s) => {
+        sectionSet.add(s.section)
+      })
+    })
 
-      resizeTimeout.current = setTimeout(() => {
-        setWidth(containerRef.current.offsetWidth)
-      }, 100)
-    }
-
-    const resizeObserver = new ResizeObserver(handleResize)
-
-    resizeObserver.observe(containerRef.current)
-
-    setWidth(containerRef.current.offsetWidth)
-
-    return () => {
-      resizeObserver.disconnect()
-      if (resizeTimeout.current) clearTimeout(resizeTimeout.current)
-    }
-  }, [])
-
-  const chartData = useMemo(() => {
-    if (!data) return []
+    const sections = Array.from(sectionSet).sort()
 
     const map = {}
 
-    data.forEach((item) => {
-      const key = String(item.ClassID).replace(/^0+/, '')
-      map[key] = item.StudentStrength
+    data.forEach((cls) => {
+      const key = String(cls.class).replace(/^0+/, '')
+
+      map[key] = {}
+
+      cls.sections.forEach((s) => {
+        map[key][s.section] = s.strength
+      })
     })
 
-    return classes.map((cls) => ({
-      class: cls,
-      strength: map[cls] || 0,
-    }))
+    const chartData = classes.map((cls) => {
+      const row = { class: cls }
+
+      sections.forEach((section) => {
+        row[section] = map[cls]?.[section] || 0
+      })
+
+      return row
+    })
+
+    return { chartData, sections }
   }, [data])
 
+  /*
+  ----------------------------------
+  Attendance Pie
+  ----------------------------------
+  */
+
   const { data: attendanceData } = useTodayAttendanceCount()
+
   const attendanceDataArray = attendanceData?.Data ?? []
 
   const current = attendanceDataArray.find((tab) => tab.entity === active) || {}
@@ -85,11 +86,10 @@ export default function DashboardChartsSection() {
 
   const hasNonZero = pieData.some((d) => d.value > 0)
 
-  console.log(data)
-
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[3fr_2fr] gap-4 mt-8 items-stretch">
       {/* Student Strength Chart */}
+
       <Card className="min-w-0 rounded-sm h-full">
         <CardHeader>
           <CardTitle className="text-base font-semibold">
@@ -97,7 +97,7 @@ export default function DashboardChartsSection() {
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="h-98">
+        <CardContent className="h-[320px] sm:h-[360px]">
           {isLoading ? (
             <div className="space-y-3">
               <Skeleton className="h-6 w-40" />
@@ -105,16 +105,53 @@ export default function DashboardChartsSection() {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis dataKey="class" tick={{ fontSize: 11 }} interval={0} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar
-                  dataKey="strength"
-                  fill="#3b82f6"
-                  radius={[4, 4, 0, 0]}
-                  isAnimationActive={false}
+              <BarChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: -10, bottom: 10 }}
+                barCategoryGap="20%"
+              >
+                <XAxis
+                  dataKey="class"
+                  tick={{ fontSize: 10 }}
+                  interval="preserveStartEnd"
                 />
+
+                <YAxis allowDecimals={false} tick={{ fontSize: 10 }} width={28} />
+
+                <Tooltip
+                  contentStyle={{
+                    background: 'rgba(15, 23, 42, 0.75)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    padding: '10px 12px',
+                  }}
+                  labelStyle={{
+                    color: '#e5e7eb',
+                    fontWeight: 600,
+                    marginBottom: '4px',
+                  }}
+                  itemStyle={{
+                    color: '#f1f5f9',
+                    fontSize: '13px',
+                  }}
+                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                />
+
+                <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="bottom" />
+
+                {sections.map((section, index) => (
+                  <Bar
+                    key={section}
+                    dataKey={section}
+                    stackId="a"
+                    fill={SECTION_COLORS[index % SECTION_COLORS.length]}
+                    maxBarSize={30}
+                    radius={[3, 3, 0, 0]}
+                    isAnimationActive={false}
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -122,6 +159,7 @@ export default function DashboardChartsSection() {
       </Card>
 
       {/* Attendance Pie */}
+
       <Card className="min-w-0 rounded-sm">
         <CardHeader className="space-y-3">
           <CardTitle className="text-base font-semibold">Attendance Overview</CardTitle>
@@ -199,6 +237,8 @@ export default function DashboardChartsSection() {
     </div>
   )
 }
+
+const SECTION_COLORS = ['#3b82f6', '#ef4444', '#8b5cf6', '#22c55e', '#f59e0b']
 
 const PieTooltip = ({ active, payload, pieData }) => {
   if (!active || !payload?.length) return null
