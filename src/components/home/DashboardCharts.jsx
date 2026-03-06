@@ -17,6 +17,7 @@ import {
 import { useStudentStrength } from '@/hooks/useStudents'
 import { Skeleton } from '@/components/ui/skeleton'
 import { classes } from '@/data/basicData'
+import { CircleLoader } from '../layout/RouteLoader'
 
 export default function DashboardChartsSection() {
   const { data, isLoading } = useStudentStrength()
@@ -84,6 +85,8 @@ export default function DashboardChartsSection() {
 
   const hasNonZero = pieData.some((d) => d.value > 0)
 
+  console.log(data)
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[3fr_2fr] gap-4 mt-8 items-stretch">
       {/* Student Strength Chart */}
@@ -94,28 +97,26 @@ export default function DashboardChartsSection() {
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="h-72 overflow-hidden flex-1">
+        <CardContent className="h-98">
           {isLoading ? (
             <div className="space-y-3">
               <Skeleton className="h-6 w-40" />
               <Skeleton className="h-64 w-full" />
             </div>
           ) : (
-            <div ref={containerRef} className="w-full h-full">
-              {width > 0 && (
-                <BarChart width={width} height={380} data={chartData}>
-                  <XAxis dataKey="class" tick={{ fontSize: 11 }} interval={0} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar
-                    dataKey="strength"
-                    fill="#3b82f6"
-                    radius={[4, 4, 0, 0]}
-                    isAnimationActive={false}
-                  />
-                </BarChart>
-              )}
-            </div>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <XAxis dataKey="class" tick={{ fontSize: 11 }} interval={0} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar
+                  dataKey="strength"
+                  fill="#3b82f6"
+                  radius={[4, 4, 0, 0]}
+                  isAnimationActive={false}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
