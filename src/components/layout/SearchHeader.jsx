@@ -16,21 +16,24 @@ export default function SearchHeader({ column, title, type = 'text', options = [
 
   const [operator, setOperator] = useState(currentFilter?.operator || 'contains')
   const [value, setValue] = useState(currentFilter?.value || '')
+  const [open, setOpen] = useState(false)
 
   const applyFilter = () => {
     column.setFilterValue({ operator, value })
+    setOpen(false) // close popup
   }
 
   const clearFilter = () => {
     column.setFilterValue(undefined)
     setValue('')
+    setOpen(false) // close popup
   }
 
   return (
     <div className="flex items-center gap-1">
       <span>{title}</span>
 
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon">
             <Filter
@@ -40,7 +43,6 @@ export default function SearchHeader({ column, title, type = 'text', options = [
         </PopoverTrigger>
 
         <PopoverContent className="w-56 space-y-3">
-          {/* operator */}
           {type !== 'select' && (
             <Select value={operator} onValueChange={setOperator}>
               <SelectTrigger>
@@ -52,6 +54,7 @@ export default function SearchHeader({ column, title, type = 'text', options = [
                 <SelectItem value="equals">Equals</SelectItem>
                 <SelectItem value="startsWith">Starts With</SelectItem>
                 <SelectItem value="endsWith">Ends With</SelectItem>
+
                 {type === 'number' && (
                   <>
                     <SelectItem value="greaterThan">Greater Than</SelectItem>
@@ -62,13 +65,13 @@ export default function SearchHeader({ column, title, type = 'text', options = [
             </Select>
           )}
 
-          {/* value input */}
           {type === 'select' ? (
             <Select
               value={value}
               onValueChange={(v) => {
                 setValue(v)
                 column.setFilterValue({ operator: 'equals', value: v })
+                setOpen(false) // close popup
               }}
             >
               <SelectTrigger>
@@ -92,17 +95,17 @@ export default function SearchHeader({ column, title, type = 'text', options = [
             />
           )}
 
-          <div className="flex justify-between">
-            <Button size="sm" variant="outline" onClick={clearFilter}>
-              Clear
-            </Button>
+          {type !== 'select' && (
+            <div className="flex justify-between">
+              <Button size="sm" variant="outline" onClick={clearFilter}>
+                Clear
+              </Button>
 
-            {type !== 'select' && (
               <Button size="sm" onClick={applyFilter}>
                 Apply
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </PopoverContent>
       </Popover>
     </div>
