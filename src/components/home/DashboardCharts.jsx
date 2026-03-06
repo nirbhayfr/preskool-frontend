@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTodayAttendanceCount } from '@/hooks/useAttendance'
 import { cn } from '@/lib/utils'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import {
   BarChart,
   Bar,
@@ -14,11 +14,16 @@ import {
   Cell,
   Legend,
 } from 'recharts'
-import { CircleLoader } from '../layout/RouteLoader'
+import { useStudentStrength } from '@/hooks/useStudents'
+import { Skeleton } from '@/components/ui/skeleton'
+import { classes } from '@/data/basicData'
 
 export default function DashboardChartsSection() {
+  const { data, isLoading } = useStudentStrength()
+
   const [active, setActive] = useState('Staff')
   const [width, setWidth] = useState(0)
+
   const containerRef = useRef(null)
   const resizeTimeout = useRef(null)
 
@@ -27,12 +32,14 @@ export default function DashboardChartsSection() {
 
     const handleResize = () => {
       if (resizeTimeout.current) clearTimeout(resizeTimeout.current)
+
       resizeTimeout.current = setTimeout(() => {
         setWidth(containerRef.current.offsetWidth)
       }, 100)
     }
 
     const resizeObserver = new ResizeObserver(handleResize)
+
     resizeObserver.observe(containerRef.current)
 
     setWidth(containerRef.current.offsetWidth)
@@ -43,10 +50,27 @@ export default function DashboardChartsSection() {
     }
   }, [])
 
+  const chartData = useMemo(() => {
+    if (!data) return []
+
+    const map = {}
+
+    data.forEach((item) => {
+      const key = String(item.ClassID).replace(/^0+/, '')
+      map[key] = item.StudentStrength
+    })
+
+    return classes.map((cls) => ({
+      class: cls,
+      strength: map[cls] || 0,
+    }))
+  }, [data])
+
   const { data: attendanceData } = useTodayAttendanceCount()
   const attendanceDataArray = attendanceData?.Data ?? []
 
   const current = attendanceDataArray.find((tab) => tab.entity === active) || {}
+
   const present = current.present || 0
   const absent = current.absent || 0
   const total = current.total
@@ -58,58 +82,49 @@ export default function DashboardChartsSection() {
 
   const PIE_COLORS = ['#3b82f6', '#94a3b8']
 
-  const feeData = [
-    { month: 'Jan', collected: 420000, total: 500000 },
-    { month: 'Feb', collected: 380000, total: 500000 },
-    { month: 'Mar', collected: 460000, total: 500000 },
-    { month: 'Apr', collected: 490000, total: 520000 },
-    { month: 'May', collected: 510000, total: 520000 },
-    { month: 'Jun', collected: 470000, total: 520000 },
-    { month: 'Jul', collected: 530000, total: 550000 },
-    { month: 'Aug', collected: 540000, total: 550000 },
-    { month: 'Sep', collected: 520000, total: 550000 },
-    { month: 'Oct', collected: 560000, total: 580000 },
-    { month: 'Nov', collected: 570000, total: 580000 },
-    { month: 'Dec', collected: 590000, total: 600000 },
-  ]
-
   const hasNonZero = pieData.some((d) => d.value > 0)
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[3fr_2fr] gap-4 mt-8 items-stretch">
-      {/* Bar Chart – Fees */}
+      {/* Student Strength Chart */}
       <Card className="min-w-0 rounded-sm h-full">
         <CardHeader>
           <CardTitle className="text-base font-semibold">
-            Fees Collection (2025)
+            Student Strength By Class
           </CardTitle>
         </CardHeader>
 
         <CardContent className="h-72 overflow-hidden flex-1">
-          <div ref={containerRef} className="w-full h-full">
-            {width > 0 && (
-              <BarChart width={width} height={380} data={feeData} barGap={6}>
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} interval={0} />
-                <YAxis
-                  width={40}
-                  tick={{ fontSize: 11 }}
-                  tickFormatter={(v) => `${v / 1000}k`}
-                />
-                <Tooltip cursor={false} content={<FeesTooltip />} />
-                <Bar dataKey="total" fill="#bfdbfe" isAnimationActive={false} />
-                <Bar dataKey="collected" fill="#3b82f6" isAnimationActive={false} />
-              </BarChart>
-            )}
-          </div>
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : (
+            <div ref={containerRef} className="w-full h-full">
+              {width > 0 && (
+                <BarChart width={width} height={380} data={chartData}>
+                  <XAxis dataKey="class" tick={{ fontSize: 11 }} interval={0} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar
+                    dataKey="strength"
+                    fill="#3b82f6"
+                    radius={[4, 4, 0, 0]}
+                    isAnimationActive={false}
+                  />
+                </BarChart>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Pie Chart – Attendance */}
+      {/* Attendance Pie */}
       <Card className="min-w-0 rounded-sm">
         <CardHeader className="space-y-3">
           <CardTitle className="text-base font-semibold">Attendance Overview</CardTitle>
 
-          {/* Toggle */}
           <div className="flex gap-2">
             {attendanceDataArray.map((tab) => (
               <button
@@ -127,20 +142,20 @@ export default function DashboardChartsSection() {
             ))}
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-3 pt-1">
             <div className="rounded-md border bg-muted/40 p-3 text-green-600">
-              <p className="text-xs ">Present</p>
-              <p className="text-xl font-semibold ">{present}</p>
+              <p className="text-xs">Present</p>
+              <p className="text-xl font-semibold">{present}</p>
             </div>
 
             <div className="rounded-md border bg-muted/40 p-3 text-red-600">
-              <p className="text-xs ">Absent</p>
-              <p className="text-xl font-semibold ">{absent}</p>
+              <p className="text-xs">Absent</p>
+              <p className="text-xl font-semibold">{absent}</p>
             </div>
+
             <div className="rounded-md border bg-muted/40 p-3 text-foreground">
               <p className="text-xs">Total</p>
-              <p className="text-xl font-semibold ">{total}</p>
+              <p className="text-xl font-semibold">{total}</p>
             </div>
           </div>
         </CardHeader>
@@ -180,24 +195,6 @@ export default function DashboardChartsSection() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-const FeesTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null
-
-  return (
-    <div className="rounded-md border bg-background p-2 text-sm shadow-md">
-      <p className="font-medium">{label}</p>
-      {payload.map((item) => (
-        <p key={item.dataKey} className="text-muted-foreground">
-          {item.name}:{' '}
-          <span className="font-semibold text-foreground">
-            ₹{item.value?.toLocaleString()}
-          </span>
-        </p>
-      ))}
     </div>
   )
 }

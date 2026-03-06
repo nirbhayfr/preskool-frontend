@@ -1,54 +1,62 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-	fetchStudents,
-	fetchStudentById,
-	createStudent,
-	updateStudent,
-	deleteStudent,
-} from "@/api/students";
+  fetchStudents,
+  fetchStudentById,
+  createStudent,
+  updateStudent,
+  deleteStudent,
+  fetchStudentStrength,
+} from '@/api/students'
 
 export const useStudents = () =>
-	useQuery({
-		queryKey: ["students"],
-		queryFn: fetchStudents,
-	});
+  useQuery({
+    queryKey: ['students'],
+    queryFn: fetchStudents,
+  })
 
 export const useStudent = (id) =>
-	useQuery({
-		queryKey: ["students", id],
-		queryFn: () => fetchStudentById(id),
-		enabled: !!id,
-	});
+  useQuery({
+    queryKey: ['students', id],
+    queryFn: () => fetchStudentById(id),
+    enabled: !!id,
+  })
+
+export const useStudentStrength = (ClassID, SectionID) => {
+  return useQuery({
+    queryKey: ['student-strength', ClassID, SectionID],
+    queryFn: () => fetchStudentStrength({ ClassID, SectionID }),
+  })
+}
 
 export const useCreateStudent = () => {
-	const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
-	return useMutation({
-		mutationFn: createStudent,
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["students"] });
-		},
-	});
-};
+  return useMutation({
+    mutationFn: createStudent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+    },
+  })
+}
 
 export const useUpdateStudent = () => {
-	const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
-	return useMutation({
-		mutationFn: updateStudent,
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["students"] });
-		},
-	});
-};
+  return useMutation({
+    mutationFn: updateStudent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+    },
+  })
+}
 
 export const useDeleteStudent = () => {
-	const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
-	return useMutation({
-		mutationFn: deleteStudent,
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["students"] });
-		},
-	});
-};
+  return useMutation({
+    mutationFn: deleteStudent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+    },
+  })
+}

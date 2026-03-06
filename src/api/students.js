@@ -1,26 +1,37 @@
-import api from "./api";
+import api from './api'
 
 export const fetchStudents = async () => {
-	const { data } = await api.get("/student/students");
-	return data;
-};
+  const { data } = await api.get('/student/students')
+  return data
+}
 
 export const fetchStudentById = async (id) => {
-	const { data } = await api.get(`/student/students/${id}`);
-	return data.data;
-};
+  const { data } = await api.get(`/student/students/${id}`)
+  return data.data
+}
+
+export const fetchStudentStrength = async ({ ClassID, SectionID } = {}) => {
+  const params = {}
+
+  if (ClassID) params.ClassID = ClassID
+  if (SectionID) params.SectionID = SectionID
+
+  const { data } = await api.get(`/student/students/class/strength`, { params })
+
+  return data.data
+}
 
 export const createStudent = async (payload) => {
-	const { data } = await api.post("/student/students/upsert", payload);
-	return data;
-};
+  const { data } = await api.post('/student/students/upsert', payload)
+  return data
+}
 
 export const updateStudent = async ({ id, payload }) => {
-	const { data } = await api.put(`/student/students/${id}`, payload);
-	return data;
-};
+  const { data } = await api.put(`/student/students/${id}`, payload)
+  return data
+}
 
 export const deleteStudent = async (id) => {
-	const { data } = await api.delete(`/student/students/${id}`);
-	return data;
-};
+  const { data } = await api.delete(`/student/students/${id}`)
+  return data
+}
