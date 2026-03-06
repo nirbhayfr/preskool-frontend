@@ -5,7 +5,54 @@ import { AttendanceCell } from '../student-attendance/AttendanceCell'
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
 
 import SearchHeader from '../layout/SearchHeader'
-import { advancedFilter } from '../student-list/StudentColumns'
+
+const advancedFilter = (row, columnId, filterValue) => {
+  if (!filterValue) return true
+
+  let rowValue = row.getValue(columnId)
+
+  if (columnId === 'Status' && (rowValue === null || rowValue === undefined)) {
+    rowValue = 'Inactive'
+  }
+
+  if (columnId === 'TransportStatus' && (rowValue === null || rowValue === undefined)) {
+    rowValue = 'No'
+  }
+
+  if (rowValue === undefined || rowValue === null) return false
+
+  const value = String(rowValue).toLowerCase()
+  const search = String(filterValue.value ?? '').toLowerCase()
+
+  switch (filterValue.operator) {
+    case 'equals':
+      return value === search
+
+    case 'notEquals':
+      return value !== search
+
+    case 'startsWith':
+      return value.startsWith(search)
+
+    case 'endsWith':
+      return value.endsWith(search)
+
+    case 'greaterThan':
+      return Number(rowValue) > Number(filterValue.value)
+
+    case 'lessThan':
+      return Number(rowValue) < Number(filterValue.value)
+
+    case 'empty':
+      return value === ''
+
+    case 'notEmpty':
+      return value !== ''
+
+    default:
+      return value.includes(search)
+  }
+}
 
 const formatValue = (value) => value ?? '—'
 

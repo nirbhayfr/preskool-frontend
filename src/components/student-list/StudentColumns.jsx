@@ -27,7 +27,7 @@ const handlePrintId = async (student) => {
   window.open(url)
 }
 
-export const advancedFilter = (row, columnId, filterValue) => {
+const advancedFilter = (row, columnId, filterValue) => {
   if (!filterValue) return true
 
   let rowValue = row.getValue(columnId)
