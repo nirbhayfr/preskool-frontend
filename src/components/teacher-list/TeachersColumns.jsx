@@ -1,16 +1,19 @@
 import { Button } from '@/components/ui/button'
 import { Mail, MessageSquare } from 'lucide-react'
-
 import { Link } from 'react-router-dom'
 import { AttendanceCell } from '../student-attendance/AttendanceCell'
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
+
+import SearchHeader from '../layout/SearchHeader'
+import { advancedFilter } from '../student-list/StudentColumns'
 
 const formatValue = (value) => value ?? '—'
 
 export const teachersColumns = () => [
   {
     accessorKey: 'TeacherID',
-    header: 'Teacher ID',
+    header: ({ column }) => <SearchHeader column={column} title="Teacher ID" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => (
       <Link
         to={`/teacher-details/${row.original.TeacherID}`}
@@ -63,17 +66,22 @@ export const teachersColumns = () => [
 
   {
     accessorKey: 'FullName',
-    header: 'Full Name',
+    header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.FullName),
   },
+
   {
     accessorKey: 'Gender',
-    header: 'Gender',
+    header: ({ column }) => <SearchHeader column={column} title="Gender" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.Gender),
   },
+
   {
     accessorKey: 'TodayStatus',
-    header: 'Today Status',
+    header: ({ column }) => <SearchHeader column={column} title="Today Status" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => {
       const value =
         row.original.TodayStatus === 'N' ? undefined : row.original.TodayStatus
@@ -81,137 +89,172 @@ export const teachersColumns = () => [
       return <AttendanceCell value={value} />
     },
   },
+
   {
     accessorKey: 'Class',
-    header: 'Class',
+    header: ({ column }) => <SearchHeader column={column} title="Class" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.Class),
   },
+
   {
     accessorKey: 'Section',
-    header: 'Section',
+    header: ({ column }) => <SearchHeader column={column} title="Section" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.Section),
   },
+
   {
     accessorKey: 'DateOfBirth',
-    header: 'DOB',
+    header: ({ column }) => <SearchHeader column={column} title="DOB" />,
+    filterFn: advancedFilter,
     cell: ({ row }) =>
       row.original.DateOfBirth
         ? new Date(row.original.DateOfBirth).toLocaleDateString()
         : '—',
   },
+
   {
     accessorKey: 'Subject',
-    header: 'Subject',
+    header: ({ column }) => <SearchHeader column={column} title="Subject" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.Subject),
   },
+
   {
     accessorKey: 'Email',
-    header: 'Email',
+    header: ({ column }) => <SearchHeader column={column} title="Email" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.Email),
   },
+
   {
     accessorKey: 'ContactNumber',
-    header: 'Contact No',
+    header: ({ column }) => <SearchHeader column={column} title="Contact No" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.ContactNumber),
   },
+
   {
     accessorKey: 'Qualification',
-    header: 'Qualification',
+    header: ({ column }) => <SearchHeader column={column} title="Qualification" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.Qualification),
   },
+
   {
     accessorKey: 'ExperienceYears',
-    header: 'Experience (Yrs)',
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Experience (Yrs)" type="number" />
+    ),
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.ExperienceYears),
   },
+
   {
     accessorKey: 'Address',
-    header: 'Address',
+    header: ({ column }) => <SearchHeader column={column} title="Address" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.Address),
   },
+
   {
     accessorKey: 'City',
-    header: 'City',
+    header: ({ column }) => <SearchHeader column={column} title="City" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.City),
   },
+
   {
     accessorKey: 'State',
-    header: 'State',
+    header: ({ column }) => <SearchHeader column={column} title="State" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.State),
   },
+
   {
     accessorKey: 'PostalCode',
-    header: 'Postal Code',
+    header: ({ column }) => <SearchHeader column={column} title="Postal Code" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.PostalCode),
   },
+
   {
     accessorKey: 'Nationality',
-    header: 'Nationality',
+    header: ({ column }) => <SearchHeader column={column} title="Nationality" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.Nationality),
   },
+
   {
     accessorKey: 'DateOfJoining',
-    header: 'Joining Date',
+    header: ({ column }) => <SearchHeader column={column} title="Joining Date" />,
+    filterFn: advancedFilter,
     cell: ({ row }) =>
       row.original.DateOfJoining
         ? new Date(row.original.DateOfJoining).toLocaleDateString()
         : '—',
   },
+
   {
     accessorKey: 'BloodGroup',
-    header: 'Blood Group',
+    header: ({ column }) => <SearchHeader column={column} title="Blood Group" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.BloodGroup),
   },
+
   {
     accessorKey: 'MaritalStatus',
-    header: 'Marital Status',
+    header: ({ column }) => <SearchHeader column={column} title="Marital Status" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.MaritalStatus),
   },
+
   {
     accessorKey: 'VehicleNumber',
-    header: 'Vehicle Number',
+    header: ({ column }) => <SearchHeader column={column} title="Vehicle Number" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.VehicleNumber),
   },
+
   {
     accessorKey: 'TransportNumber',
-    header: 'Transport Number',
+    header: ({ column }) => <SearchHeader column={column} title="Transport Number" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.TransportNumber),
   },
+
   {
     accessorKey: 'ProfilePictureUrl',
-    header: 'Profile Picture URL',
+    header: ({ column }) => <SearchHeader column={column} title="Profile Picture URL" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.ProfilePictureUrl),
   },
+
   {
     accessorKey: 'IDProofPhoto',
-    header: 'ID Proof Photo',
+    header: ({ column }) => <SearchHeader column={column} title="ID Proof Photo" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.IDProofPhoto),
   },
+
   {
     accessorKey: 'Salary',
-    header: 'Salary',
+    header: ({ column }) => <SearchHeader column={column} title="Salary" type="number" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.Salary),
   },
+
   {
     id: 'actions',
     header: 'Actions',
     cell: () => (
       <div className="flex gap-2">
-        {/* Mail */}
-        <Button
-          size="icon"
-          variant="outline"
-          // onClick={() => onMail(row.original.StudentID)}
-        >
+        <Button size="icon" variant="outline">
           <Mail className="h-4 w-4" />
         </Button>
 
-        {/* Message */}
-        <Button
-          size="icon"
-          variant="outline"
-          // onClick={() => onMessage(row.original.StudentID)}
-        >
+        <Button size="icon" variant="outline">
           <MessageSquare className="h-4 w-4" />
         </Button>
       </div>

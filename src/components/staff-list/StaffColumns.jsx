@@ -1,20 +1,25 @@
 import { Button } from '@/components/ui/button'
 import { Mail, MessageSquare } from 'lucide-react'
-
 import { Link } from 'react-router-dom'
 import { AttendanceCell } from '../student-attendance/AttendanceCell'
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
 
+import SearchHeader from '../layout/SearchHeader'
+import { advancedFilter } from '../student-list/StudentColumns'
+
+const formatValue = (value) => value ?? '-'
+
 export const staffColumns = () => [
   {
     accessorKey: 'StaffID',
-    header: 'Staff ID',
+    header: ({ column }) => <SearchHeader column={column} title="Staff ID" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => (
       <Link
         to={`/staff-details/${row.original.StaffID}`}
         className="text-primary font-medium"
       >
-        {row.original.StaffID ?? '-'}
+        {formatValue(row.original.StaffID)}
       </Link>
     ),
   },
@@ -61,17 +66,22 @@ export const staffColumns = () => [
 
   {
     accessorKey: 'FullName',
-    header: 'Full Name',
-    cell: ({ row }) => row.original.FullName ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.FullName),
   },
+
   {
     accessorKey: 'Role',
-    header: 'Role',
-    cell: ({ row }) => row.original.Role ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="Role" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Role),
   },
+
   {
     accessorKey: 'TodayStatus',
-    header: 'Today Status',
+    header: ({ column }) => <SearchHeader column={column} title="Today Status" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => {
       const value =
         row.original.TodayStatus === 'N' ? undefined : row.original.TodayStatus
@@ -79,25 +89,32 @@ export const staffColumns = () => [
       return <AttendanceCell value={value} />
     },
   },
+
   {
     accessorKey: 'Email',
-    header: 'Email',
-    cell: ({ row }) => row.original.Email ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="Email" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Email),
   },
+
   {
     accessorKey: 'ContactNumber',
-    header: 'Contact No',
-    cell: ({ row }) => row.original.ContactNumber ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="Contact No" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.ContactNumber),
   },
+
   {
     accessorKey: 'Gender',
-    header: 'Gender',
-    cell: ({ row }) => row.original.Gender ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="Gender" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Gender),
   },
 
   {
     accessorKey: 'DateOfBirth',
-    header: 'DOB',
+    header: ({ column }) => <SearchHeader column={column} title="DOB" />,
+    filterFn: advancedFilter,
     cell: ({ row }) =>
       row.original.DateOfBirth
         ? new Date(row.original.DateOfBirth).toLocaleDateString()
@@ -106,18 +123,22 @@ export const staffColumns = () => [
 
   {
     accessorKey: 'Qualification',
-    header: 'Qualification',
-    cell: ({ row }) => row.original.Qualification ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="Qualification" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Qualification),
   },
+
   {
     accessorKey: 'ExperienceYears',
-    header: 'Experience (Yrs)',
-    cell: ({ row }) => row.original.ExperienceYears ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="Experience (Yrs)" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.ExperienceYears),
   },
 
   {
     accessorKey: 'DateOfJoining',
-    header: 'Joining Date',
+    header: ({ column }) => <SearchHeader column={column} title="Joining Date" />,
+    filterFn: advancedFilter,
     cell: ({ row }) =>
       row.original.DateOfJoining
         ? new Date(row.original.DateOfJoining).toLocaleDateString()
@@ -125,64 +146,31 @@ export const staffColumns = () => [
   },
 
   {
-    accessorKey: 'Address',
-    header: 'Address',
-    cell: ({ row }) => row.original.Address ?? '-',
-  },
-  {
     accessorKey: 'City',
-    header: 'City',
-    cell: ({ row }) => row.original.City ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="City" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.City),
   },
+
   {
     accessorKey: 'State',
-    header: 'State',
-    cell: ({ row }) => row.original.State ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="State" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.State),
   },
-  {
-    accessorKey: 'PostalCode',
-    header: 'Postal Code',
-    cell: ({ row }) => row.original.PostalCode ?? '-',
-  },
-  {
-    accessorKey: 'Nationality',
-    header: 'Nationality',
-    cell: ({ row }) => row.original.Nationality ?? '-',
-  },
-  {
-    accessorKey: 'MaritalStatus',
-    header: 'Marital Status',
-    cell: ({ row }) => row.original.MaritalStatus ?? '-',
-  },
-  {
-    accessorKey: 'EmergencyContactName',
-    header: 'Emergency Contact Name',
-    cell: ({ row }) => row.original.EmergencyContactName ?? '-',
-  },
-  {
-    accessorKey: 'EmergencyContactNumber',
-    header: 'Emergency Contact Number',
-    cell: ({ row }) => row.original.EmergencyContactNumber ?? '-',
-  },
-  {
-    accessorKey: 'VehicleNumber',
-    header: 'Vehicle Number',
-    cell: ({ row }) => row.original.VehicleNumber ?? '-',
-  },
+
   {
     accessorKey: 'TransportNumber',
-    header: 'Transport Number',
-    cell: ({ row }) => row.original.TransportNumber ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="Transport Number" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.TransportNumber),
   },
+
   {
     accessorKey: 'Salary',
-    header: 'Salary',
-    cell: ({ row }) => row.original.Salary ?? '-',
-  },
-  {
-    accessorKey: 'IDProofPhoto',
-    header: 'ID Proof',
-    cell: ({ row }) => row.original.IDProofPhoto ?? '-',
+    header: ({ column }) => <SearchHeader column={column} title="Salary" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Salary),
   },
 
   {
@@ -190,12 +178,10 @@ export const staffColumns = () => [
     header: 'Actions',
     cell: () => (
       <div className="flex gap-2">
-        {/* Mail */}
         <Button size="icon" variant="outline">
           <Mail className="h-4 w-4" />
         </Button>
 
-        {/* Message */}
         <Button size="icon" variant="outline">
           <MessageSquare className="h-4 w-4" />
         </Button>

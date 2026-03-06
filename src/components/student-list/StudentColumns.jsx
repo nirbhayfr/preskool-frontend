@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { Mail, MessageSquare, Pencil, Trash } from 'lucide-react'
+import { Mail, MessageSquare } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { CollectFeesDialog } from './CollectFeesDialog'
 import { decryptData } from '@/utils/crypto'
@@ -34,6 +34,10 @@ export const advancedFilter = (row, columnId, filterValue) => {
 
   if (columnId === 'Status' && (rowValue === null || rowValue === undefined)) {
     rowValue = 'Inactive'
+  }
+
+  if (columnId === 'TransportStatus' && (rowValue === null || rowValue === undefined)) {
+    rowValue = 'No'
   }
 
   if (rowValue === undefined || rowValue === null) return false
@@ -129,9 +133,10 @@ export const studentsColumns = (setSelectedStudent) => [
   {
     accessorKey: 'FullName',
     header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
-    cell: ({ row }) => <span className="capitalize">{row.original.FullName}</span>,
     filterFn: advancedFilter,
+    cell: ({ row }) => <span className="capitalize">{row.original.FullName}</span>,
   },
+
   {
     accessorKey: 'Status',
     header: ({ column }) => (
@@ -160,9 +165,11 @@ export const studentsColumns = (setSelectedStudent) => [
       )
     },
   },
+
   {
     accessorKey: 'TodayStatus',
-    header: 'Today Status',
+    header: ({ column }) => <SearchHeader column={column} title="Today Status" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => {
       const value =
         row.original.TodayStatus === 'N' ? undefined : row.original.TodayStatus
@@ -170,6 +177,7 @@ export const studentsColumns = (setSelectedStudent) => [
       return <AttendanceCell value={value} />
     },
   },
+
   {
     accessorKey: 'ClassID',
     header: ({ column }) => (
@@ -177,6 +185,7 @@ export const studentsColumns = (setSelectedStudent) => [
     ),
     filterFn: advancedFilter,
   },
+
   {
     accessorKey: 'SectionID',
     header: ({ column }) => (
@@ -184,6 +193,7 @@ export const studentsColumns = (setSelectedStudent) => [
     ),
     filterFn: advancedFilter,
   },
+
   {
     accessorKey: 'Gender',
     header: ({ column }) => <SearchHeader column={column} title="Gender" />,
@@ -192,29 +202,37 @@ export const studentsColumns = (setSelectedStudent) => [
 
   {
     accessorKey: 'DOB',
-    header: 'DOB',
+    header: ({ column }) => <SearchHeader column={column} title="DOB" />,
+    filterFn: advancedFilter,
     cell: ({ row }) =>
       row.original.DOB ? new Date(row.original.DOB).toLocaleDateString() : '—',
   },
 
   {
     accessorKey: 'RollNo',
-    header: 'Roll No',
+    header: ({ column }) => <SearchHeader column={column} title="Roll No" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.RollNo ?? '—',
   },
+
   {
     accessorKey: 'IdentificationNumber',
-    header: 'ID Number',
+    header: ({ column }) => <SearchHeader column={column} title="ID Number" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.IdentificationNumber ?? '—',
   },
+
   {
     accessorKey: 'EnrollmentNumber',
-    header: 'Enrollment No',
+    header: ({ column }) => <SearchHeader column={column} title="Enrollment No" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.EnrollmentNumber ?? '—',
   },
+
   {
     accessorKey: 'AdmissionDate',
-    header: 'Admission Date',
+    header: ({ column }) => <SearchHeader column={column} title="Admission Date" />,
+    filterFn: advancedFilter,
     cell: ({ row }) =>
       row.original.AdmissionDate
         ? new Date(row.original.AdmissionDate).toLocaleDateString()
@@ -223,37 +241,49 @@ export const studentsColumns = (setSelectedStudent) => [
 
   {
     accessorKey: 'PreviousAcademicRecord',
-    header: 'Previous Record',
+    header: ({ column }) => <SearchHeader column={column} title="Previous Record" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.PreviousAcademicRecord ?? '—',
   },
 
   {
     accessorKey: 'AttendancePercentage',
-    header: 'Attendance %',
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Attendance %" type="number" />
+    ),
+    filterFn: advancedFilter,
     cell: ({ row }) =>
       row.original.AttendancePercentage ? `${row.original.AttendancePercentage}%` : '—',
   },
 
   {
     accessorKey: 'AcademicStatus',
-    header: 'Academic Status',
+    header: ({ column }) => <SearchHeader column={column} title="Academic Status" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.AcademicStatus ?? '—',
   },
+
   {
     accessorKey: 'ParentEmail',
-    header: 'Parent Email',
+    header: ({ column }) => <SearchHeader column={column} title="Parent Email" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.ParentEmail ?? '—',
   },
+
   {
     accessorKey: 'HouseName',
-    header: 'House',
+    header: ({ column }) => <SearchHeader column={column} title="House" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.HouseName ?? '—',
   },
+
   {
     accessorKey: 'Caste',
-    header: 'Caste',
+    header: ({ column }) => <SearchHeader column={column} title="Caste" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.Cast ?? '—',
   },
+
   {
     accessorKey: 'PendingFee',
     header: ({ column }) => (
@@ -262,11 +292,14 @@ export const studentsColumns = (setSelectedStudent) => [
     filterFn: advancedFilter,
     cell: ({ row }) => (row.original.PendingFee ? `₹${row.original.PendingFee}` : '₹0'),
   },
+
   {
     accessorKey: 'Route',
-    header: 'Transport Route',
+    header: ({ column }) => <SearchHeader column={column} title="Transport Route" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.Route ?? '—',
   },
+
   {
     accessorKey: 'TransportStatus',
     header: ({ column }) => (
@@ -290,173 +323,86 @@ export const studentsColumns = (setSelectedStudent) => [
       </span>
     ),
   },
+
   {
     accessorKey: 'VehicleNo',
-    header: 'Vehicle No',
+    header: ({ column }) => <SearchHeader column={column} title="Vehicle No" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.VehicleNo ?? '—',
   },
-  {
-    accessorKey: 'GuardianPhoto',
-    header: 'Guardian Photo',
-    cell: ({ row }) => {
-      const { GuardianPhoto, GuardianName } = row.original
 
-      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        GuardianName || 'Guardian'
-      )}&size=256`
-
-      const imageUrl = GuardianPhoto || avatarUrl
-
-      return (
-        <Dialog>
-          <DialogTrigger asChild>
-            <img
-              src={imageUrl}
-              alt="Guardian"
-              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
-              onError={(e) => {
-                e.currentTarget.src = avatarUrl
-              }}
-            />
-          </DialogTrigger>
-
-          <DialogContent className="max-w-md p-4">
-            <div className="flex flex-col items-center gap-3">
-              <img
-                src={imageUrl}
-                alt="Guardian"
-                className="max-h-[70vh] rounded-md object-contain"
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )
-    },
-  },
   {
     accessorKey: 'AdmissionNo',
-    header: 'Admission No',
+    header: ({ column }) => <SearchHeader column={column} title="Admission No" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.AdmissionNo ?? '—',
   },
+
   {
     accessorKey: 'Attendance',
-    header: 'Attendance',
+    header: ({ column }) => <SearchHeader column={column} title="Attendance" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.Attendance ?? '—',
   },
 
-  { accessorKey: 'Address', header: 'Address' },
-  { accessorKey: 'ContactNumber', header: 'Contact No' },
+  {
+    accessorKey: 'Address',
+    header: ({ column }) => <SearchHeader column={column} title="Address" />,
+    filterFn: advancedFilter,
+  },
+
+  {
+    accessorKey: 'ContactNumber',
+    header: ({ column }) => <SearchHeader column={column} title="Contact No" />,
+    filterFn: advancedFilter,
+  },
+
   {
     accessorKey: 'EmailAddress',
-    header: 'Email',
+    header: ({ column }) => <SearchHeader column={column} title="Email" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.EmailAddress ?? '—',
   },
+
   {
     accessorKey: 'Nationality',
-    header: 'Nationality',
+    header: ({ column }) => <SearchHeader column={column} title="Nationality" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.Nationality ?? '—',
   },
 
   {
-    accessorKey: 'FatherPhoto',
-    header: 'Father Photo',
-    cell: ({ row }) => {
-      const { FatherPhoto, GuardianName } = row.original
-
-      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        GuardianName || 'Father'
-      )}&size=256`
-
-      const imageUrl = FatherPhoto || avatarUrl
-
-      return (
-        <Dialog>
-          <DialogTrigger asChild>
-            <img
-              src={imageUrl}
-              alt="Father"
-              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
-              onError={(e) => {
-                e.currentTarget.src = avatarUrl
-              }}
-            />
-          </DialogTrigger>
-
-          <DialogContent className="max-w-md p-4">
-            <div className="flex flex-col items-center gap-3">
-              <img
-                src={imageUrl}
-                alt="Father"
-                className="max-h-[70vh] rounded-md object-contain"
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )
-    },
-  },
-  {
-    accessorKey: 'MotherPhoto',
-    header: 'Mother Photo',
-    cell: ({ row }) => {
-      const { MotherPhoto, GuardianName } = row.original
-
-      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        GuardianName || 'Mother'
-      )}&size=256`
-
-      const imageUrl = MotherPhoto || avatarUrl
-
-      return (
-        <Dialog>
-          <DialogTrigger asChild>
-            <img
-              src={imageUrl}
-              alt="Mother"
-              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
-              onError={(e) => {
-                e.currentTarget.src = avatarUrl
-              }}
-            />
-          </DialogTrigger>
-
-          <DialogContent className="max-w-md p-4">
-            <div className="flex flex-col items-center gap-3">
-              <img
-                src={imageUrl}
-                alt="Mother"
-                className="max-h-[70vh] rounded-md object-contain"
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )
-    },
-  },
-
-  {
     accessorKey: 'GuardianName',
-    header: 'Guardian Name',
+    header: ({ column }) => <SearchHeader column={column} title="Guardian Name" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.GuardianName ?? '—',
   },
+
   {
     accessorKey: 'GuardianRelation',
-    header: 'Guardian Relation',
+    header: ({ column }) => <SearchHeader column={column} title="Guardian Relation" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.GuardianRelation ?? '—',
   },
+
   {
     accessorKey: 'GuardianContact',
-    header: 'Guardian Contact',
+    header: ({ column }) => <SearchHeader column={column} title="Guardian Contact" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.GuardianContact ?? '—',
   },
+
   {
     accessorKey: 'GuardianOccupation',
-    header: 'Guardian Occupation',
+    header: ({ column }) => <SearchHeader column={column} title="Guardian Occupation" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.GuardianOccupation ?? '—',
   },
+
   {
     accessorKey: 'GuardianAddress',
-    header: 'Guardian Address',
+    header: ({ column }) => <SearchHeader column={column} title="Guardian Address" />,
+    filterFn: advancedFilter,
     cell: ({ row }) => row.original.GuardianAddress ?? '—',
   },
 
@@ -465,17 +411,14 @@ export const studentsColumns = (setSelectedStudent) => [
     header: 'Actions',
     cell: ({ row }) => (
       <div className="flex gap-2">
-        {/* Mail */}
         <Button size="icon" variant="outline">
           <Mail className="h-4 w-4" />
         </Button>
 
-        {/* Message */}
         <Button size="icon" variant="outline">
           <MessageSquare className="h-4 w-4" />
         </Button>
 
-        {/* Collect Fees */}
         {user?.Role === 'Admin' && (
           <CollectFeesDialog studentId={row.original.StudentID} />
         )}
