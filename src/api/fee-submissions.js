@@ -24,3 +24,11 @@ export const deleteFeeSubmission = async (id) => {
   const { data } = await api.delete(`/fee-submissions/${id}`)
   return data
 }
+
+export const fetchFeeCollectionByDate = async (date) => {
+  const { data } = await api.get('/fee-collection-by-date', {
+    params: { date },
+  })
+
+  return data
+}

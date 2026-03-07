@@ -5,6 +5,7 @@ import {
   getFeeSubmissionByTransaction,
   createFeeSubmission,
   deleteFeeSubmission,
+  fetchFeeCollectionByDate,
 } from '@/api/fee-submissions'
 
 // Fetch all fee submissions
@@ -49,5 +50,13 @@ export const useDeleteFeeSubmission = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feeSubmissions'] })
     },
+  })
+}
+
+export const useFeeCollectionByDate = (date) => {
+  return useQuery({
+    queryKey: ['fee-collection-by-date', date],
+    queryFn: () => fetchFeeCollectionByDate(date),
+    enabled: !!date,
   })
 }

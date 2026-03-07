@@ -18,6 +18,7 @@ import {
   Package,
   ReceiptText,
   BookOpenCheck,
+  Receipt,
 } from 'lucide-react'
 
 import {
@@ -132,6 +133,11 @@ const data = {
       title: 'Pending Fee',
       url: '/pending-fees',
       icon: ReceiptText,
+    },
+    {
+      title: 'Revenue List',
+      url: '/revenue',
+      icon: Receipt,
     },
   ],
   salary: [
@@ -286,7 +292,7 @@ export function AppSidebar({ ...props }) {
         )}
 
         {sidebarData.fees?.length > 0 && (
-          <NavSecondary items={sidebarData.fees} name="fees" />
+          <NavSecondary items={sidebarData.fees} name="fees & revenue" />
         )}
 
         {sidebarData.library?.length > 0 && (
