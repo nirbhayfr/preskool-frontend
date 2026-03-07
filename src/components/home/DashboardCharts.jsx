@@ -13,6 +13,7 @@ import {
   Pie,
   Cell,
   Legend,
+  LabelList,
 } from 'recharts'
 import { useStudentStrength } from '@/hooks/useStudents'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -60,12 +61,6 @@ export default function DashboardChartsSection() {
 
     return { chartData, sections }
   }, [data])
-
-  /*
-  ----------------------------------
-  Attendance Pie
-  ----------------------------------
-  */
 
   const { data: attendanceData } = useTodayAttendanceCount()
 
@@ -150,7 +145,15 @@ export default function DashboardChartsSection() {
                     maxBarSize={30}
                     radius={[3, 3, 0, 0]}
                     isAnimationActive={false}
-                  />
+                  >
+                    <LabelList
+                      dataKey={section}
+                      position="inside"
+                      fill="#fff"
+                      fontSize={10}
+                      formatter={(value) => (value > 0 ? value : '')}
+                    />
+                  </Bar>
                 ))}
               </BarChart>
             </ResponsiveContainer>
