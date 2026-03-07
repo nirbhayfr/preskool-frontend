@@ -26,6 +26,16 @@ export default function RevenueListPage() {
 
   const dailyCollection = dailyData?.data || []
 
+  /* FEE COLLECTION BY DATE */
+  const {
+    data: feeData,
+    isLoading: feeLoading,
+    isError: feeError,
+    error: feeErrorMessage,
+  } = useFeeCollectionByDate(selectedDate)
+
+  const feeCollection = feeData?.data || []
+
   const filledDailyCollection = useMemo(() => {
     if (!fromDate || !toDate) return dailyCollection
 
@@ -59,15 +69,33 @@ export default function RevenueListPage() {
     return result
   }, [dailyCollection, fromDate, toDate])
 
-  /* FEE COLLECTION BY DATE */
-  const {
-    data: feeData,
-    isLoading: feeLoading,
-    isError: feeError,
-    error: feeErrorMessage,
-  } = useFeeCollectionByDate(selectedDate)
+  const dailyTotals = useMemo(() => {
+    if (!fromDate || !toDate) return null
 
-  const feeCollection = feeData?.data || []
+    return filledDailyCollection.reduce(
+      (acc, curr) => {
+        acc.fee += curr.FeeCollection
+        acc.fine += curr.FineCollection
+        acc.total += curr.TotalCollection
+        return acc
+      },
+      { fee: 0, fine: 0, total: 0 }
+    )
+  }, [filledDailyCollection, fromDate, toDate])
+
+  const feeTotals = useMemo(() => {
+    if (!selectedDate) return null
+
+    return feeCollection.reduce(
+      (acc, curr) => {
+        acc.original += curr.OriginalAmount
+        acc.discount += curr.DiscountAmount
+        acc.paid += curr.PaidAmount
+        return acc
+      },
+      { original: 0, discount: 0, paid: 0 }
+    )
+  }, [feeCollection, selectedDate])
 
   /* DAILY TABLE */
   const dailyColumns = [
@@ -152,22 +180,22 @@ export default function RevenueListPage() {
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <CardTitle>Collection By Date</CardTitle>
 
-          <div className="flex gap-3">
+          <div className="flex flex-row gap-3 flex-wrap">
             <Input
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="w-[160px]"
+              className="w-full sm:w-[160px]"
             />
 
             <Input
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="w-[160px]"
+              className="w-full sm:w-[160px]"
             />
 
-            <Button variant="outline" onClick={refetch}>
+            <Button variant="outline" onClick={refetch} className="w-full sm:w-auto">
               Apply
             </Button>
           </div>
@@ -189,7 +217,33 @@ export default function RevenueListPage() {
               No collection data found
             </div>
           ) : (
-            <TableLayout columns={dailyColumns} data={filledDailyCollection} />
+            <>
+              {dailyTotals && (
+                <div className="grid grid-cols-3 gap-3 mb-4 text-sm">
+                  <div className="rounded-md border bg-muted/40 p-3">
+                    <p className="text-xs text-muted-foreground">Fee Total</p>
+                    <p className="font-semibold text-blue-600">
+                      ₹ {dailyTotals.fee.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="rounded-md border bg-muted/40 p-3">
+                    <p className="text-xs text-muted-foreground">Fine Total</p>
+                    <p className="font-semibold text-orange-600">
+                      ₹ {dailyTotals.fine.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="rounded-md border bg-muted/40 p-3">
+                    <p className="text-xs text-muted-foreground">Grand Total</p>
+                    <p className="font-semibold">
+                      ₹ {dailyTotals.total.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <TableLayout columns={dailyColumns} data={filledDailyCollection} />
+            </>
           )}
         </CardContent>
       </Card>
@@ -224,7 +278,33 @@ export default function RevenueListPage() {
               No fee submissions found
             </div>
           ) : (
-            <TableLayout columns={feeColumns} data={feeCollection} />
+            <>
+              {feeTotals && (
+                <div className="grid grid-cols-3 gap-3 mb-4 text-sm">
+                  <div className="rounded-md border bg-muted/40 p-3">
+                    <p className="text-xs text-muted-foreground">Amount</p>
+                    <p className="font-semibold">
+                      ₹ {feeTotals.original.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="rounded-md border bg-muted/40 p-3">
+                    <p className="text-xs text-muted-foreground">Discount</p>
+                    <p className="font-semibold text-orange-600">
+                      ₹ {feeTotals.discount.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="rounded-md border bg-muted/40 p-3">
+                    <p className="text-xs text-muted-foreground">Paid Amount</p>
+                    <p className="font-semibold text-green-600">
+                      ₹ {feeTotals.paid.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <TableLayout columns={feeColumns} data={feeCollection} />
+            </>
           )}
         </CardContent>
       </Card>

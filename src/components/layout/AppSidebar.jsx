@@ -19,6 +19,7 @@ import {
   ReceiptText,
   BookOpenCheck,
   Receipt,
+  Wallet,
 } from 'lucide-react'
 
 import {
@@ -138,6 +139,11 @@ const data = {
       title: 'Revenue List',
       url: '/revenue',
       icon: Receipt,
+    },
+    {
+      title: 'Budget List',
+      url: '/budget',
+      icon: Wallet,
     },
   ],
   salary: [
@@ -340,7 +346,11 @@ function NavMain({ items, name }) {
                           {item.items.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton asChild>
-                                <a href={subItem.url}>
+                                <a
+                                  href={subItem.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
                                   <span>{subItem.title}</span>
                                 </a>
                               </SidebarMenuSubButton>
@@ -351,7 +361,7 @@ function NavMain({ items, name }) {
                     </Collapsible>
                   ) : (
                     <SidebarMenuButton asChild>
-                      <a href={item.url}>
+                      <a href={item.url} target="_blank" rel="noopener noreferrer">
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </a>
@@ -390,7 +400,12 @@ function NavSecondary({ items, name }) {
                 isActive={active}
                 className="data-[active=true]:text-sidebar-primary"
               >
-                <a href={item.url} className="flex items-center gap-2">
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
                   <item.icon className="h-4 w-4" />
                   <span>{item.title}</span>
                 </a>

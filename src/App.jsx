@@ -58,6 +58,7 @@ import BookList from './pages/BookList'
 import InventoryPage from './pages/InventoryPage'
 import BookIssues from './pages/BookIssues'
 import RevenuePage from './pages/RevenuePage'
+import BudgetPage from './pages/BudgetPage'
 
 function App() {
   return (
@@ -133,6 +134,7 @@ function App() {
               />
               <Route path="/pending-fees" element={<PendingFeesPage />} />
               <Route path="/revenue" element={<RevenuePage />} />
+              <Route path="/budget" element={<BudgetPage />} />
 
               <Route path="/exam-result" element={<ExamResultPage />} />
               <Route path="inventory" element={<InventoryPage />} />
