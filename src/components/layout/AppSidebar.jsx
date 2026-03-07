@@ -346,11 +346,7 @@ function NavMain({ items, name }) {
                           {item.items.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton asChild>
-                                <a
-                                  href={subItem.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
+                                <a href={subItem.url}>
                                   <span>{subItem.title}</span>
                                 </a>
                               </SidebarMenuSubButton>
@@ -361,7 +357,7 @@ function NavMain({ items, name }) {
                     </Collapsible>
                   ) : (
                     <SidebarMenuButton asChild>
-                      <a href={item.url} target="_blank" rel="noopener noreferrer">
+                      <a href={item.url}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </a>
@@ -402,7 +398,6 @@ function NavSecondary({ items, name }) {
               >
                 <a
                   href={item.url}
-                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2"
                 >

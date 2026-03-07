@@ -11,9 +11,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 
 export default function RevenueListPage() {
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
-  const [selectedDate, setSelectedDate] = useState('')
+  const today = new Date()
+  const oneWeekAgo = new Date()
+  oneWeekAgo.setDate(today.getDate() - 7)
+
+  const [fromDate, setFromDate] = useState(oneWeekAgo.toISOString().split('T')[0])
+  const [toDate, setToDate] = useState(today.toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState(today.toISOString().split('T')[0])
 
   /* DAILY COLLECTION */
   const {
