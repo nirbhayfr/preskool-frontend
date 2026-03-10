@@ -20,6 +20,7 @@ import {
   BookOpenCheck,
   Receipt,
   Wallet,
+  Form,
 } from 'lucide-react'
 
 import {
@@ -199,6 +200,14 @@ const data = {
       icon: BookOpenCheck,
     },
   ],
+
+  documents: [
+    {
+      title: 'Admission Form',
+      url: '/admission-form',
+      icon: Form,
+    },
+  ],
 }
 
 function getSidebarDataByRole(role) {
@@ -216,6 +225,7 @@ function getSidebarDataByRole(role) {
       fees: [], // teachers don’t see fees
       salary: [],
       library: [],
+      documents: [],
     }
   }
 
@@ -229,6 +239,7 @@ function getSidebarDataByRole(role) {
       salary: [],
       additional: [],
       library: [],
+      documents: [],
     }
   }
 
@@ -241,6 +252,7 @@ function getSidebarDataByRole(role) {
       fees: [],
       salary: [],
       additional: [],
+      documents: [],
     }
   }
 
@@ -303,6 +315,10 @@ export function AppSidebar({ ...props }) {
 
         {sidebarData.library?.length > 0 && (
           <NavSecondary items={sidebarData.library} name="library" />
+        )}
+
+        {sidebarData.documents?.length > 0 && (
+          <NavSecondary items={sidebarData.documents} name="docs" />
         )}
       </SidebarContent>
 

@@ -59,6 +59,7 @@ import InventoryPage from './pages/InventoryPage'
 import BookIssues from './pages/BookIssues'
 import RevenuePage from './pages/RevenuePage'
 import BudgetPage from './pages/BudgetPage'
+import AdmissionForm from './pages/AdmissionForm'
 
 function App() {
   return (
@@ -146,6 +147,8 @@ function App() {
 
               <Route path="/book-list" element={<BookList />} />
               <Route path="/book-issues" element={<BookIssues />} />
+
+              <Route path="/admission-form" element={<AdmissionForm />} />
             </Route>
           </Route>
         </Routes>

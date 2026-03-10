@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'https://preskool-project.onrender.com/api',
+  baseURL: 'https://erp-backend-2ybf.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
