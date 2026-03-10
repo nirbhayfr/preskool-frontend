@@ -6,7 +6,7 @@ import { decryptData } from '@/utils/crypto'
 const tabs = [
   { label: 'Student Details', value: 'details', icon: User },
   { label: 'Attendance', value: 'attendance', icon: ClipboardCheck },
-  { label: 'Fees', value: 'fees', icon: CreditCard, roles: ['Admin'] },
+  // { label: 'Fees', value: 'fees', icon: CreditCard, roles: ['Admin'] },
   { label: 'Exam & Results', value: 'exams', icon: FileText },
   { label: 'Library', value: 'library', icon: BookOpen },
 ]

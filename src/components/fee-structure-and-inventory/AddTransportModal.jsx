@@ -4,57 +4,64 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useCreateTransport, useUpdateTransport } from '@/hooks/useTransport'
 import { toast } from 'sonner'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
 
 function AddTransportModal({ open, onClose, editingData }) {
   const { mutate: createTransport } = useCreateTransport()
   const { mutate: updateTransport } = useUpdateTransport()
 
-  const [form, setForm] = useState({
+  const initialState = {
+    TransportID: '',
     TransportNumber: '',
     TransportType: '',
     TransporterName: '',
     OwnerName: '',
     JoiningDate: '',
     GPSNumber: '',
+    RouteName: '',
     Route: '',
+    Price: '',
     Description: '',
     Status: 'Active',
-  })
+  }
+
+  const [form, setForm] = useState(initialState)
 
   useEffect(() => {
     if (editingData) {
       setForm({
+        ...initialState,
         ...editingData,
         JoiningDate: editingData.JoiningDate?.split('T')[0],
       })
     } else {
-      setForm({
-        TransportNumber: '',
-        TransportType: '',
-        TransporterName: '',
-        OwnerName: '',
-        JoiningDate: '',
-        GPSNumber: '',
-        Route: '',
-        Description: '',
-        Status: 'Active',
-      })
+      setForm(initialState)
     }
-  }, [editingData])
+  }, [editingData, open])
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = () => {
     const payload = {
+      transportId: form.TransportID,
       transportNumber: form.TransportNumber,
       transportType: form.TransportType,
       transporterName: form.TransporterName,
       ownerName: form.OwnerName,
       joiningDate: form.JoiningDate,
       gpsNumber: form.GPSNumber,
+      routeName: form.RouteName,
       route: form.Route,
+      price: Number(form.Price) || 0,
       description: form.Description,
       status: form.Status,
     }
@@ -97,15 +104,23 @@ function AddTransportModal({ open, onClose, editingData }) {
 
         <div className="space-y-3">
           <Input
+            name="TransportID"
+            placeholder="Transport ID"
+            value={form.TransportID}
+            onChange={handleChange}
+            disabled={!!editingData}
+          />
+
+          <Input
             name="TransportNumber"
-            placeholder="Transport Number e.g., BUS-12"
+            placeholder="Transport Number (BUS-12)"
             value={form.TransportNumber}
             onChange={handleChange}
           />
 
           <Input
             name="TransportType"
-            placeholder="Transport Type"
+            placeholder="Transport Type (Bus / Van)"
             value={form.TransportType}
             onChange={handleChange}
           />
@@ -139,9 +154,24 @@ function AddTransportModal({ open, onClose, editingData }) {
           />
 
           <Input
+            name="RouteName"
+            placeholder="Route Name (e.g. Rohini Route)"
+            value={form.RouteName}
+            onChange={handleChange}
+          />
+
+          <Input
             name="Route"
-            placeholder="Route"
+            placeholder="Route Path (Sector → School)"
             value={form.Route}
+            onChange={handleChange}
+          />
+
+          <Input
+            type="number"
+            name="Price"
+            placeholder="Transport Fee"
+            value={form.Price}
             onChange={handleChange}
           />
 
@@ -152,12 +182,19 @@ function AddTransportModal({ open, onClose, editingData }) {
             onChange={handleChange}
           />
 
-          <Input
-            name="Status"
-            placeholder="Status"
+          <Select
             value={form.Status}
-            onChange={handleChange}
-          />
+            onValueChange={(value) => setForm((prev) => ({ ...prev, Status: value }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Status" />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
 
           <div className="flex justify-end gap-2 pt-3">
             <Button variant="outline" onClick={onClose}>

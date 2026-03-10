@@ -43,11 +43,12 @@ function formatDate(dateStr) {
   })
 }
 
-function FeesTable() {
+function PreviousFeesRecords() {
   const { id } = useParams()
   const [globalFilter, setGlobalFilter] = React.useState('')
 
   const { data: feesData, isLoading, isError } = useFeeSubmissionsByStudent(id)
+
   const tableData = React.useMemo(() => {
     return (
       feesData?.data?.map((item) => ({
@@ -77,7 +78,21 @@ function FeesTable() {
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => <Badge>{row.original.status}</Badge>,
+        cell: ({ row }) => {
+          const status = row.original.status
+
+          return (
+            <Badge
+              className={
+                status === 'Paid'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-yellow-100 text-yellow-700'
+              }
+            >
+              {status}
+            </Badge>
+          )
+        },
       },
       { accessorKey: 'mode', header: 'Mode' },
       { accessorKey: 'refId', header: 'Ref ID' },
@@ -98,13 +113,13 @@ function FeesTable() {
   })
 
   if (isLoading) return <FeesTableSkeleton />
-  if (isError) return <p>Failed to load fee submissions</p>
+  if (isError) return <p>Failed to load fee records</p>
   if (!feesData) return null
 
   return (
     <Card className="rounded-sm">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-lg font-semibold">Fees</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-lg font-semibold">Previous Fees Records</CardTitle>
       </CardHeader>
 
       <CardContent className="pt-0 space-y-4">
@@ -128,7 +143,7 @@ function FeesTable() {
           </div>
 
           <Input
-            placeholder="Search"
+            placeholder="Search records..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="max-w-xs"
@@ -153,9 +168,9 @@ function FeesTable() {
             <TableBody>
               {table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} className="border-b last:border-b-0">
+                  <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-3 px-4 text-center">
+                      <TableCell key={cell.id} className="text-center">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
@@ -167,7 +182,7 @@ function FeesTable() {
                     colSpan={feeColumns.length}
                     className="py-6 text-center text-sm"
                   >
-                    No fee submissions.
+                    No previous fee records found.
                   </TableCell>
                 </TableRow>
               )}
@@ -202,49 +217,55 @@ function FeesTable() {
   )
 }
 
-export default FeesTable
+export default PreviousFeesRecords
 
 function FeesTableSkeleton() {
   return (
     <Card className="rounded-sm">
-      {/* Header */}
+      {' '}
+      {/* Header */}{' '}
       <CardHeader className="flex flex-row items-center justify-between">
+        {' '}
         <CardTitle className="text-lg font-semibold">
-          <Skeleton className="h-5 w-24" />
-        </CardTitle>
-      </CardHeader>
-
+          {' '}
+          <Skeleton className="h-5 w-24" />{' '}
+        </CardTitle>{' '}
+      </CardHeader>{' '}
       <CardContent className="pt-0 space-y-4">
-        {/* Controls */}
+        {' '}
+        {/* Controls */}{' '}
         <div className="flex flex-wrap items-center justify-between gap-3">
+          {' '}
           <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-9 w-20 rounded-md" />
-          </div>
-
-          <Skeleton className="h-9 w-48 rounded-md" />
-        </div>
-
-        {/* Table */}
+            {' '}
+            <Skeleton className="h-4 w-20" />{' '}
+            <Skeleton className="h-9 w-20 rounded-md" />{' '}
+          </div>{' '}
+          <Skeleton className="h-9 w-48 rounded-md" />{' '}
+        </div>{' '}
+        {/* Table */}{' '}
         <div className="rounded-md border overflow-x-auto">
+          {' '}
           <div className="space-y-2 p-3">
+            {' '}
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="grid grid-cols-11 gap-3 items-center">
+                {' '}
                 {Array.from({ length: 11 }).map((__, j) => (
                   <Skeleton key={j} className="h-4 w-full" />
-                ))}
+                ))}{' '}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Pagination */}
+            ))}{' '}
+          </div>{' '}
+        </div>{' '}
+        {/* Pagination */}{' '}
         <div className="flex justify-end gap-2">
-          <Skeleton className="h-8 w-16 rounded-md" />
-          <Skeleton className="h-8 w-6 rounded-md" />
-          <Skeleton className="h-8 w-16 rounded-md" />
-        </div>
-      </CardContent>
+          {' '}
+          <Skeleton className="h-8 w-16 rounded-md" />{' '}
+          <Skeleton className="h-8 w-6 rounded-md" />{' '}
+          <Skeleton className="h-8 w-16 rounded-md" />{' '}
+        </div>{' '}
+      </CardContent>{' '}
     </Card>
   )
 }

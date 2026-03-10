@@ -1,9 +1,9 @@
 import StudentDetailsAndInfoCard from '@/components/student-details/StudentDetailsAndInfo'
 import StudentDetailsTabsLayout from '@/components/student-details/StudentDetailsTabs'
 import { Button } from '@/components/ui/button'
-import { Outlet, useNavigate, useParams } from 'react-router-dom'
+import { Link, Outlet, useNavigate, useParams } from 'react-router-dom'
 
-import { PenBoxIcon, Trash } from 'lucide-react'
+import { Banknote, PenBoxIcon, Trash } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -55,10 +55,16 @@ function StudentDetails() {
         </div>
 
         <div className="flex gap-2">
+          {user?.Role === 'Admin' && (
+            <Button>
+              <Banknote className="mr-1 h-4 w-4" />
+              <Link to={`/pay-fees/${id}`}>Pay Fees</Link>
+            </Button>
+          )}
           {/* Edit */}
           {user?.Role === 'Admin' && (
             <Button onClick={() => handleEdit(id)}>
-              <PenBoxIcon className="mr-2 h-4 w-4" />
+              <PenBoxIcon className="mr-1 h-4 w-4" />
               Edit Profile
             </Button>
           )}
@@ -68,7 +74,7 @@ function StudentDetails() {
             <AlertDialogTrigger asChild>
               {user?.Role === 'Admin' && (
                 <Button variant="destructive">
-                  <Trash className="mr-2 h-4 w-4" />
+                  <Trash className="mr-1 h-4 w-4" />
                   Delete
                 </Button>
               )}

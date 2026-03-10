@@ -92,6 +92,8 @@ function FeeStructureAndInventory() {
     setOpenTransport(true)
   }
 
+  console.log(transport)
+
   return (
     <section className="p-6 space-y-8 capitalize">
       {/* Header with actions */}

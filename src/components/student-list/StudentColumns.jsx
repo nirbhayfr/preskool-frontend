@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Mail, MessageSquare } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { CollectFeesDialog } from './CollectFeesDialog'
 import { decryptData } from '@/utils/crypto'
 import { AttendanceCell } from '../student-attendance/AttendanceCell'
 import IssueBookDialog from '../book-issues/IssueBookDialog'
@@ -419,9 +418,9 @@ export const studentsColumns = (setSelectedStudent) => [
           <MessageSquare className="h-4 w-4" />
         </Button>
 
-        {user?.Role === 'Admin' && (
+        {/* {user?.Role === 'Admin' && (
           <CollectFeesDialog studentId={row.original.StudentID} />
-        )}
+        )} */}
 
         {(user?.Role === 'Admin' || user?.Role === 'Librarian') && (
           <Button

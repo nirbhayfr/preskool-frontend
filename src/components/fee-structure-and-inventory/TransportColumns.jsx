@@ -1,15 +1,19 @@
 import { Button } from '@/components/ui/button'
-import { Badge } from '../ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { Pencil, Trash } from 'lucide-react'
 
 export const transportColumns = ({ onEdit, onDelete }) => [
   {
     accessorKey: 'TransportNumber',
-    header: 'Transport Number',
+    header: 'Vehicle No.',
   },
   {
     accessorKey: 'TransportType',
     header: 'Type',
+  },
+  {
+    accessorKey: 'RouteName',
+    header: 'Route',
   },
   {
     accessorKey: 'TransporterName',
@@ -20,16 +24,40 @@ export const transportColumns = ({ onEdit, onDelete }) => [
     header: 'Owner',
   },
   {
-    accessorKey: 'Route',
-    header: 'Route',
+    accessorKey: 'Price',
+    header: 'Monthly Fee',
+    cell: ({ row }) => {
+      const price = row.original.Price
+      return <span>₹{Number(price).toLocaleString()}</span>
+    },
   },
+  {
+    accessorKey: 'GPSNumber',
+    header: 'GPS',
+    cell: ({ row }) => {
+      const gps = row.original.GPSNumber
+      return gps ? gps : '-'
+    },
+  },
+  {
+    accessorKey: 'JoiningDate',
+    header: 'Joining Date',
+    cell: ({ row }) => {
+      const date = row.original.JoiningDate
+      if (!date) return '-'
 
+      return new Date(date).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    },
+  },
   {
     accessorKey: 'Status',
     header: 'Status',
     cell: ({ row }) => {
       const status = row.original.Status
-
       const isActive = status?.toLowerCase() === 'active'
 
       return (
@@ -40,7 +68,7 @@ export const transportColumns = ({ onEdit, onDelete }) => [
               : 'bg-red-100 text-red-700 hover:bg-red-100'
           }
         >
-          {status}
+          {status || 'Inactive'}
         </Badge>
       )
     },

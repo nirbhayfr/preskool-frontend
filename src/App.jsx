@@ -19,7 +19,6 @@ import StaffAttendance from './pages/StaffAttendance'
 import StudentDetails from './pages/StudentDetails'
 import StudentDetailsTabContent from './components/student-details/StudentDetailsTabContent'
 import StudentLeaveandAttendance from './components/student-details/StudentLeaveandAttendance'
-import StudentFees from './components/student-details/StudentFees'
 import StudentExamResults from './components/student-details/StudentExamResults'
 import StudentLibraryDetails from './components/student-details/StudentLibraryDetails'
 
@@ -60,6 +59,7 @@ import BookIssues from './pages/BookIssues'
 import RevenuePage from './pages/RevenuePage'
 import BudgetPage from './pages/BudgetPage'
 import AdmissionForm from './pages/AdmissionForm'
+import PayFeesPage from './pages/PayFeesPage'
 
 function App() {
   return (
@@ -103,11 +103,12 @@ function App() {
                 element={<TakeStudentAttendance />}
               />
 
+              <Route path="/pay-fees/:id" element={<PayFeesPage />} />
+
               <Route path="/student-details/:id" element={<StudentDetails />}>
                 <Route index element={<Navigate to="details" replace />} />
                 <Route path="details" element={<StudentDetailsTabContent />} />
                 <Route path="attendance" element={<StudentLeaveandAttendance />} />
-                <Route path="fees" element={<StudentFees />} />
                 <Route path="exams" element={<StudentExamResults />} />
                 <Route path="library" element={<StudentLibraryDetails />} />
               </Route>
