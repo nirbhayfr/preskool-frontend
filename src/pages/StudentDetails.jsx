@@ -43,25 +43,31 @@ function StudentDetails() {
 
   return (
     <section className="p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Left Section */}
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Student Details</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
+            Student Details
+          </h1>
 
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
             Dashboard
             <span className="mx-1">{'>'}</span>
             <span className="font-medium text-foreground">Student Details</span>
           </p>
         </div>
 
-        <div className="flex gap-2">
+        {/* Right Buttons */}
+        <div className="flex flex-wrap gap-2">
           {user?.Role === 'Admin' && (
-            <Button>
-              <Banknote className="mr-1 h-4 w-4" />
-              <Link to={`/pay-fees/${id}`}>Pay Fees</Link>
+            <Button asChild>
+              <Link to={`/pay-fees/${id}`} className="flex items-center">
+                <Banknote className="mr-1 h-4 w-4" />
+                Pay Fees
+              </Link>
             </Button>
           )}
-          {/* Edit */}
+
           {user?.Role === 'Admin' && (
             <Button onClick={() => handleEdit(id)}>
               <PenBoxIcon className="mr-1 h-4 w-4" />
@@ -69,7 +75,6 @@ function StudentDetails() {
             </Button>
           )}
 
-          {/* Delete */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               {user?.Role === 'Admin' && (

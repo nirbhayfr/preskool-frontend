@@ -15,7 +15,7 @@ export const getFeeSubmissionByTransaction = async (transactionId) => {
   return data
 }
 
-export const createFeeSubmission = async (payload) => {
+export const createFeeSubmissionHelper = async (payload) => {
   const { data } = await api.post('/fee-submissions', payload)
   return data
 }
@@ -30,5 +30,10 @@ export const fetchFeeCollectionByDate = async (date) => {
     params: { date },
   })
 
+  return data
+}
+
+export const deductFeesHelper = async (payload) => {
+  const { data } = await api.post('/fees/deduct', payload)
   return data
 }

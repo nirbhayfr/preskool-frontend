@@ -5,12 +5,14 @@ import { useStudent } from '@/hooks/useStudents'
 import StudentDetailsPayFees from '@/components/pay-fees/StudentDetailsPayFees'
 import PreviousFeesRecords from '@/components/pay-fees/PreviousFeesRecord'
 import PayFeesSection from '@/components/pay-fees/PayFeesSection'
+import { useFeeSubmissionsByStudent } from '@/hooks/useFeeSubmissions'
 
 function PayFeesPage() {
   const { id } = useParams()
   const { data: student, isLoading, isError } = useStudent(id)
+  const { data: feesData, isLoading: isFeeLoading } = useFeeSubmissionsByStudent(id)
 
-  if (isLoading) return <CircleLoader />
+  if (isLoading || isFeeLoading) return <CircleLoader />
   if (isError) return <p className="text-sm text-destructive">Failed to load student</p>
   if (!student) return null
 
@@ -22,8 +24,8 @@ function PayFeesPage() {
       </div>
 
       <StudentDetailsPayFees student={student} />
-      <PreviousFeesRecords />
-      <PayFeesSection student={student} />
+      <PreviousFeesRecords feesData={feesData} isLoading={isFeeLoading} />
+      <PayFeesSection student={student} feesData={feesData} />
     </section>
   )
 }

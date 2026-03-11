@@ -271,18 +271,42 @@ export const teachersColumns = () => [
     cell: ({ row }) => formatValue(row.original.TransportNumber),
   },
 
-  {
-    accessorKey: 'ProfilePictureUrl',
-    header: ({ column }) => <SearchHeader column={column} title="Profile Picture URL" />,
-    filterFn: advancedFilter,
-    cell: ({ row }) => formatValue(row.original.ProfilePictureUrl),
-  },
+  // {
+  //   accessorKey: 'ProfilePictureUrl',
+  //   header: ({ column }) => <SearchHeader column={column} title="Profile Picture URL" />,
+  //   filterFn: advancedFilter,
+  //   cell: ({ row }) => formatValue(row.original.ProfilePictureUrl),
+  // },
 
   {
     accessorKey: 'IDProofPhoto',
     header: ({ column }) => <SearchHeader column={column} title="ID Proof Photo" />,
     filterFn: advancedFilter,
-    cell: ({ row }) => formatValue(row.original.IDProofPhoto),
+    cell: ({ row }) => {
+      if (row.original.IDProofPhoto === null) return '-'
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <img
+              src={row.original.IDProofPhoto}
+              alt="ID PROOF"
+              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
+            />
+          </DialogTrigger>
+
+          <DialogContent className="max-w-md p-4">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={row.original.IDProofPhoto}
+                alt="ID PROOF"
+                className="max-h-[70vh] rounded-md object-contain"
+              />
+              {/* <p className="font-medium">{FullName}</p> */}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
   },
 
   {

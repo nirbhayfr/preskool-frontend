@@ -26,8 +26,6 @@ import {
   SelectItem,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { useParams } from 'react-router-dom'
-import { useFeeSubmissionsByStudent } from '@/hooks/useFeeSubmissions'
 import { Skeleton } from '../ui/skeleton'
 
 function formatDate(dateStr) {
@@ -43,11 +41,8 @@ function formatDate(dateStr) {
   })
 }
 
-function PreviousFeesRecords() {
-  const { id } = useParams()
+function PreviousFeesRecords({ feesData, isLoading, isError }) {
   const [globalFilter, setGlobalFilter] = React.useState('')
-
-  const { data: feesData, isLoading, isError } = useFeeSubmissionsByStudent(id)
 
   const tableData = React.useMemo(() => {
     return (

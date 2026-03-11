@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -11,14 +11,28 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+
 import { useFeeStructureByClass } from '@/hooks/useFeeStructure'
 import { useCreateFeeSubmission } from '@/hooks/useFeeSubmissions'
-import { toast } from 'sonner'
-import FeeStructureSection from './FeeStructureSection'
 import { useStudentTransportHistory } from '@/hooks/useTransportHistory'
 import { useTransport } from '@/hooks/useTransport'
 
-export default function PayFeesSection({ student }) {
+import { toast } from 'sonner'
+import FeeStructureSection from './FeeStructureSection'
+import { createFeeSubmissionHelper, deductFeesHelper } from '@/api/fee-submissions'
+import { useQueryClient } from '@tanstack/react-query'
+
+const getStoredPending = (studentId) => {
+  const val = sessionStorage.getItem(`pendingFee_${studentId}`)
+  return val ? Number(val) : null
+}
+
+const setStoredPending = (studentId, value) => {
+  sessionStorage.setItem(`pendingFee_${studentId}`, value)
+}
+
+export default function PayFeesSection({ student, feesData }) {
+  const queryClient = useQueryClient()
   const academicYear = '2025-2026'
 
   const [tab, setTab] = useState('type')
@@ -27,13 +41,38 @@ export default function PayFeesSection({ student }) {
   const [quarter, setQuarter] = useState('')
 
   const [originalAmount, setOriginalAmount] = useState('')
-  const [discount, setDiscount] = useState('200')
+  const [discount, setDiscount] = useState('0')
   const [payableAmount, setPayableAmount] = useState('')
 
   const [paymentMode, setPaymentMode] = useState('')
-  const [paymentRef, setPaymentRef] = useState('')
   const [collectionDate, setCollectionDate] = useState('')
   const [remarks, setRemarks] = useState('')
+
+  const [transportFee, setTransportFee] = useState('')
+
+  /* ---------------- BULLETPROOF PENDING STATE ---------------- */
+
+  const [localPendingFee, setLocalPendingFee] = useState(() => {
+    if (!student?.StudentID) return null
+
+    const stored = getStoredPending(student.StudentID)
+    if (stored !== null) return stored
+
+    return Number(student?.PendingFee || 0)
+  })
+  const [pendingLocked, setPendingLocked] = useState(false)
+
+  /* Only initialize once per student */
+  useEffect(() => {
+    if (!pendingLocked && student?.PendingFee !== undefined) {
+      setLocalPendingFee(Number(student.PendingFee))
+    }
+  }, [student?.StudentID, pendingLocked])
+
+  const pendingAmount =
+    localPendingFee !== null ? localPendingFee : Number(student?.PendingFee || 0)
+
+  /* ---------------- DATA ---------------- */
 
   const { data: structure } = useFeeStructureByClass({
     classId: student?.ClassID,
@@ -51,34 +90,21 @@ export default function PayFeesSection({ student }) {
 
   const { mutate: createFeeSubmission, isLoading } = useCreateFeeSubmission()
 
-  /* ---------------- TRANSPORT ROUTE PRICE ---------------- */
+  /* ---------------- TRANSPORT PRICE ---------------- */
 
   const transportRoutePrice = useMemo(() => {
-    if (!transportHistory?.months.length || !transport?.length) return 0
+    if (!transportHistory?.months?.length || !transport?.length) return 0
 
     const routeMonth = transportHistory.months.find((m) => m?.Route && m.Route !== 'N/A')
 
     if (!routeMonth) return 0
 
     const routeTransport = transport.find(
-      (t) => t?.TransportNumber && t.TransportNumber === routeMonth.VehicleNo
+      (t) => t?.TransportNumber === routeMonth.VehicleNo
     )
 
     return routeTransport?.Price ?? 0
   }, [transportHistory, transport])
-  /* ---------------- TRANSPORT MONTHS ---------------- */
-
-  const transportMonths = useMemo(() => {
-    if (!transportHistory?.months?.length) return []
-
-    return transportHistory.months
-      .filter((m) => m?.Route && m.Route !== 'N/A')
-      .map((m) => ({
-        key: `transport_${m.MonthNumber}`,
-        label: m.MonthName,
-        value: transportRoutePrice,
-      }))
-  }, [transportHistory, transportRoutePrice])
 
   /* ---------------- FEE GROUPS ---------------- */
 
@@ -89,45 +115,33 @@ export default function PayFeesSection({ student }) {
       ...new Set(
         Object.keys(structure)
           .filter((k) => k.includes('_fee'))
-          .map((k) => (k.includes('tuition') ? 'tuition_fee' : k))
+          .map((k) => (k.includes('tuition') || k.includes('tution') ? 'tuition_fee' : k))
       ),
     ]
 
-    if (transportMonths.length > 0) {
-      groups.push('transport_fee')
-    }
+    return ['pending_fee', ...groups]
+  }, [structure])
 
-    if (student?.PendingFee > 0) {
-      groups.push('pending_fee')
-    }
-
-    return groups
-  }, [structure, transportMonths, student])
-
-  /* ---------------- FEES FOR SELECTED GROUP ---------------- */
+  /* ---------------- FEES FOR GROUP ---------------- */
 
   const feesForGroup = useMemo(() => {
-    if (!selectedGroup) return []
-
-    if (selectedGroup === 'transport_fee') {
-      return transportMonths
-    }
+    if (!selectedGroup || !structure) return []
 
     if (selectedGroup === 'pending_fee') {
       return [
         {
           key: 'pending_fee',
-          label: 'Pending Fee',
-          value: student?.PendingFee || 0,
+          label: 'PENDING FEES',
+          value: pendingAmount,
         },
       ]
     }
 
-    if (!structure) return []
-
     return Object.entries(structure)
       .filter(([key]) => {
-        if (selectedGroup === 'tuition_fee') return key.includes('tuition_fee')
+        if (selectedGroup === 'tuition_fee')
+          return key.includes('tuition_fee') || key.includes('tution_fee')
+
         return key === selectedGroup
       })
       .map(([key, value]) => ({
@@ -135,49 +149,93 @@ export default function PayFeesSection({ student }) {
         label: key.replace(/_/g, ' ').toUpperCase(),
         value,
       }))
-  }, [structure, selectedGroup, transportMonths, student])
+  }, [structure, selectedGroup, pendingAmount])
 
-  /* ---------------- AMOUNT HANDLERS ---------------- */
+  /* ---------------- MONTH ---------------- */
 
-  const handleOriginalChange = (value) => {
-    const original = Number(value || 0)
+  const selectedMonth = useMemo(() => {
+    if (!selectedType) return null
+    return selectedType.split('_')[0]
+  }, [selectedType])
+
+  /* ---------------- TRANSPORT FEE ---------------- */
+
+  const transportFeeForMonth = useMemo(() => {
+    if (!selectedMonth) return 0
+    if (!transportHistory?.months?.length) return 0
+
+    const month = transportHistory.months.find(
+      (m) =>
+        m.MonthName?.toLowerCase().startsWith(selectedMonth) &&
+        m.Route &&
+        m.Route !== 'N/A'
+    )
+
+    return month ? transportRoutePrice : 0
+  }, [selectedMonth, transportHistory, transportRoutePrice])
+
+  useEffect(() => {
+    setTransportFee(transportFeeForMonth)
+  }, [transportFeeForMonth])
+
+  /* ---------------- TOTAL ---------------- */
+
+  const totalAmount = Number(originalAmount || 0) + Number(transportFee || 0)
+
+  useEffect(() => {
     const disc = Number(discount || 0)
+    const calculated = Math.max(totalAmount - disc, 0)
 
-    setOriginalAmount(value)
-    setPayableAmount(Math.max(original - disc, 0))
-  }
+    if (!payableAmount) {
+      setPayableAmount(calculated)
+    }
+  }, [originalAmount, transportFee, discount])
 
-  const handleDiscountChange = (value) => {
-    const disc = Number(value || 0)
-    const original = Number(originalAmount || 0)
+  /* ---------------- QUARTER TOTAL ---------------- */
 
-    setDiscount(value)
-    setPayableAmount(Math.max(original - disc, 0))
-  }
+  const quarterTotal = useMemo(() => {
+    if (!quarter || !structure) return 0
 
-  const handlePayableChange = (value) => {
-    const payable = Number(value || 0)
-    const original = Number(originalAmount || 0)
+    const quarterMonths = {
+      1: ['apr', 'may', 'jun'],
+      2: ['jul', 'aug', 'sep'],
+      3: ['oct', 'nov', 'dec'],
+      4: ['jan', 'feb', 'mar'],
+    }
 
-    setPayableAmount(value)
-    setDiscount(Math.max(original - payable, 0))
-  }
+    const months = quarterMonths[quarter] || []
+    let total = 0
+
+    months.forEach((month) => {
+      const tuitionKey = Object.keys(structure).find(
+        (k) => k.startsWith(month) && (k.includes('tuition') || k.includes('tution'))
+      )
+
+      if (tuitionKey) {
+        total += Number(structure[tuitionKey] || 0)
+      }
+
+      const monthTransport = transportHistory?.months?.find((m) =>
+        m.MonthName?.toLowerCase().startsWith(month)
+      )
+
+      if (monthTransport?.Route && monthTransport.Route !== 'N/A') {
+        total += Number(transportRoutePrice || 0)
+      }
+    })
+
+    return total
+  }, [quarter, structure, transportHistory, transportRoutePrice])
 
   /* ---------------- SUBMIT ---------------- */
 
   const handleSubmit = () => {
-    if (!originalAmount || !paymentMode) return
+    if (!paymentMode || !selectedType) return
 
-    const payload = {
+    const baseTxn = `TXN${Date.now()}`
+
+    const basePayload = {
       studentId: Number(student.StudentID),
-      transactionId: paymentRef || `TXN${Date.now()}`,
-      feeType:
-        tab === 'type'
-          ? selectedType.replace('_fee', '').toUpperCase()
-          : `QUARTER_${quarter}`,
-      originalAmount: Number(originalAmount),
-      discountAmount: Number(discount),
-      paidAmount: Number(payableAmount),
       paymentMode,
       paymentStatus: 'SUCCESS',
       submittedBy: 'Accountant',
@@ -185,14 +243,61 @@ export default function PayFeesSection({ student }) {
       remarks,
     }
 
-    createFeeSubmission(payload, {
-      onSuccess: () => {
-        toast.success('Fees collected successfully')
-      },
-    })
-  }
+    /* ---------- PENDING FEES ---------- */
+    if (selectedType === 'pending_fee') {
+      const pay = Number(payableAmount)
 
-  console.log(transportHistory, transport)
+      const submitPending = async () => {
+        try {
+          await deductFeesHelper({
+            studentId: Number(student.StudentID),
+            amount: pay,
+          })
+
+          // await createFeeSubmissionHelper({
+          //   ...basePayload,
+          //   feeType: 'PENDING_FEES',
+          //   transactionId: `${baseTxn}_PENDING`,
+          //   originalAmount: Number(originalAmount),
+          //   discountAmount: Number(discount || 0),cd 
+          //   paidAmount: pay,
+          // })
+
+          /* UPDATE REACT QUERY CACHE */
+
+          queryClient.setQueryData(['student', student.StudentID], (old) => {
+            if (!old) return old
+
+            return {
+              ...old,
+              PendingFee: Math.max((old.PendingFee || 0) - pay, 0),
+            }
+          })
+
+          toast.success('Pending fees cleared')
+        } catch (err) {
+          toast.error('Payment failed')
+          console.error(err)
+        }
+      }
+
+      submitPending()
+      return
+    }
+
+    /* ---------- OTHER FEES ---------- */
+
+    createFeeSubmission({
+      ...basePayload,
+      feeType: selectedType.replace('_fee', '').toUpperCase(),
+      transactionId: `${baseTxn}`,
+      originalAmount: Number(originalAmount),
+      discountAmount: Number(discount || 0),
+      paidAmount: Number(payableAmount),
+    })
+
+    toast.success('Fees collected successfully')
+  }
 
   return (
     <>
@@ -219,7 +324,7 @@ export default function PayFeesSection({ student }) {
                     <SelectContent>
                       {feeGroups.map((group) => (
                         <SelectItem key={group} value={group}>
-                          {group.replace('_fee', '').replace('_', ' ').toUpperCase()}
+                          {group.replace('_fee', '').toUpperCase()}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -231,13 +336,9 @@ export default function PayFeesSection({ student }) {
                     value={selectedType}
                     onValueChange={(val) => {
                       setSelectedType(val)
-
                       const fee = feesForGroup.find((f) => f.key === val)
 
-                      if (fee) {
-                        setOriginalAmount(fee.value)
-                        setPayableAmount(fee.value - Number(discount || 0))
-                      }
+                      if (fee) setOriginalAmount(fee.value)
                     }}
                   >
                     <SelectTrigger>
@@ -247,7 +348,7 @@ export default function PayFeesSection({ student }) {
                     <SelectContent>
                       {feesForGroup.map(({ key, value, label }) => (
                         <SelectItem key={key} value={key}>
-                          {label || key.replace(/_/g, ' ').toUpperCase()} — ₹{value}
+                          {label} — ₹{value}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -258,13 +359,13 @@ export default function PayFeesSection({ student }) {
                   <Input
                     type="number"
                     value={originalAmount}
-                    onChange={(e) => handleOriginalChange(e.target.value)}
+                    onChange={(e) => setOriginalAmount(e.target.value)}
                   />
                 </Field>
               </div>
             </TabsContent>
 
-            <TabsContent value="quarter" className="space-y-4">
+            <TabsContent value="quarter">
               <div className="grid md:grid-cols-2 gap-4">
                 <Field label="Quarter">
                   <Select value={quarter} onValueChange={setQuarter}>
@@ -281,12 +382,8 @@ export default function PayFeesSection({ student }) {
                   </Select>
                 </Field>
 
-                <Field label="Original Amount">
-                  <Input
-                    type="number"
-                    value={originalAmount}
-                    onChange={(e) => handleOriginalChange(e.target.value)}
-                  />
+                <Field label="Quarter Amount">
+                  <Input value={quarterTotal} disabled />
                 </Field>
               </div>
             </TabsContent>
@@ -297,7 +394,7 @@ export default function PayFeesSection({ student }) {
               <Input
                 type="number"
                 value={discount}
-                onChange={(e) => handleDiscountChange(e.target.value)}
+                onChange={(e) => setDiscount(e.target.value)}
               />
             </Field>
 
@@ -305,32 +402,16 @@ export default function PayFeesSection({ student }) {
               <Input
                 type="number"
                 value={payableAmount}
-                onChange={(e) => handlePayableChange(e.target.value)}
+                onChange={(e) => setPayableAmount(e.target.value)}
               />
             </Field>
 
             <Field label="Payment Mode">
-              <Input
-                placeholder="Cash / UPI / Bank"
-                onChange={(e) => setPaymentMode(e.target.value)}
-              />
+              <Input onChange={(e) => setPaymentMode(e.target.value)} />
             </Field>
 
             <Field label="Collection Date">
               <Input type="date" onChange={(e) => setCollectionDate(e.target.value)} />
-            </Field>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Reference Number">
-              <Input
-                placeholder="Optional"
-                onChange={(e) => setPaymentRef(e.target.value)}
-              />
-            </Field>
-
-            <Field label="Remarks">
-              <Input placeholder="Notes" onChange={(e) => setRemarks(e.target.value)} />
             </Field>
           </div>
 
@@ -342,7 +423,12 @@ export default function PayFeesSection({ student }) {
         </CardContent>
       </Card>
 
-      <FeeStructureSection structure={structure} />
+      <FeeStructureSection
+        structure={structure}
+        feesData={feesData}
+        transportHistory={transportHistory}
+        transportFee={transportRoutePrice}
+      />
     </>
   )
 }
