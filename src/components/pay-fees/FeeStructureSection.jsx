@@ -124,7 +124,7 @@ export default function FeeStructureSection({
     }
   })
 
-  console.log(paidFees)
+  // console.log(paidFees)
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
