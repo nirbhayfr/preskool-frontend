@@ -29,8 +29,10 @@ export default function PayFeesSection({ student, feesData }) {
   const [quarter, setQuarter] = useState('')
 
   const [originalAmount, setOriginalAmount] = useState('')
-  const [discount, setDiscount] = useState('0')
-  const [payableAmount, setPayableAmount] = useState('')
+  const [discount, setDiscount] = useState(
+    student?.DiscountAmount ? Number(student.DiscountAmount) : 0
+  )
+  // const [payableAmount, setPayableAmount] = useState('')
 
   const [paymentMode, setPaymentMode] = useState('')
   const [collectionDate, setCollectionDate] = useState(
@@ -56,6 +58,11 @@ export default function PayFeesSection({ student, feesData }) {
 
   const { mutate: createFeeSubmission, isLoading } = useCreateFeeSubmission()
   const { mutate: deductFees } = useDeductFees()
+
+  const payableAmount = Math.max(
+    Number(originalAmount || 0) + Number(transportFee || 0) - Number(discount || 0),
+    0
+  )
 
   /* ---------------- TRANSPORT PRICE ---------------- */
 
@@ -151,17 +158,6 @@ export default function PayFeesSection({ student, feesData }) {
   /* ---------------- TOTAL ---------------- */
 
   const totalAmount = Number(originalAmount || 0) + Number(transportFee || 0)
-
-  /* ---------------- AUTO PAYABLE ---------------- */
-
-  useEffect(() => {
-    const disc = Number(discount || 0)
-    const calculated = Math.max(totalAmount - disc, 0)
-
-    if (!payableAmount) {
-      setPayableAmount(calculated)
-    }
-  }, [originalAmount, transportFee, discount])
 
   /* ---------------- QUARTER TOTAL ---------------- */
 
@@ -391,6 +387,7 @@ export default function PayFeesSection({ student, feesData }) {
                     type="number"
                     value={originalAmount}
                     onChange={(e) => setOriginalAmount(e.target.value)}
+                    disabled
                   />
                 </Field>
               </div>
@@ -402,6 +399,7 @@ export default function PayFeesSection({ student, feesData }) {
                       type="number"
                       value={originalAmount}
                       onChange={(e) => setOriginalAmount(e.target.value)}
+                      disabled
                     />
                   </Field>
 
@@ -410,6 +408,7 @@ export default function PayFeesSection({ student, feesData }) {
                       type="number"
                       value={transportFee}
                       onChange={(e) => setTransportFee(e.target.value)}
+                      disabled
                     />
                   </Field>
 
@@ -454,19 +453,20 @@ export default function PayFeesSection({ student, feesData }) {
                 type="number"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
+                disabled
               />
             </Field>
 
             <Field label="Payable Amount">
-              <Input
-                type="number"
-                value={payableAmount}
-                onChange={(e) => setPayableAmount(e.target.value)}
-              />
+              <Input type="number" value={payableAmount} disabled />
             </Field>
 
             <Field label="Payment Mode">
               <Input onChange={(e) => setPaymentMode(e.target.value)} />
+            </Field>
+
+            <Field label="Remarks">
+              <Input onChange={(e) => setRemarks(e.target.value)} />
             </Field>
 
             <Field label="Collection Date">

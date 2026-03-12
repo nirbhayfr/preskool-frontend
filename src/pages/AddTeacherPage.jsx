@@ -140,14 +140,17 @@ export function InputField({ form, name, type = 'text', colSpan, options }) {
 
           <FormControl>
             {options ? (
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+              <Select
+                key={field.value ?? 'empty'} // <-- force remount on value change
+                value={String(field.value ?? '')}
+                onValueChange={(val) => field.onChange(String(val))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder={`Select ${label}`} />
                 </SelectTrigger>
-
                 <SelectContent>
                   {options.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
+                    <SelectItem key={opt} value={String(opt)}>
                       {opt}
                     </SelectItem>
                   ))}
@@ -218,14 +221,15 @@ export default function TeacherFormPage({ defaultValues }) {
 
     if (teacher) {
       const mappedTeacher = {
+        ...EMPTY_DEFAULTS,
         teacherId: teacher.TeacherID ?? undefined,
         fullName: teacher.FullName ?? '',
         subject: teacher.Subject ?? '',
         email: teacher.Email ?? '',
         contactNumber: teacher.ContactNumber ?? '',
-        gender: teacher.Gender ?? '',
-        class: teacher.Class ?? '',
-        section: teacher.Section ?? '',
+        gender: (teacher.Gender ?? '').trim(),
+        class: (teacher.Class ?? '').trim(),
+        section: (teacher.Section ?? '').trim(),
         profilePhoto: teacher.ProfilePhoto ?? '',
         idProofPhoto: teacher.IDProofPhoto ?? '',
         qualification: teacher.Qualification ?? '',
@@ -237,14 +241,12 @@ export default function TeacherFormPage({ defaultValues }) {
         nationality: teacher.Nationality ?? '',
         dateOfBirth: formatDateForInput(teacher.DateOfBirth),
         dateOfJoining: formatDateForInput(teacher.DateOfJoining),
-
         bloodGroup: teacher.BloodGroup ?? '',
-        maritalStatus: teacher.MaritalStatus ?? '',
+        maritalStatus: (teacher.MaritalStatus ?? '').trim(),
         salary: teacher.Salary ?? '',
         previousSalary: teacher.PreviousSalary ?? '',
         position: teacher.Position ?? '',
         caste: teacher.Caste ?? '',
-
         emergencyContactName: teacher.EmergencyContactName ?? '',
         emergencyContactNumber: teacher.EmergencyContactNumber ?? '',
         vehicleNumber: teacher.VehicleNumber ?? '',

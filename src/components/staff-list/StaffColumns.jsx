@@ -130,10 +130,15 @@ export const staffColumns = () => [
     header: ({ column }) => <SearchHeader column={column} title="Today Status" />,
     filterFn: advancedFilter,
     cell: ({ row }) => {
-      const value =
-        row.original.TodayStatus === 'N' ? undefined : row.original.TodayStatus
+      const status = row.original.TodayStatus
 
-      return <AttendanceCell value={value} />
+      if (status === 'N') return <p className="text-blue-600">Holiday</p>
+      if (status === 'P') return <p className="text-emerald-600">Present</p>
+      if (status === 'A') return <p className="text-red-600">Absent</p>
+      if (status === 'L') return <p className="text-amber-300">Late</p>
+      if (status === 'H') return <p className="text-amber-600">HalfDay</p>
+
+      return '-'
     },
   },
 
