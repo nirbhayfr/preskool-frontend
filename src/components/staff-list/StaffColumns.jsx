@@ -176,6 +176,104 @@ export const staffColumns = () => [
   },
 
   {
+    accessorKey: 'Address',
+    header: ({ column }) => <SearchHeader column={column} title="Address" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Address),
+  },
+
+  {
+    accessorKey: 'PostalCode',
+    header: ({ column }) => <SearchHeader column={column} title="Postal Code" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.PostalCode),
+  },
+
+  {
+    accessorKey: 'Nationality',
+    header: ({ column }) => <SearchHeader column={column} title="Nationality" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Nationality),
+  },
+
+  {
+    accessorKey: 'MaritalStatus',
+    header: ({ column }) => <SearchHeader column={column} title="Marital Status" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.MaritalStatus),
+  },
+
+  {
+    accessorKey: 'Caste',
+    header: ({ column }) => <SearchHeader column={column} title="Caste" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Caste),
+  },
+
+  {
+    accessorKey: 'EmergencyContactName',
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Emergency Contact Name" />
+    ),
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.EmergencyContactName),
+  },
+
+  {
+    accessorKey: 'EmergencyContactNumber',
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Emergency Contact Number" />
+    ),
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.EmergencyContactNumber),
+  },
+
+  {
+    accessorKey: 'PreviousSalary',
+    header: ({ column }) => <SearchHeader column={column} title="Previous Salary" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.PreviousSalary),
+  },
+
+  {
+    accessorKey: 'VehicleNumber',
+    header: ({ column }) => <SearchHeader column={column} title="Vehicle Number" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.VehicleNumber),
+  },
+
+  {
+    accessorKey: 'IDProofPhoto',
+    header: ({ column }) => <SearchHeader column={column} title="ID Proof Photo" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => {
+      if (row.original.IDProofPhoto === null) return '-'
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <img
+              src={row.original.IDProofPhoto}
+              alt="ID PROOF"
+              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
+            />
+          </DialogTrigger>
+
+          <DialogContent className="max-w-md p-4">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={row.original.IDProofPhoto}
+                alt="ID PROOF"
+                className="max-h-[70vh] rounded-md object-contain"
+              />
+              {/* <p className="font-medium">{FullName}</p> */}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
+  },
+
+  {
     accessorKey: 'ExperienceYears',
     header: ({ column }) => <SearchHeader column={column} title="Experience (Yrs)" />,
     filterFn: advancedFilter,

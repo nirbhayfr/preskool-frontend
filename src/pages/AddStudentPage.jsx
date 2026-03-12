@@ -29,6 +29,7 @@ import { Section } from './AddTeacherPage'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { decryptData } from '@/utils/crypto'
+import { classes, sections } from '@/data/basicData'
 
 const STUDENT_FIELDS = [
   { name: 'fullName', required: true },
@@ -36,29 +37,46 @@ const STUDENT_FIELDS = [
   { name: 'gender', required: true },
   { name: 'class', required: true },
   { name: 'section', required: true },
+
   { name: 'rollNo' },
   { name: 'admissionNo' },
-  { name: 'joiningDate' },
+  { name: 'joiningDate', required: true },
+  { name: 'identificationNumber' },
+  { name: 'enrollmentNumber' },
+
   { name: 'program' },
   { name: 'yearSemester' },
   { name: 'previousRecord' },
+
   { name: 'gpa' },
   { name: 'attendance' },
   { name: 'subjects' },
   { name: 'status' },
+
+  { name: 'houseName' },
+  { name: 'caste' },
+
   { name: 'address', required: true },
   { name: 'contact', required: true },
   { name: 'email' },
   { name: 'nationality' },
+
   { name: 'photo' },
   { name: 'fatherPhoto' },
   { name: 'motherPhoto' },
   { name: 'guardianPhoto' },
+
   { name: 'guardianName' },
   { name: 'guardianRelation' },
   { name: 'guardianContact' },
   { name: 'guardianOccupation' },
   { name: 'guardianAddress' },
+
+  { name: 'pendingFee', required: true },
+  { name: 'discountAmount', required: true },
+  { name: 'route' },
+  { name: 'transportStatus' },
+  { name: 'vehicleNo' },
 ]
 
 const REQUIRED_FIELDS = STUDENT_FIELDS.filter((f) => f.required).map((f) => f.name)
@@ -82,13 +100,20 @@ const studentSchema = z.object({
   rollNo: z.string().optional(),
   admissionNo: z.string().optional(),
   joiningDate: z.string().optional(),
+  identificationNumber: z.string().optional(),
+  enrollmentNumber: z.string().optional(),
+
   program: z.string().optional(),
   yearSemester: z.string().optional(),
   previousRecord: z.string().optional(),
+
   gpa: z.string().optional(),
   attendance: z.string().optional(),
   subjects: z.string().optional(),
   status: z.string().optional(),
+
+  houseName: z.string().optional(),
+  caste: z.string().optional(),
 
   address: z.string().min(1),
   contact: z.string(),
@@ -99,19 +124,24 @@ const studentSchema = z.object({
   fatherPhoto: z.string().optional(),
   motherPhoto: z.string().optional(),
   guardianPhoto: z.string().optional(),
+
   guardianName: z.string().optional(),
   guardianRelation: z.string().optional(),
   guardianContact: z.string().optional(),
   guardianOccupation: z.string().optional(),
   guardianAddress: z.string().optional(),
+
+  pendingFee: z.string().optional(),
+  discountAmount: z.string().optional(),
+  route: z.string().optional(),
+  transportStatus: z.string().optional(),
+  vehicleNo: z.string().optional(),
 })
 
 function InputField({ form, name, type = 'text', colSpan, options }) {
   const isSelect = Array.isArray(options)
   const label = name.replace(/([A-Z])/g, ' $1').trim()
-
   const required = REQUIRED_FIELDS.includes(name)
-
   const fieldId = `field-${name}`
 
   return (
@@ -120,20 +150,18 @@ function InputField({ form, name, type = 'text', colSpan, options }) {
       name={name}
       render={({ field }) => (
         <FormItem className={colSpan ? 'col-span-full' : ''}>
-          {/* Accessible label */}
           <FormLabel
             htmlFor={isSelect ? undefined : fieldId}
             id={`${fieldId}-label`}
             className="flex items-center gap-1 capitalize"
           >
             {label}
-            {required && <span className="text-red-500 font-medium">*</span>}
+            {required && <span className="text-red-500">*</span>}
           </FormLabel>
 
           <FormControl>
             {isSelect ? (
               <Select value={field.value || ''} onValueChange={field.onChange}>
-                {/* Link label for screen readers */}
                 <SelectTrigger aria-labelledby={`${fieldId}-label`} id={fieldId}>
                   <SelectValue placeholder={`Select ${label}`} />
                 </SelectTrigger>
@@ -146,12 +174,7 @@ function InputField({ form, name, type = 'text', colSpan, options }) {
                 </SelectContent>
               </Select>
             ) : (
-              <Input
-                {...field}
-                type={type}
-                id={fieldId}
-                aria-labelledby={`${fieldId}-label`}
-              />
+              <Input {...field} type={type} id={fieldId} />
             )}
           </FormControl>
 
@@ -171,6 +194,7 @@ export default function StudentFormPage({ defaultValues }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
+
   const encryptedUser = localStorage.getItem('user')
   const user = encryptedUser ? decryptData(encryptedUser) : null
 
@@ -194,6 +218,7 @@ export default function StudentFormPage({ defaultValues }) {
         return
       }
     }
+
     if (student) {
       const mappedStudent = {
         studentId: student.StudentID ?? undefined,
@@ -205,6 +230,8 @@ export default function StudentFormPage({ defaultValues }) {
         rollNo: student.RollNo ?? '',
         admissionNo: student.AdmissionNo ?? '',
         joiningDate: formatDateForInput(student.JoiningDate),
+        identificationNumber: student.IdentificationNumber ?? '',
+        enrollmentNumber: student.EnrollmentNumber ?? '',
         program: student.Program ?? '',
         yearSemester: student.YearSemester ?? '',
         previousRecord: student.PreviousRecord ?? '',
@@ -212,6 +239,8 @@ export default function StudentFormPage({ defaultValues }) {
         attendance: student.Attendance ?? '',
         subjects: student.Subjects ?? '',
         status: student.Status ?? 'Active',
+        houseName: student.HouseName ?? '',
+        caste: student.Cast ?? '',
         address: student.Address ?? '',
         contact: student.ContactNumber ?? '',
         email: student.EmailAddress ?? '',
@@ -225,6 +254,11 @@ export default function StudentFormPage({ defaultValues }) {
         guardianContact: student.GuardianContact ?? '',
         guardianOccupation: student.GuardianOccupation ?? '',
         guardianAddress: student.GuardianAddress ?? '',
+        pendingFee: student.PendingFee ?? '',
+        discountAmount: student.DiscountAmount ?? '',
+        route: student.Route ?? '',
+        transportStatus: student.TransportStatus ?? '',
+        vehicleNo: student.VehicleNo ?? '',
       }
 
       form.reset({
@@ -241,8 +275,13 @@ export default function StudentFormPage({ defaultValues }) {
     )}`
 
   const onSubmit = (values) => {
+    console.log(values, { discountAmount: Number(values.discountAmount) })
     saveStudent(
-      { ...values, studentId: isEdit ? Number(id) : undefined },
+      {
+        ...values,
+        studentId: isEdit ? Number(id) : undefined,
+        discountAmount: Number(values.discountAmount),
+      },
       {
         onSuccess: () => {
           toast.success(
@@ -255,31 +294,21 @@ export default function StudentFormPage({ defaultValues }) {
   }
 
   return (
-    <section className="w-full p-6 space-y-8 text-foreground">
+    <section className="w-full p-6 space-y-8">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <UserPlus className="h-6 w-6" />
           {isEdit ? 'Edit Student' : 'Add Student'}
         </h1>
-        <div className="mt-2 flex items-center text-sm text-muted-foreground gap-1">
-          <span>Dashboard</span>
-          <ChevronRight className="h-4 w-4" />
-          <span>Students</span>
-          <ChevronRight className="h-4 w-4" />
-          <span className="font-medium text-foreground">
-            {isEdit ? 'Edit Student' : 'Add Student'}
-          </span>
-        </div>
       </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {/* Profile Images */}
           <div className="flex flex-col md:flex-row items-center gap-6">
             <img
               src={avatar}
               alt="Profile"
-              className="h-28 w-28 rounded-xl border border-border object-cover bg-muted"
+              className="h-28 w-28 rounded-xl border object-cover"
             />
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
               <InputField form={form} name="photo" />
@@ -289,56 +318,57 @@ export default function StudentFormPage({ defaultValues }) {
             </div>
           </div>
 
-          {/* Personal Information */}
           <Section title="Personal Information" icon={User}>
             <InputField form={form} name="fullName" />
             <InputField form={form} name="dob" type="date" />
             <InputField form={form} name="gender" />
-            <InputField form={form} name="class" />
-            <InputField form={form} name="section" />
+            <InputField form={form} name="class" options={classes} />
+            <InputField form={form} name="section" options={sections} />
+            <InputField form={form} name="houseName" />
+            <InputField form={form} name="caste" />
           </Section>
 
-          {/* Academic Information */}
           <Section title="Academic Information" icon={Book}>
-            <InputField form={form} name="rollNo" />
+            <InputField form={form} name="rollNo" type="number" />
             <InputField form={form} name="admissionNo" />
             <InputField form={form} name="joiningDate" type="date" />
+            <InputField form={form} name="identificationNumber" />
+            <InputField form={form} name="enrollmentNumber" />
             <InputField form={form} name="program" />
             <InputField form={form} name="yearSemester" />
             <InputField form={form} name="previousRecord" />
-            <InputField form={form} name="gpa" />
-            <InputField form={form} name="attendance" />
+            <InputField form={form} name="gpa" type="number" />
+            <InputField form={form} name="attendance" type="number" />
             <InputField form={form} name="subjects" colSpan />
             <InputField form={form} name="status" options={['Active', 'Inactive']} />
           </Section>
 
-          {/* Contact Information */}
           <Section title="Contact Information" icon={Shield}>
             <InputField form={form} name="address" colSpan />
-            <InputField form={form} name="contact" />
+            <InputField form={form} name="contact" type="number" />
             <InputField form={form} name="email" />
             <InputField form={form} name="nationality" />
           </Section>
 
-          {/* Guardian Information */}
           <Section title="Guardian Information" icon={User}>
             <InputField form={form} name="guardianName" />
             <InputField form={form} name="guardianRelation" />
-            <InputField form={form} name="guardianContact" />
+            <InputField form={form} name="guardianContact" type="number" />
             <InputField form={form} name="guardianOccupation" />
             <InputField form={form} name="guardianAddress" colSpan />
           </Section>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-6">
+          <Section title="Transport & Fees" icon={Shield}>
+            <InputField form={form} name="pendingFee" type="number" />
+            <InputField form={form} name="discountAmount" type="number" />
+            <InputField form={form} name="route" />
+            <InputField form={form} name="transportStatus" options={['Yes', 'No']} />
+            <InputField form={form} name="vehicleNo" />
+          </Section>
+
+          <div className="flex justify-end pt-6">
             <Button type="submit" disabled={isLoading}>
-              {isLoading
-                ? isEdit
-                  ? 'Updating...'
-                  : 'Saving...'
-                : isEdit
-                  ? 'Update Student'
-                  : 'Save Student'}
+              {isEdit ? 'Update Student' : 'Save Student'}
             </Button>
           </div>
         </form>

@@ -13,12 +13,24 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 import { useUpsertTeacher, useTeacher } from '@/hooks/useTeacher'
 import { toast } from 'sonner'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { decryptData } from '@/utils/crypto'
+import { classes, sections } from '@/data/basicData'
+
+const genders = ['Male', 'Female', 'Other']
+
+const maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed']
 
 const teacherSchema = z.object({
   teacherId: z.number().optional(),
@@ -31,7 +43,6 @@ const teacherSchema = z.object({
   class: z.string().min(1, 'Class is required'),
   section: z.string().min(1, 'Section is required'),
 
-  profilePictureUrl: z.string().optional(),
   profilePhoto: z.string().optional(),
   idProofPhoto: z.string().optional(),
 
@@ -50,6 +61,10 @@ const teacherSchema = z.object({
   maritalStatus: z.string().optional(),
 
   salary: z.coerce.number().optional(),
+  previousSalary: z.coerce.number().optional(),
+
+  position: z.string().optional(),
+  caste: z.string().optional(),
 
   emergencyContactName: z.string().optional(),
   emergencyContactNumber: z.string().optional(),
@@ -82,10 +97,13 @@ const TEACHER_FIELDS = [
   { name: 'bloodGroup' },
   { name: 'maritalStatus' },
 
+  { name: 'position' },
+  { name: 'salary' },
+  { name: 'previousSalary' },
+  { name: 'caste' },
+
   { name: 'emergencyContactName' },
   { name: 'emergencyContactNumber' },
-
-  { name: 'salary' },
 
   { name: 'profilePhoto' },
   { name: 'idProofPhoto' },
@@ -104,7 +122,7 @@ const EMPTY_DEFAULTS = TEACHER_FIELDS.reduce(
   { teacherId: undefined }
 )
 
-export function InputField({ form, name, type = 'text', colSpan }) {
+export function InputField({ form, name, type = 'text', colSpan, options }) {
   const label = name.replace(/([A-Z])/g, ' $1').trim()
 
   return (
@@ -121,8 +139,25 @@ export function InputField({ form, name, type = 'text', colSpan }) {
           </FormLabel>
 
           <FormControl>
-            <Input {...field} type={type} />
+            {options ? (
+              <Select onValueChange={field.onChange} value={field.value || ''}>
+                <SelectTrigger>
+                  <SelectValue placeholder={`Select ${label}`} />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {options.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input {...field} type={type} />
+            )}
           </FormControl>
+
           <FormMessage />
         </FormItem>
       )}
@@ -180,6 +215,7 @@ export default function TeacherFormPage({ defaultValues }) {
         return
       }
     }
+
     if (teacher) {
       const mappedTeacher = {
         teacherId: teacher.TeacherID ?? undefined,
@@ -190,7 +226,6 @@ export default function TeacherFormPage({ defaultValues }) {
         gender: teacher.Gender ?? '',
         class: teacher.Class ?? '',
         section: teacher.Section ?? '',
-        profilePictureUrl: teacher.ProfilePictureUrl ?? '',
         profilePhoto: teacher.ProfilePhoto ?? '',
         idProofPhoto: teacher.IDProofPhoto ?? '',
         qualification: teacher.Qualification ?? '',
@@ -206,6 +241,10 @@ export default function TeacherFormPage({ defaultValues }) {
         bloodGroup: teacher.BloodGroup ?? '',
         maritalStatus: teacher.MaritalStatus ?? '',
         salary: teacher.Salary ?? '',
+        previousSalary: teacher.PreviousSalary ?? '',
+        position: teacher.Position ?? '',
+        caste: teacher.Caste ?? '',
+
         emergencyContactName: teacher.EmergencyContactName ?? '',
         emergencyContactNumber: teacher.EmergencyContactNumber ?? '',
         vehicleNumber: teacher.VehicleNumber ?? '',
@@ -260,7 +299,6 @@ export default function TeacherFormPage({ defaultValues }) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {/* Profile */}
           <div className="flex flex-col md:flex-row items-center gap-6">
             <img
               src={avatar}
@@ -275,21 +313,24 @@ export default function TeacherFormPage({ defaultValues }) {
 
           <Section title="Personal Information" icon={User}>
             <InputField form={form} name="fullName" />
-            <InputField form={form} name="gender" />
+            <InputField form={form} name="gender" options={genders} />
             <InputField form={form} name="dateOfBirth" type="date" />
             <InputField form={form} name="bloodGroup" />
-            <InputField form={form} name="maritalStatus" />
+            <InputField form={form} name="maritalStatus" options={maritalStatuses} />
             <InputField form={form} name="nationality" />
+            <InputField form={form} name="caste" />
           </Section>
 
           <Section title="Professional Information" icon={Briefcase}>
-            <InputField form={form} name="class" />
-            <InputField form={form} name="section" />
+            <InputField form={form} name="class" options={classes} />
+            <InputField form={form} name="section" options={sections} />
             <InputField form={form} name="subject" />
             <InputField form={form} name="qualification" />
             <InputField form={form} name="experienceYears" />
+            <InputField form={form} name="position" />
             <InputField form={form} name="dateOfJoining" type="date" />
-            <InputField form={form} name="salary" />
+            <InputField form={form} name="salary" type="number" />
+            <InputField form={form} name="previousSalary" type="number" />
           </Section>
 
           <Section title="Contact Information" icon={Phone}>

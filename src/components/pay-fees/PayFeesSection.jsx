@@ -325,17 +325,17 @@ export default function PayFeesSection({ student, feesData }) {
   return (
     <>
       <Card className="rounded-sm">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Pay Fees</CardTitle>
+
+          {/* Pending Fee Highlight */}
+          <div className="flex items-center gap-2 px-4 py-2 rounded-md text-sm border-red-700 border">
+            <span className="font-medium text-red-700">Pending Fee</span>
+            <span className="font-semibold text-red-800">₹{pendingAmount || 0}</span>
+          </div>
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <div className="grid md:grid-cols-3 gap-4">
-            <Field label="Current Pending Fee">
-              <Input type="number" value={pendingAmount} disabled />
-            </Field>
-          </div>
-
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
               <TabsTrigger value="type">Fee Type</TabsTrigger>

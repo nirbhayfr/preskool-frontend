@@ -317,6 +317,45 @@ export const teachersColumns = () => [
   },
 
   {
+    accessorKey: 'Position',
+    header: ({ column }) => <SearchHeader column={column} title="Position" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Position),
+  },
+
+  {
+    accessorKey: 'Caste',
+    header: ({ column }) => <SearchHeader column={column} title="Caste" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.Caste),
+  },
+
+  {
+    accessorKey: 'PreviousSalary',
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Previous Salary" type="number" />
+    ),
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.PreviousSalary),
+  },
+
+  {
+    accessorKey: 'EmergencyContactName',
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Emergency Contact Name" />
+    ),
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.EmergencyContactName),
+  },
+
+  {
+    accessorKey: 'EmergencyContactNumber',
+    header: ({ column }) => <SearchHeader column={column} title="Emergency Contact No" />,
+    filterFn: advancedFilter,
+    cell: ({ row }) => formatValue(row.original.EmergencyContactNumber),
+  },
+
+  {
     id: 'actions',
     header: 'Actions',
     cell: () => (

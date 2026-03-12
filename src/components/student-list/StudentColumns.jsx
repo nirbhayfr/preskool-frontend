@@ -239,6 +239,25 @@ export const studentsColumns = (setSelectedStudent) => [
   },
 
   {
+    accessorKey: 'DiscountAmount',
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Discount Amount" type="number" />
+    ),
+    filterFn: advancedFilter,
+    cell: ({ row }) =>
+      row.original.DiscountAmount ? `₹${row.original.DiscountAmount}` : '₹0',
+  },
+
+  {
+    accessorKey: 'PendingFee',
+    header: ({ column }) => (
+      <SearchHeader column={column} title="Pending Fee" type="number" />
+    ),
+    filterFn: advancedFilter,
+    cell: ({ row }) => (row.original.PendingFee ? `₹${row.original.PendingFee}` : '₹0'),
+  },
+
+  {
     accessorKey: 'PreviousAcademicRecord',
     header: ({ column }) => <SearchHeader column={column} title="Previous Record" />,
     filterFn: advancedFilter,
@@ -281,15 +300,6 @@ export const studentsColumns = (setSelectedStudent) => [
     header: ({ column }) => <SearchHeader column={column} title="Caste" />,
     filterFn: advancedFilter,
     cell: ({ row }) => row.original.Cast ?? '—',
-  },
-
-  {
-    accessorKey: 'PendingFee',
-    header: ({ column }) => (
-      <SearchHeader column={column} title="Pending Fee" type="number" />
-    ),
-    filterFn: advancedFilter,
-    cell: ({ row }) => (row.original.PendingFee ? `₹${row.original.PendingFee}` : '₹0'),
   },
 
   {
@@ -368,6 +378,83 @@ export const studentsColumns = (setSelectedStudent) => [
     header: ({ column }) => <SearchHeader column={column} title="Nationality" />,
     filterFn: advancedFilter,
     cell: ({ row }) => row.original.Nationality ?? '—',
+  },
+
+  {
+    accessorKey: 'FatherPhoto',
+    header: 'Father Photo',
+    cell: ({ row }) => {
+      const { FatherPhoto, GuardianName } = row.original
+
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        GuardianName || 'Father'
+      )}&size=256`
+
+      const imageUrl = FatherPhoto || avatarUrl
+
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <img
+              src={imageUrl}
+              alt="Father"
+              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
+              onError={(e) => {
+                e.currentTarget.src = avatarUrl
+              }}
+            />
+          </DialogTrigger>
+
+          <DialogContent className="max-w-md p-4">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={imageUrl}
+                alt="Father"
+                className="max-h-[70vh] rounded-md object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
+  },
+  {
+    accessorKey: 'MotherPhoto',
+    header: 'Mother Photo',
+    cell: ({ row }) => {
+      const { MotherPhoto, GuardianName } = row.original
+
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        GuardianName || 'Mother'
+      )}&size=256`
+
+      const imageUrl = MotherPhoto || avatarUrl
+
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <img
+              src={imageUrl}
+              alt="Mother"
+              className="h-10 w-10 rounded-full object-cover border cursor-pointer hover:scale-105 transition"
+              onError={(e) => {
+                e.currentTarget.src = avatarUrl
+              }}
+            />
+          </DialogTrigger>
+
+          <DialogContent className="max-w-md p-4">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={imageUrl}
+                alt="Mother"
+                className="max-h-[70vh] rounded-md object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
   },
 
   {

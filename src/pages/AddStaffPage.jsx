@@ -1,345 +1,347 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import {
-	User,
-	Briefcase,
-	Phone,
-	Shield,
-	Car,
-	ChevronRight,
-	UserPlus,
-} from "lucide-react";
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { User, Briefcase, Phone, Shield, Car, ChevronRight, UserPlus } from 'lucide-react'
 
 import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 
-import { useUpsertStaff, useStaffById } from "@/hooks/useStaff";
-import { toast } from "sonner";
-import { useNavigate, useParams } from "react-router-dom";
-import { useEffect } from "react";
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+import { useUpsertStaff, useStaffById } from '@/hooks/useStaff'
+import { toast } from 'sonner'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect } from 'react'
+
+const genders = ['Male', 'Female', 'Other']
+
+const maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed']
 
 const staffSchema = z.object({
-	staffId: z.number().optional(),
-	fullName: z.string().min(1),
-	role: z.string().min(1),
-	email: z.string().email(),
-	contactNumber: z.string(),
-	gender: z.string().min(1),
+  staffId: z.number().optional(),
+  fullName: z.string().min(1),
+  role: z.string().min(1),
+  email: z.string().email(),
+  contactNumber: z.string(),
+  gender: z.string().min(1),
 
-	profilePictureUrl: z.string().optional(),
-	profilePhoto: z.string().optional(),
-	idProofPhoto: z.string().optional(),
+  profilePictureUrl: z.string().optional(),
+  profilePhoto: z.string().optional(),
+  idProofPhoto: z.string().optional(),
 
-	dateOfBirth: z.string().optional(),
-	qualification: z.string().optional(),
-	experienceYears: z.coerce.number().optional(),
-	dateOfJoining: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  qualification: z.string().optional(),
+  experienceYears: z.coerce.number().optional(),
+  dateOfJoining: z.string().optional(),
 
-	address: z.string().min(1),
-	city: z.string().optional(),
-	state: z.string().optional(),
-	postalCode: z.string().optional(),
-	nationality: z.string().optional(),
-	maritalStatus: z.string().optional(),
-	salary: z.coerce.number().optional(),
+  address: z.string().min(1),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
+  nationality: z.string().optional(),
+  maritalStatus: z.string().optional(),
+  caste: z.string().optional(),
 
-	emergencyContactName: z.string().optional(),
-	emergencyContactNumber: z.string().optional(),
+  salary: z.coerce.number().optional(),
+  previousSalary: z.coerce.number().optional(),
 
-	vehicleNumber: z.string().optional(),
-	transportNumber: z.string().optional(),
-});
+  emergencyContactName: z.string().optional(),
+  emergencyContactNumber: z.string().optional(),
+
+  vehicleNumber: z.string().optional(),
+  transportNumber: z.string().optional(),
+})
 
 const STAFF_FIELDS = [
-	{ name: "fullName", required: true },
-	{ name: "role", required: true },
-	{ name: "email", required: true },
-	{ name: "contactNumber", required: true },
-	{ name: "gender", required: true },
+  { name: 'fullName', required: true },
+  { name: 'role', required: true },
+  { name: 'email', required: true },
+  { name: 'contactNumber', required: true },
+  { name: 'gender', required: true },
 
-	{ name: "qualification" },
-	{ name: "experienceYears" },
-	{ name: "dateOfJoining" },
+  { name: 'qualification' },
+  { name: 'experienceYears' },
+  { name: 'dateOfJoining' },
 
-	{ name: "address", required: true },
-	{ name: "city" },
-	{ name: "state" },
-	{ name: "postalCode" },
-	{ name: "nationality" },
-	{ name: "maritalStatus" },
-	{ name: "salary" },
+  { name: 'address', required: true },
+  { name: 'city' },
+  { name: 'state' },
+  { name: 'postalCode' },
+  { name: 'nationality' },
+  { name: 'maritalStatus' },
+  { name: 'caste' },
 
-	{ name: "emergencyContactName" },
-	{ name: "emergencyContactNumber" },
+  { name: 'salary' },
+  { name: 'previousSalary' },
 
-	{ name: "vehicleNumber" },
-	{ name: "transportNumber" },
+  { name: 'emergencyContactName' },
+  { name: 'emergencyContactNumber' },
 
-	{ name: "profilePhoto" },
-	{ name: "idProofPhoto" },
-];
+  { name: 'vehicleNumber' },
+  { name: 'transportNumber' },
 
-const REQUIRED_FIELDS = STAFF_FIELDS.filter((f) => f.required).map(
-	(f) => f.name,
-);
+  { name: 'profilePhoto' },
+  { name: 'idProofPhoto' },
+]
+
+const REQUIRED_FIELDS = STAFF_FIELDS.filter((f) => f.required).map((f) => f.name)
 
 const EMPTY_DEFAULTS = STAFF_FIELDS.reduce(
-	(acc, field) => {
-		acc[field.name] = "";
-		return acc;
-	},
-	{ staffId: undefined },
-);
+  (acc, field) => {
+    acc[field.name] = ''
+    return acc
+  },
+  { staffId: undefined }
+)
 
-export function InputField({ form, name, type = "text", colSpan }) {
-	const label = name.replace(/([A-Z])/g, " $1").trim();
+export function InputField({ form, name, type = 'text', colSpan, options }) {
+  const label = name.replace(/([A-Z])/g, ' $1').trim()
 
-	return (
-		<FormField
-			control={form.control}
-			name={name}
-			render={({ field }) => (
-				<FormItem className={colSpan ? "col-span-full" : ""}>
-					<FormLabel className="flex items-center gap-1 capitalize">
-						{label}
-						{REQUIRED_FIELDS.includes(name) && (
-							<span className="text-red-500 font-medium">
-								*
-							</span>
-						)}
-					</FormLabel>
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className={colSpan ? 'col-span-full' : ''}>
+          <FormLabel className="flex items-center gap-1 capitalize">
+            {label}
+            {REQUIRED_FIELDS.includes(name) && (
+              <span className="text-red-500 font-medium">*</span>
+            )}
+          </FormLabel>
 
-					<FormControl>
-						<Input
-							{...field}
-							type={type}
-							value={field.value ?? ""}
-						/>
-					</FormControl>
+          <FormControl>
+            {options ? (
+              <Select onValueChange={field.onChange} value={field.value || ''}>
+                <SelectTrigger>
+                  <SelectValue placeholder={`Select ${label}`} />
+                </SelectTrigger>
 
-					<FormMessage />
-				</FormItem>
-			)}
-		/>
-	);
+                <SelectContent>
+                  {options.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input {...field} type={type} value={field.value ?? ''} />
+            )}
+          </FormControl>
+
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
 }
 
 export function Section({ title, icon, children }) {
-	const Icon = icon;
-	return (
-		<div className="rounded-xl border border-border">
-			<div className="flex items-center gap-3 px-6 py-4 rounded-t-xl bg-muted/50 border-b border-border">
-				<div className="h-10 w-10 rounded-lg bg-background border border-border flex items-center justify-center">
-					<Icon className="h-5 w-5 text-foreground" />
-				</div>
-				<h2 className="text-lg font-semibold text-foreground">
-					{title}
-				</h2>
-			</div>
-			<div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-				{children}
-			</div>
-		</div>
-	);
+  const Icon = icon
+
+  return (
+    <div className="rounded-xl border border-border">
+      <div className="flex items-center gap-3 px-6 py-4 rounded-t-xl bg-muted/50 border-b border-border">
+        <div className="h-10 w-10 rounded-lg bg-background border border-border flex items-center justify-center">
+          <Icon className="h-5 w-5 text-foreground" />
+        </div>
+
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+      </div>
+
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {children}
+      </div>
+    </div>
+  )
 }
 
 function formatDateForInput(date) {
-	if (!date) return "";
-	return date.split("T")[0];
+  if (!date) return ''
+  return date.split('T')[0]
 }
 
 export default function StaffFormPage({ defaultValues }) {
-	const { id } = useParams();
-	const navigate = useNavigate();
-	const isEdit = Boolean(id);
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const isEdit = Boolean(id)
 
-	const form = useForm({
-		resolver: zodResolver(staffSchema),
-		defaultValues: {
-			...EMPTY_DEFAULTS,
-			...defaultValues,
-		},
-	});
+  const form = useForm({
+    resolver: zodResolver(staffSchema),
+    defaultValues: {
+      ...EMPTY_DEFAULTS,
+      ...defaultValues,
+    },
+  })
 
-	const { data: staff } = useStaffById(id, { enabled: isEdit });
-	const { mutate: saveStaff, isLoading } = useUpsertStaff();
+  const { data: staff } = useStaffById(id, { enabled: isEdit })
+  const { mutate: saveStaff, isLoading } = useUpsertStaff()
 
-	useEffect(() => {
-		if (staff) {
-			const mappedStaff = {
-				staffId: staff.StaffID ?? undefined,
-				fullName: staff.FullName ?? "",
-				role: staff.Role ?? "",
-				email: staff.Email ?? "",
-				contactNumber: staff.ContactNumber ?? "",
-				gender: staff.Gender ?? "",
-				profilePictureUrl: staff.ProfilePictureUrl ?? "",
-				profilePhoto: staff.ProfilePhoto ?? "",
-				idProofPhoto: staff.IDProofPhoto ?? "",
-				dateOfBirth: formatDateForInput(staff.DateOfBirth),
-				qualification: staff.Qualification ?? "",
-				experienceYears: staff.ExperienceYears ?? "",
-				dateOfJoining: formatDateForInput(staff.DateOfJoining),
-				address: staff.Address ?? "",
-				city: staff.City ?? "",
-				state: staff.State ?? "",
-				postalCode: staff.PostalCode ?? "",
-				nationality: staff.Nationality ?? "",
-				maritalStatus: staff.MaritalStatus ?? "",
-				salary: staff.Salary ?? "",
-				emergencyContactName: staff.EmergencyContactName ?? "",
-				emergencyContactNumber: staff.EmergencyContactNumber ?? "",
-				vehicleNumber: staff.VehicleNumber ?? "",
-				transportNumber: staff.TransportNumber ?? "",
-			};
+  useEffect(() => {
+    if (staff) {
+      const mappedStaff = {
+        staffId: staff.StaffID ?? undefined,
+        fullName: staff.FullName ?? '',
+        role: staff.Role ?? '',
+        email: staff.Email ?? '',
+        contactNumber: staff.ContactNumber ?? '',
+        gender: staff.Gender ?? '',
 
-			form.reset({
-				...EMPTY_DEFAULTS,
-				...mappedStaff,
-			});
-		}
-	}, [staff]);
+        profilePictureUrl: staff.ProfilePictureUrl ?? '',
+        profilePhoto: staff.ProfilePhoto ?? '',
+        idProofPhoto: staff.IDProofPhoto ?? '',
 
-	const avatar =
-		form.watch("profilePhoto") ||
-		`https://ui-avatars.com/api/?name=${encodeURIComponent(
-			form.watch("fullName") || "Staff",
-		)}`;
+        dateOfBirth: formatDateForInput(staff.DateOfBirth),
+        qualification: staff.Qualification ?? '',
+        experienceYears: staff.ExperienceYears ?? '',
+        dateOfJoining: formatDateForInput(staff.DateOfJoining),
 
-	const onSubmit = (values) => {
-		saveStaff(
-			{ ...values, staffId: isEdit ? Number(id) : undefined },
-			{
-				onSuccess: () => {
-					toast.success(
-						isEdit
-							? "Staff updated successfully"
-							: "Staff saved successfully",
-					);
-					navigate("/staff-list");
-				},
-			},
-		);
-	};
+        address: staff.Address ?? '',
+        city: staff.City ?? '',
+        state: staff.State ?? '',
+        postalCode: staff.PostalCode ?? '',
+        nationality: staff.Nationality ?? '',
+        maritalStatus: staff.MaritalStatus ?? '',
+        caste: staff.Caste ?? '',
 
-	return (
-		<section className="w-full p-6 space-y-8 text-foreground">
-			{/* Page header */}
-			<div>
-				<h1 className="text-2xl font-bold flex items-center gap-2">
-					<UserPlus className="h-6 w-6" />
-					{isEdit ? "Edit Staff" : "Add Staff"}
-				</h1>
+        salary: staff.Salary ?? '',
+        previousSalary: staff.PreviousSalary ?? '',
 
-				<div className="mt-2 flex items-center text-sm text-muted-foreground gap-1">
-					<span>Dashboard</span>
-					<ChevronRight className="h-4 w-4" />
-					<span>Staff</span>
-					<ChevronRight className="h-4 w-4" />
-					<span className="font-medium text-foreground">
-						{isEdit ? "Edit Staff" : "Add Staff"}
-					</span>
-				</div>
-			</div>
+        emergencyContactName: staff.EmergencyContactName ?? '',
+        emergencyContactNumber: staff.EmergencyContactNumber ?? '',
 
-			<Form {...form}>
-				<form
-					onSubmit={form.handleSubmit(onSubmit)}
-					className="space-y-8"
-				>
-					{/* Profile */}
-					<div className="flex flex-col md:flex-row items-center gap-6">
-						<img
-							src={avatar}
-							alt="Profile"
-							className="h-28 w-28 rounded-xl border border-border object-cover bg-muted"
-						/>
-						<div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 md:mt-0">
-							<InputField
-								form={form}
-								name="profilePhoto"
-							/>
-							<InputField
-								form={form}
-								name="idProofPhoto"
-							/>
-						</div>
-					</div>
+        vehicleNumber: staff.VehicleNumber ?? '',
+        transportNumber: staff.TransportNumber ?? '',
+      }
 
-					<Section title="Personal Information" icon={User}>
-						<InputField form={form} name="fullName" />
-						<InputField form={form} name="role" />
-						<InputField form={form} name="gender" />
-						<InputField
-							form={form}
-							name="dateOfBirth"
-							type="date"
-						/>
-						<InputField form={form} name="maritalStatus" />
-						<InputField form={form} name="nationality" />
-					</Section>
+      form.reset({
+        ...EMPTY_DEFAULTS,
+        ...mappedStaff,
+      })
+    }
+  }, [staff])
 
-					<Section
-						title="Professional Information"
-						icon={Briefcase}
-					>
-						<InputField form={form} name="qualification" />
-						<InputField form={form} name="experienceYears" />
-						<InputField
-							form={form}
-							name="dateOfJoining"
-							type="date"
-						/>
-						<InputField form={form} name="salary" />
-					</Section>
+  const avatar =
+    form.watch('profilePhoto') ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      form.watch('fullName') || 'Staff'
+    )}`
 
-					<Section title="Contact Information" icon={Phone}>
-						<InputField form={form} name="email" />
-						<InputField form={form} name="contactNumber" />
-						<InputField form={form} name="address" colSpan />
-						<InputField form={form} name="city" />
-						<InputField form={form} name="state" />
-						<InputField form={form} name="postalCode" />
-					</Section>
+  const onSubmit = (values) => {
+    saveStaff(
+      { ...values, staffId: isEdit ? Number(id) : undefined },
+      {
+        onSuccess: () => {
+          toast.success(
+            isEdit ? 'Staff updated successfully' : 'Staff saved successfully'
+          )
+          navigate('/staff-list')
+        },
+      }
+    )
+  }
 
-					<Section title="Emergency Contact" icon={Shield}>
-						<InputField
-							form={form}
-							name="emergencyContactName"
-						/>
-						<InputField
-							form={form}
-							name="emergencyContactNumber"
-						/>
-					</Section>
+  return (
+    <section className="w-full p-6 space-y-8 text-foreground">
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <UserPlus className="h-6 w-6" />
+          {isEdit ? 'Edit Staff' : 'Add Staff'}
+        </h1>
 
-					<Section title="Transportation" icon={Car}>
-						<InputField form={form} name="vehicleNumber" />
-						<InputField form={form} name="transportNumber" />
-					</Section>
+        <div className="mt-2 flex items-center text-sm text-muted-foreground gap-1">
+          <span>Dashboard</span>
+          <ChevronRight className="h-4 w-4" />
+          <span>Staff</span>
+          <ChevronRight className="h-4 w-4" />
+          <span className="font-medium text-foreground">
+            {isEdit ? 'Edit Staff' : 'Add Staff'}
+          </span>
+        </div>
+      </div>
 
-					<div className="flex justify-end gap-3 pt-6">
-						<Button type="submit" disabled={isLoading}>
-							{isLoading
-								? isEdit
-									? "Updating..."
-									: "Saving..."
-								: isEdit
-									? "Update Staff"
-									: "Save Staff"}
-						</Button>
-					</div>
-				</form>
-			</Form>
-		</section>
-	);
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Profile images */}
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <img
+              src={avatar}
+              alt="Profile"
+              className="h-28 w-28 rounded-xl border border-border object-cover bg-muted"
+            />
+
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 md:mt-0">
+              <InputField form={form} name="profilePhoto" />
+              <InputField form={form} name="idProofPhoto" />
+            </div>
+          </div>
+
+          <Section title="Personal Information" icon={User}>
+            <InputField form={form} name="fullName" />
+            <InputField form={form} name="role" />
+            <InputField form={form} name="gender" options={genders} />
+            <InputField form={form} name="dateOfBirth" type="date" />
+            <InputField form={form} name="maritalStatus" options={maritalStatuses} />
+            <InputField form={form} name="nationality" />
+            <InputField form={form} name="caste" />
+          </Section>
+
+          <Section title="Professional Information" icon={Briefcase}>
+            <InputField form={form} name="qualification" />
+            <InputField form={form} name="experienceYears" />
+            <InputField form={form} name="dateOfJoining" type="date" />
+            <InputField form={form} name="salary" />
+            <InputField form={form} name="previousSalary" />
+          </Section>
+
+          <Section title="Contact Information" icon={Phone}>
+            <InputField form={form} name="email" />
+            <InputField form={form} name="contactNumber" />
+            <InputField form={form} name="address" colSpan />
+            <InputField form={form} name="city" />
+            <InputField form={form} name="state" />
+            <InputField form={form} name="postalCode" />
+          </Section>
+
+          <Section title="Emergency Contact" icon={Shield}>
+            <InputField form={form} name="emergencyContactName" />
+            <InputField form={form} name="emergencyContactNumber" />
+          </Section>
+
+          <Section title="Transportation" icon={Car}>
+            <InputField form={form} name="vehicleNumber" />
+            <InputField form={form} name="transportNumber" />
+          </Section>
+
+          <div className="flex justify-end gap-3 pt-6">
+            <Button type="submit" disabled={isLoading}>
+              {isLoading
+                ? isEdit
+                  ? 'Updating...'
+                  : 'Saving...'
+                : isEdit
+                  ? 'Update Staff'
+                  : 'Save Staff'}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </section>
+  )
 }
