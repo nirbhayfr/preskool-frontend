@@ -59,8 +59,13 @@ export default function PayFeesSection({ student, feesData }) {
   const { mutate: createFeeSubmission, isLoading } = useCreateFeeSubmission()
   const { mutate: deductFees } = useDeductFees()
 
+  const isTuitionFee =
+    (tab === 'type' && selectedType?.includes('tuition')) || tab === 'quarter'
+
   const payableAmount = Math.max(
-    Number(originalAmount || 0) + Number(transportFee || 0) - Number(discount || 0),
+    Number(originalAmount || 0) +
+      Number(transportFee || 0) -
+      (isTuitionFee ? Number(discount || 0) : 0),
     0
   )
 
@@ -448,7 +453,7 @@ export default function PayFeesSection({ student, feesData }) {
           {/* ---------------- PAYMENT ---------------- */}
 
           <div className="grid md:grid-cols-4 gap-4">
-            <Field label="Discount">
+            <Field label="Discount (Tuition Only)">
               <Input
                 type="number"
                 value={discount}

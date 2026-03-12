@@ -24,7 +24,11 @@ function PayFeesPage() {
       </div>
 
       <StudentDetailsPayFees student={student} />
-      <PreviousFeesRecords feesData={feesData} isLoading={isFeeLoading} />
+      <PreviousFeesRecords
+        feesData={feesData}
+        isLoading={isFeeLoading}
+        student={student}
+      />
       <PayFeesSection student={student} feesData={feesData} />
     </section>
   )

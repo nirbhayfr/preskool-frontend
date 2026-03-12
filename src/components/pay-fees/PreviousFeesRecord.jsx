@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '../ui/skeleton'
+import { PDFDownloadLink } from '@react-pdf/renderer'
+import FeeReceiptPDF from '../pdfs/FeeReceiptPDF'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -41,7 +43,8 @@ function formatDate(dateStr) {
   })
 }
 
-function PreviousFeesRecords({ feesData, isLoading, isError }) {
+function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
+  console.log(student)
   const [globalFilter, setGlobalFilter] = React.useState('')
 
   const tableData = React.useMemo(() => {
@@ -58,6 +61,8 @@ function PreviousFeesRecords({ feesData, isLoading, isError }) {
         refId: item.TransactionID,
         datePaid: formatDate(item.SubmittedDate),
         remarks: item.Remarks,
+
+        original: item,
       })) || []
     )
   }, [feesData])
@@ -93,8 +98,34 @@ function PreviousFeesRecords({ feesData, isLoading, isError }) {
       { accessorKey: 'refId', header: 'Ref ID' },
       { accessorKey: 'datePaid', header: 'Date Paid' },
       { accessorKey: 'remarks', header: 'Remarks' },
+      {
+        id: 'receipt',
+        header: 'Receipt',
+        cell: ({ row }) => {
+          const receipt = row.original.original
+
+          return (
+            <PDFDownloadLink
+              document={
+                <FeeReceiptPDF
+                  student={student}
+                  submissions={[receipt]}
+                  receiptNo={receipt.TransactionID}
+                />
+              }
+              fileName={`receipt-${receipt.TransactionID}.pdf`}
+            >
+              {({ loading }) => (
+                <Button size="sm" variant="outline">
+                  {loading ? 'Generating...' : 'Download'}
+                </Button>
+              )}
+            </PDFDownloadLink>
+          )
+        },
+      },
     ],
-    []
+    [student, feesData]
   )
 
   const table = useReactTable({
