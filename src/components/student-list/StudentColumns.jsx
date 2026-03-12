@@ -136,44 +136,47 @@ export const studentsColumns = (setSelectedStudent) => [
     cell: ({ row }) => <span className="capitalize">{row.original.FullName}</span>,
   },
 
-  {
-    accessorKey: 'Status',
-    header: ({ column }) => (
-      <SearchHeader
-        column={column}
-        title="Status"
-        type="select"
-        options={['Active', 'Inactive']}
-      />
-    ),
-    filterFn: advancedFilter,
-    cell: ({ row }) => {
-      const status = row.original.Status
+  // {
+  //   accessorKey: 'Status',
+  //   header: ({ column }) => (
+  //     <SearchHeader
+  //       column={column}
+  //       title="Status"
+  //       type="select"
+  //       options={['Active', 'Inactive']}
+  //     />
+  //   ),
+  //   filterFn: advancedFilter,
+  //   cell: ({ row }) => {
+  //     const status = row.original.Status
 
-      return (
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-semibold
-          ${
-            status === 'Active' || status === 'active'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
-          }`}
-        >
-          {status ?? 'Inactive'}
-        </span>
-      )
-    },
-  },
+  //     return (
+  //       <span
+  //         className={`px-3 py-1 rounded-full text-xs font-semibold
+  //         ${
+  //           status === 'Active' || status === 'active'
+  //             ? 'bg-green-100 text-green-700'
+  //             : 'bg-red-100 text-red-700'
+  //         }`}
+  //       >
+  //         {status ?? 'Inactive'}
+  //       </span>
+  //     )
+  //   },
+  // },
 
   {
     accessorKey: 'TodayStatus',
     header: ({ column }) => <SearchHeader column={column} title="Today Status" />,
     filterFn: advancedFilter,
     cell: ({ row }) => {
-      const value =
-        row.original.TodayStatus === 'N' ? undefined : row.original.TodayStatus
+      const status = row.original.TodayStatus
 
-      return <AttendanceCell value={value} />
+      if (status === 'N') return <p className="text-blue-600">Holiday</p>
+      if (status === 'P') return <p className="text-emerald-600">Present</p>
+      if (status === 'A') return <p className="text-red-600">Absent</p>
+
+      return '-'
     },
   },
 

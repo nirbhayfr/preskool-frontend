@@ -130,10 +130,9 @@ export const teachersColumns = () => [
     header: ({ column }) => <SearchHeader column={column} title="Today Status" />,
     filterFn: advancedFilter,
     cell: ({ row }) => {
-      const value =
-        row.original.TodayStatus === 'N' ? undefined : row.original.TodayStatus
+      const value = row.original.TodayStatus
 
-      return <AttendanceCell value={value} />
+      return value
     },
   },
 

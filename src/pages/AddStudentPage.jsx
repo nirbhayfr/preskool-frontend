@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 
-import { User, Shield, Book, ChevronRight, UserPlus } from 'lucide-react'
+import { User, Shield, Book, UserPlus } from 'lucide-react'
 
 import {
   Form,
@@ -86,16 +86,16 @@ const EMPTY_DEFAULTS = STUDENT_FIELDS.reduce(
     acc[field.name] = ''
     return acc
   },
-  { studentId: undefined }
+  { studentId: '' }
 )
 
 const studentSchema = z.object({
-  studentId: z.number().optional(),
+  studentId: z.string().optional(),
   fullName: z.string().min(1),
   dob: z.string().min(1),
   gender: z.string().min(1),
-  class: z.string().min(1),
-  section: z.string().min(1),
+  class: z.string().min(1, 'Class is required'),
+  section: z.string().min(1, 'Section is required'),
 
   rollNo: z.string().optional(),
   admissionNo: z.string().optional(),
@@ -110,13 +110,13 @@ const studentSchema = z.object({
   gpa: z.string().optional(),
   attendance: z.string().optional(),
   subjects: z.string().optional(),
-  status: z.string().optional(),
+  status: z.string().min(1),
 
   houseName: z.string().optional(),
   caste: z.string().optional(),
 
   address: z.string().min(1),
-  contact: z.string(),
+  contact: z.string().min(1),
   email: z.string().optional(),
   nationality: z.string().optional(),
 
@@ -161,20 +161,29 @@ function InputField({ form, name, type = 'text', colSpan, options }) {
 
           <FormControl>
             {isSelect ? (
-              <Select value={field.value || ''} onValueChange={field.onChange}>
-                <SelectTrigger aria-labelledby={`${fieldId}-label`} id={fieldId}>
+              <Select
+                key={field.value} // <-- force remount when value changes
+                value={field.value ?? ''}
+                onValueChange={(val) => field.onChange(String(val))}
+              >
+                <SelectTrigger aria-labelledby={`${fieldId}-label`}>
                   <SelectValue placeholder={`Select ${label}`} />
                 </SelectTrigger>
                 <SelectContent>
                   {options.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
+                    <SelectItem key={opt} value={String(opt)}>
                       {opt}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : (
-              <Input {...field} type={type} id={fieldId} />
+              <Input
+                {...field}
+                type={type}
+                id={fieldId}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
             )}
           </FormControl>
 
@@ -211,23 +220,21 @@ export default function StudentFormPage({ defaultValues }) {
   const { mutate: saveStudent, isLoading } = useCreateStudent()
 
   useEffect(() => {
-    if (user?.Role !== 'Admin') {
-      if (user?.LinkedID !== Number(id)) {
-        toast.error("You are not authorized to edit this student's details.")
-        navigate(-1)
-        return
-      }
+    if (user?.Role !== 'Admin' && user?.LinkedID !== Number(id)) {
+      toast.error("You are not authorized to edit this student's details.")
+      navigate(-1)
+      return
     }
 
     if (student) {
       const mappedStudent = {
-        studentId: student.StudentID ?? undefined,
+        studentId: String(student.StudentID ?? ''),
         fullName: student.FullName ?? '',
         dob: formatDateForInput(student.DOB),
         gender: student.Gender ?? '',
-        class: student.ClassID ?? '',
-        section: student.SectionID ?? '',
-        rollNo: student.RollNo ?? '',
+        class: String(student.ClassID ?? ''),
+        section: String(student.SectionID ?? ''),
+        rollNo: String(student.RollNo ?? ''),
         admissionNo: student.AdmissionNo ?? '',
         joiningDate: formatDateForInput(student.JoiningDate),
         identificationNumber: student.IdentificationNumber ?? '',
@@ -235,14 +242,14 @@ export default function StudentFormPage({ defaultValues }) {
         program: student.Program ?? '',
         yearSemester: student.YearSemester ?? '',
         previousRecord: student.PreviousRecord ?? '',
-        gpa: student.GPA ?? '',
-        attendance: student.Attendance ?? '',
+        gpa: String(student.GPA ?? ''),
+        attendance: String(student.Attendance ?? ''),
         subjects: student.Subjects ?? '',
         status: student.Status ?? 'Active',
         houseName: student.HouseName ?? '',
         caste: student.Cast ?? '',
         address: student.Address ?? '',
-        contact: student.ContactNumber ?? '',
+        contact: String(student.ContactNumber ?? ''),
         email: student.EmailAddress ?? '',
         nationality: student.Nationality ?? '',
         photo: student.PhotoUrl ?? '',
@@ -251,15 +258,17 @@ export default function StudentFormPage({ defaultValues }) {
         guardianPhoto: student.GuardianPhoto ?? '',
         guardianName: student.GuardianName ?? '',
         guardianRelation: student.GuardianRelation ?? '',
-        guardianContact: student.GuardianContact ?? '',
+        guardianContact: String(student.GuardianContact ?? ''),
         guardianOccupation: student.GuardianOccupation ?? '',
         guardianAddress: student.GuardianAddress ?? '',
-        pendingFee: student.PendingFee ?? '',
-        discountAmount: student.DiscountAmount ?? '',
+        pendingFee: String(student.PendingFee ?? ''),
+        discountAmount: String(student.DiscountAmount ?? ''),
         route: student.Route ?? '',
-        transportStatus: student.TransportStatus ?? '',
+        transportStatus: (student.TransportStatus ?? '').trim(),
         vehicleNo: student.VehicleNo ?? '',
       }
+
+      console.log(mappedStudent)
 
       form.reset({
         ...EMPTY_DEFAULTS,
@@ -270,17 +279,13 @@ export default function StudentFormPage({ defaultValues }) {
 
   const avatar =
     form.watch('photo') ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      form.watch('fullName') || 'Student'
-    )}`
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(form.watch('fullName') || 'Student')}`
 
   const onSubmit = (values) => {
-    console.log(values, { discountAmount: Number(values.discountAmount) })
     saveStudent(
       {
         ...values,
-        studentId: isEdit ? Number(id) : undefined,
-        discountAmount: Number(values.discountAmount),
+        studentId: isEdit ? String(id) : undefined,
       },
       {
         onSuccess: () => {
@@ -322,14 +327,14 @@ export default function StudentFormPage({ defaultValues }) {
             <InputField form={form} name="fullName" />
             <InputField form={form} name="dob" type="date" />
             <InputField form={form} name="gender" />
-            <InputField form={form} name="class" options={classes} />
-            <InputField form={form} name="section" options={sections} />
+            <InputField form={form} name="class" options={classes.map(String)} />
+            <InputField form={form} name="section" options={sections.map(String)} />
             <InputField form={form} name="houseName" />
             <InputField form={form} name="caste" />
           </Section>
 
           <Section title="Academic Information" icon={Book}>
-            <InputField form={form} name="rollNo" type="number" />
+            <InputField form={form} name="rollNo" />
             <InputField form={form} name="admissionNo" />
             <InputField form={form} name="joiningDate" type="date" />
             <InputField form={form} name="identificationNumber" />
@@ -337,15 +342,15 @@ export default function StudentFormPage({ defaultValues }) {
             <InputField form={form} name="program" />
             <InputField form={form} name="yearSemester" />
             <InputField form={form} name="previousRecord" />
-            <InputField form={form} name="gpa" type="number" />
-            <InputField form={form} name="attendance" type="number" />
+            <InputField form={form} name="gpa" />
+            <InputField form={form} name="attendance" />
             <InputField form={form} name="subjects" colSpan />
             <InputField form={form} name="status" options={['Active', 'Inactive']} />
           </Section>
 
           <Section title="Contact Information" icon={Shield}>
             <InputField form={form} name="address" colSpan />
-            <InputField form={form} name="contact" type="number" />
+            <InputField form={form} name="contact" />
             <InputField form={form} name="email" />
             <InputField form={form} name="nationality" />
           </Section>
@@ -353,14 +358,14 @@ export default function StudentFormPage({ defaultValues }) {
           <Section title="Guardian Information" icon={User}>
             <InputField form={form} name="guardianName" />
             <InputField form={form} name="guardianRelation" />
-            <InputField form={form} name="guardianContact" type="number" />
+            <InputField form={form} name="guardianContact" />
             <InputField form={form} name="guardianOccupation" />
             <InputField form={form} name="guardianAddress" colSpan />
           </Section>
 
           <Section title="Transport & Fees" icon={Shield}>
-            <InputField form={form} name="pendingFee" type="number" />
-            <InputField form={form} name="discountAmount" type="number" />
+            <InputField form={form} name="pendingFee" />
+            <InputField form={form} name="discountAmount" />
             <InputField form={form} name="route" />
             <InputField form={form} name="transportStatus" options={['Yes', 'No']} />
             <InputField form={form} name="vehicleNo" />
