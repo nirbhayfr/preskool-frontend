@@ -27,30 +27,45 @@ export default function PayFeesSection({ student, feesData }) {
   const [tab, setTab] = useState('type')
   const [quarter, setQuarter] = useState('')
 
-  const [paymentMode, setPaymentMode] = useState('')
   const [collectionDate] = useState(new Date().toISOString().split('T')[0])
-  const [remarks, setRemarks] = useState('')
-
-  const [discount] = useState(
-    student?.DiscountAmount ? Number(student.DiscountAmount) : 0
-  )
 
   const [includeTuition, setIncludeTuition] = useState(true)
   const [includeTransport, setIncludeTransport] = useState(true)
 
   const [feeRows, setFeeRows] = useState([
-    { id: Date.now(), group: '', type: '', amount: 0 },
+    {
+      id: Date.now(),
+      group: '',
+      type: '',
+      amount: 0,
+      includeTuition: true,
+      includeTransport: true,
+      discount: student?.DiscountAmount ? Number(student.DiscountAmount) : 0,
+      paymentMode: '',
+      remarks: '',
+    },
   ])
 
   const addRow = () => {
-    setFeeRows((prev) => [...prev, { id: Date.now(), group: '', type: '', amount: 0 }])
+    setFeeRows((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        group: '',
+        type: '',
+        amount: 0,
+        includeTuition: true,
+        includeTransport: true,
+        discount: student?.DiscountAmount ? Number(student.DiscountAmount) : 0,
+        paymentMode: '',
+        remarks: '',
+      },
+    ])
   }
 
   const removeRow = (id) => {
     setFeeRows((prev) => prev.filter((r) => r.id !== id))
   }
-
-  /* API */
 
   const { data: structure } = useFeeStructureByClass({
     classId: student?.ClassID,
@@ -69,8 +84,6 @@ export default function PayFeesSection({ student, feesData }) {
   const { mutate: createFeeSubmission, isLoading } = useCreateFeeSubmission()
   const { mutate: deductFees } = useDeductFees()
 
-  /* Transport price */
-
   const transportRoutePrice = useMemo(() => {
     if (!transportHistory?.months?.length || !transport?.length) return 0
 
@@ -85,8 +98,6 @@ export default function PayFeesSection({ student, feesData }) {
   }, [transportHistory, transport])
 
   const pendingAmount = Number(student?.PendingFee || 0)
-
-  /* Fee Groups */
 
   const feeGroups = useMemo(() => {
     if (!structure) return []
@@ -123,7 +134,6 @@ export default function PayFeesSection({ student, feesData }) {
 
       if (tuitionKey && includeTuition) {
         total += Number(structure[tuitionKey] || 0)
-        total -= discount
       }
 
       const monthTransport = transportHistory?.months?.find((m) =>
@@ -135,7 +145,7 @@ export default function PayFeesSection({ student, feesData }) {
       }
     })
 
-    return Math.max(total, 0)
+    return total
   }, [
     quarter,
     structure,
@@ -143,10 +153,7 @@ export default function PayFeesSection({ student, feesData }) {
     transportRoutePrice,
     includeTuition,
     includeTransport,
-    discount,
   ])
-
-  /* Fees per group */
 
   const getFeesForGroup = (group) => {
     if (!group || !structure) return []
@@ -174,8 +181,6 @@ export default function PayFeesSection({ student, feesData }) {
       }))
   }
 
-  /* Transport lookup */
-
   const getTransportFeeForType = (type) => {
     if (!type) return 0
 
@@ -192,50 +197,33 @@ export default function PayFeesSection({ student, feesData }) {
     return 0
   }
 
-  /* Total calculation */
-
-  const payableAmount = useMemo(() => {
+  const calculateRowPayable = (row) => {
     let total = 0
+    const isTuition = row.type.includes('tuition')
 
-    feeRows.forEach((row) => {
-      const isTuition = row.type.includes('tuition')
-
-      if (isTuition) {
-        if (includeTuition) total += Number(row.amount || 0)
-
-        if (includeTransport) {
-          total += getTransportFeeForType(row.type)
-        }
-
-        total -= discount
-      } else {
-        total += Number(row.amount || 0)
-      }
-    })
+    if (isTuition) {
+      if (row.includeTuition) total += Number(row.amount || 0)
+      if (row.includeTransport) total += getTransportFeeForType(row.type)
+      total -= row.discount
+    } else {
+      total += Number(row.amount || 0)
+    }
 
     return Math.max(total, 0)
-  }, [feeRows, includeTuition, includeTransport, discount])
-
-  /* Submit */
+  }
 
   const handleSubmit = async () => {
-    if (!paymentMode) return
-
     const baseTxn = `TXN${Date.now()}`
 
     const basePayload = {
       studentId: Number(student.StudentID),
-      paymentMode,
       paymentStatus: 'SUCCESS',
       submittedBy: 'Accountant',
       submittedDate: collectionDate,
-      remarks,
     }
 
     if (tab === 'quarter') {
       if (!quarter) return
-
-      const baseTxn = `TXN${Date.now()}`
 
       const quarterMonths = {
         1: ['apr', 'may', 'jun'],
@@ -256,10 +244,12 @@ export default function PayFeesSection({ student, feesData }) {
 
           createFeeSubmission({
             ...basePayload,
+            paymentMode: 'CASH',
+            remarks: 'Quarterly Payment',
             feeType: `${month.toUpperCase()}_TUITION`,
             transactionId: `${baseTxn}_${month}_TUITION`,
             originalAmount: tuitionAmount,
-            discountAmount: discount,
+            discountAmount: 0,
             paidAmount: tuitionAmount,
           })
         }
@@ -271,6 +261,8 @@ export default function PayFeesSection({ student, feesData }) {
         if (includeTransport && monthTransport?.Route && monthTransport.Route !== 'N/A') {
           createFeeSubmission({
             ...basePayload,
+            paymentMode: 'CASH',
+            remarks: 'Quarterly Payment',
             feeType: `TRANSPORT_${month.toUpperCase()}`,
             transactionId: `${baseTxn}_${month}_TRANSPORT`,
             originalAmount: transportRoutePrice,
@@ -291,26 +283,28 @@ export default function PayFeesSection({ student, feesData }) {
       const isPending = row.type === 'pending_fee'
       const month = row.type.split('_')[0]
 
-      /* ---------------- TUITION ---------------- */
-
       if (isTuition) {
-        if (includeTuition) {
+        if (row.includeTuition) {
           createFeeSubmission({
             ...basePayload,
+            paymentMode: row.paymentMode,
+            remarks: row.remarks,
             feeType: `${month.toUpperCase()}_TUITION`,
             transactionId: `${baseTxn}_${month}_TUITION`,
             originalAmount: Number(row.amount),
-            discountAmount: discount,
+            discountAmount: row.discount,
             paidAmount: Number(row.amount),
           })
         }
 
-        if (includeTransport) {
+        if (row.includeTransport) {
           const transportFee = getTransportFeeForType(row.type)
 
           if (transportFee > 0) {
             createFeeSubmission({
               ...basePayload,
+              paymentMode: row.paymentMode,
+              remarks: row.remarks,
               feeType: `TRANSPORT_${month.toUpperCase()}`,
               transactionId: `${baseTxn}_${month}_TRANSPORT`,
               originalAmount: transportFee,
@@ -323,13 +317,11 @@ export default function PayFeesSection({ student, feesData }) {
         continue
       }
 
-      /* ---------------- PENDING FEES ---------------- */
-
       if (isPending) {
-        /* 1️⃣ Record payment transaction */
-
         createFeeSubmission({
           ...basePayload,
+          paymentMode: row.paymentMode,
+          remarks: row.remarks,
           feeType: 'PENDING_FEE',
           transactionId: `${baseTxn}_PENDING_${row.id}`,
           originalAmount: Number(row.amount),
@@ -337,23 +329,21 @@ export default function PayFeesSection({ student, feesData }) {
           paidAmount: Number(row.amount),
         })
 
-        /* 2️⃣ Deduct from pending balance */
-
         deductFees({
           studentId: Number(student.StudentID),
           amount: Number(row.amount),
-          paymentMode,
-          remarks,
+          paymentMode: row.paymentMode,
+          remarks: row.remarks,
           submittedDate: collectionDate,
         })
 
         continue
       }
 
-      /* ---------------- OTHER FEES (MISC ETC) ---------------- */
-
       createFeeSubmission({
         ...basePayload,
+        paymentMode: row.paymentMode,
+        remarks: row.remarks,
         feeType: row.type.replace('_fee', '').toUpperCase(),
         transactionId: `${baseTxn}_${row.id}`,
         originalAmount: Number(row.amount),
@@ -384,6 +374,7 @@ export default function PayFeesSection({ student, feesData }) {
               <TabsTrigger value="quarter">Quarterly</TabsTrigger>
             </TabsList>
 
+            {/* TYPE TAB */}
             <TabsContent value="type" className="space-y-4">
               {feeRows.map((row, index) => {
                 const feesForGroup = getFeesForGroup(row.group)
@@ -391,8 +382,9 @@ export default function PayFeesSection({ student, feesData }) {
                 return (
                   <div
                     key={row.id}
-                    className="grid md:grid-cols-4 gap-4 items-end border p-4 rounded-md"
+                    className="grid md:grid-cols-4 gap-6 items-end border p-5 rounded-md"
                   >
+                    {/* group */}
                     <Field label="Fees Group">
                       <Select
                         value={row.group}
@@ -420,6 +412,7 @@ export default function PayFeesSection({ student, feesData }) {
                       </Select>
                     </Field>
 
+                    {/* type */}
                     <Field label="Fees Type">
                       <Select
                         value={row.type}
@@ -453,6 +446,98 @@ export default function PayFeesSection({ student, feesData }) {
                       <Input value={row.amount} disabled />
                     </Field>
 
+                    <Field label="Transport Fee">
+                      <Input
+                        value={
+                          row.includeTransport ? getTransportFeeForType(row.type) : 0
+                        }
+                        disabled
+                      />
+                    </Field>
+
+                    <div className="col-span-full grid md:grid-cols-5 gap-4 mt-2">
+                      <Field label="Include Tuition">
+                        <Switch
+                          checked={row.includeTuition}
+                          onCheckedChange={(val) =>
+                            setFeeRows((prev) =>
+                              prev.map((r) =>
+                                r.id === row.id ? { ...r, includeTuition: val } : r
+                              )
+                            )
+                          }
+                        />
+                      </Field>
+
+                      <Field label="Include Transport">
+                        <Switch
+                          checked={row.includeTransport}
+                          onCheckedChange={(val) =>
+                            setFeeRows((prev) =>
+                              prev.map((r) =>
+                                r.id === row.id ? { ...r, includeTransport: val } : r
+                              )
+                            )
+                          }
+                        />
+                      </Field>
+
+                      <Field label="Discount">
+                        <Input
+                          value={row.discount}
+                          onChange={(e) =>
+                            setFeeRows((prev) =>
+                              prev.map((r) =>
+                                r.id === row.id
+                                  ? { ...r, discount: Number(e.target.value) }
+                                  : r
+                              )
+                            )
+                          }
+                          disabled
+                        />
+                      </Field>
+
+                      <Field label="Transport Fee">
+                        <Input
+                          value={
+                            row.includeTransport ? getTransportFeeForType(row.type) : 0
+                          }
+                          disabled
+                        />
+                      </Field>
+
+                      <Field label="Payable Amount">
+                        <Input value={calculateRowPayable(row)} disabled />
+                      </Field>
+                    </div>
+
+                    <Field label="Payment Mode">
+                      <Input
+                        value={row.paymentMode}
+                        onChange={(e) =>
+                          setFeeRows((prev) =>
+                            prev.map((r) =>
+                              r.id === row.id ? { ...r, paymentMode: e.target.value } : r
+                            )
+                          )
+                        }
+                      />
+                    </Field>
+
+                    <Field label="Remarks">
+                      <Input
+                        value={row.remarks}
+                        onChange={(e) =>
+                          setFeeRows((prev) =>
+                            prev.map((r) =>
+                              r.id === row.id ? { ...r, remarks: e.target.value } : r
+                            )
+                          )
+                        }
+                      />
+                    </Field>
+
                     {index > 0 && (
                       <Button
                         variant="destructive"
@@ -469,29 +554,9 @@ export default function PayFeesSection({ student, feesData }) {
               <Button variant="outline" onClick={addRow}>
                 + Add Fee
               </Button>
-
-              <div className="grid md:grid-cols-4 gap-4">
-                <Field label="Include Tuition (Tuition Only)">
-                  <Switch checked={includeTuition} onCheckedChange={setIncludeTuition} />
-                </Field>
-
-                <Field label="Include Transport (Tuition Only)">
-                  <Switch
-                    checked={includeTransport}
-                    onCheckedChange={setIncludeTransport}
-                  />
-                </Field>
-
-                <Field label="Discount (Tuition Only)">
-                  <Input value={discount} disabled />
-                </Field>
-
-                <Field label="Payable Amount">
-                  <Input value={payableAmount} disabled />
-                </Field>
-              </div>
             </TabsContent>
 
+            {/* QUARTER TAB */}
             <TabsContent value="quarter" className="space-y-4">
               <div className="grid md:grid-cols-4 gap-4">
                 <Field label="Quarter">
@@ -528,14 +593,6 @@ export default function PayFeesSection({ student, feesData }) {
           </Tabs>
 
           <div className="grid md:grid-cols-3 gap-4">
-            <Field label="Payment Mode">
-              <Input onChange={(e) => setPaymentMode(e.target.value)} />
-            </Field>
-
-            <Field label="Remarks">
-              <Input onChange={(e) => setRemarks(e.target.value)} />
-            </Field>
-
             <Field label="Collection Date">
               <Input type="date" value={collectionDate} disabled />
             </Field>
