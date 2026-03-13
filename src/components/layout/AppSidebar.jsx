@@ -207,7 +207,13 @@ const data = {
       url: '/admission-form',
       icon: Form,
     },
+     {
+      title: 'Create/Join Meeting',
+      url: '/meeting',
+      icon: Form,
+    },
   ],
+  
 }
 
 function getSidebarDataByRole(role) {

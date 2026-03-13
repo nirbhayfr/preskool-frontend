@@ -60,6 +60,10 @@ import RevenuePage from './pages/RevenuePage'
 import BudgetPage from './pages/BudgetPage'
 import AdmissionForm from './pages/AdmissionForm'
 import PayFeesPage from './pages/PayFeesPage'
+// App.jsx or routes.jsx
+import JitsiMeetingRoom from './pages/JitsiMeetingRoom'
+
+
 
 function App() {
   return (
@@ -150,6 +154,7 @@ function App() {
               <Route path="/book-issues" element={<BookIssues />} />
 
               <Route path="/admission-form" element={<AdmissionForm />} />
+              <Route path="/meeting" element={<JitsiMeetingRoom />} />
             </Route>
           </Route>
         </Routes>
