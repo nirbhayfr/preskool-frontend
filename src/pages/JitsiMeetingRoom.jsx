@@ -11,7 +11,7 @@
  *   GET  /api/online-meetings/list/:classId/:sectionId
  */
 
-const API_BASE  = "http://localhost:3000/api"; // ← your backend
+const API_BASE  = baseURL; // ← your backend
 const TOKEN_KEY = "token";                      // ← your localStorage key
 
 // ─── Auth fetch helper ────────────────────────────────────────────────────────
