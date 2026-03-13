@@ -103,6 +103,7 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
         header: 'Receipt',
         cell: ({ row }) => {
           const receipt = row.original.original
+          console.log(receipt)
 
           return (
             <PDFDownloadLink

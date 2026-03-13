@@ -134,6 +134,8 @@ export default function StudentAttendance() {
 
   if (isLoading) return <CircleLoader />
 
+  console.log(user)
+
   return (
     <section className="p-6">
       <StudentAttendanceHeader
