@@ -1,0 +1,581 @@
+/* ============================================================
+   StatisticsCard.css — Mission-control analytics panel
+   ============================================================ */
+
+/* ── Theme tokens ── */
+.sc-wrap {
+  /* Light */
+  --sc-bg: #ffffff;
+  --sc-bg-inner: #f8fafc;
+  --sc-border: rgba(0, 0, 0, 0.08);
+  --sc-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+  --sc-title: #0f172a;
+  --sc-sub: #64748b;
+  --sc-grid: rgba(0, 0, 0, 0.06);
+  --sc-tile-bg: rgba(0, 0, 0, 0.03);
+  --sc-tile-border: rgba(0, 0, 0, 0.07);
+  --sc-tile-label: #64748b;
+  --sc-tile-value: #0f172a;
+  --sc-glow-a: rgba(59, 130, 246, 0.08);
+  --sc-glow-b: rgba(6, 182, 212, 0.06);
+  --sc-tooltip-bg: #ffffff;
+  --sc-tooltip-border: rgba(0, 0, 0, 0.1);
+  --sc-tooltip-text: #0f172a;
+  --sc-tooltip-sub: #64748b;
+  --sc-orb-opacity: 0.06;
+  --sc-shimmer: rgba(0, 0, 0, 0.025);
+}
+
+/* Dark — Tailwind .dark */
+.dark .sc-wrap {
+  --sc-bg: #0d1728;
+  --sc-bg-inner: #0a1020;
+  --sc-border: rgba(255, 255, 255, 0.07);
+  --sc-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --sc-title: #f1f5f9;
+  --sc-sub: #64748b;
+  --sc-grid: rgba(255, 255, 255, 0.05);
+  --sc-tile-bg: rgba(255, 255, 255, 0.04);
+  --sc-tile-border: rgba(255, 255, 255, 0.07);
+  --sc-tile-label: #94a3b8;
+  --sc-tile-value: #f1f5f9;
+  --sc-glow-a: rgba(59, 130, 246, 0.18);
+  --sc-glow-b: rgba(6, 182, 212, 0.14);
+  --sc-tooltip-bg: #111f38;
+  --sc-tooltip-border: rgba(255, 255, 255, 0.1);
+  --sc-tooltip-text: #f1f5f9;
+  --sc-tooltip-sub: #94a3b8;
+  --sc-orb-opacity: 0.18;
+  --sc-shimmer: rgba(255, 255, 255, 0.03);
+}
+
+/* Dark — system preference */
+@media (prefers-color-scheme: dark) {
+  .sc-wrap {
+    --sc-bg: #0d1728;
+    --sc-bg-inner: #0a1020;
+    --sc-border: rgba(255, 255, 255, 0.07);
+    --sc-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    --sc-title: #f1f5f9;
+    --sc-sub: #64748b;
+    --sc-grid: rgba(255, 255, 255, 0.05);
+    --sc-tile-bg: rgba(255, 255, 255, 0.04);
+    --sc-tile-border: rgba(255, 255, 255, 0.07);
+    --sc-tile-label: #94a3b8;
+    --sc-tile-value: #f1f5f9;
+    --sc-glow-a: rgba(59, 130, 246, 0.18);
+    --sc-glow-b: rgba(6, 182, 212, 0.14);
+    --sc-tooltip-bg: #111f38;
+    --sc-tooltip-border: rgba(255, 255, 255, 0.1);
+    --sc-tooltip-text: #f1f5f9;
+    --sc-tooltip-sub: #94a3b8;
+    --sc-orb-opacity: 0.18;
+    --sc-shimmer: rgba(255, 255, 255, 0.03);
+  }
+}
+
+/* ============================================================
+   CARD SHELL
+   ============================================================ */
+.sc-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--sc-bg);
+  border: 1px solid var(--sc-border);
+  box-shadow: var(--sc-shadow);
+  width: 100%;
+  height: 100%;
+  animation: sc-card-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sc-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Moving background glow orbs ── */
+.sc-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(60px);
+}
+
+.sc-orb-1 {
+  width: 300px;
+  height: 300px;
+  background: #3b82f6;
+  opacity: var(--sc-orb-opacity);
+  top: -80px;
+  left: -60px;
+  animation: sc-drift-1 10s ease-in-out infinite alternate;
+}
+
+.sc-orb-2 {
+  width: 240px;
+  height: 240px;
+  background: #06b6d4;
+  opacity: var(--sc-orb-opacity);
+  bottom: -60px;
+  right: -40px;
+  animation: sc-drift-2 13s ease-in-out infinite alternate;
+}
+
+.sc-orb-3 {
+  width: 180px;
+  height: 180px;
+  background: #6366f1;
+  opacity: calc(var(--sc-orb-opacity) * 0.7);
+  top: 40%;
+  left: 40%;
+  animation: sc-drift-3 8s ease-in-out infinite alternate;
+}
+
+@keyframes sc-drift-1 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(50px, 30px) scale(1.2);
+  }
+}
+@keyframes sc-drift-2 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-40px, -25px) scale(1.15);
+  }
+}
+@keyframes sc-drift-3 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-30px, 20px) scale(1.3);
+  }
+}
+
+/* scrolling dot grid */
+.sc-grid-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--sc-grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+  animation: sc-grid-scroll 20s linear infinite;
+  mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 100% 100% at 50% 50%,
+    black 40%,
+    transparent 100%
+  );
+}
+
+@keyframes sc-grid-scroll {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 28px 28px;
+  }
+}
+
+/* spinning conic border */
+@property --sc-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.sc-border-spin {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--sc-angle),
+    transparent 0deg,
+    rgba(59, 130, 246, 0.6) 60deg,
+    rgba(6, 182, 212, 0.4) 120deg,
+    transparent 180deg,
+    transparent 220deg,
+    rgba(99, 102, 241, 0.5) 300deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: sc-spin 5s linear infinite;
+}
+
+@keyframes sc-spin {
+  to {
+    --sc-angle: 360deg;
+  }
+}
+
+/* ============================================================
+   INNER CONTENT
+   ============================================================ */
+.sc-content {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 20px 16px;
+  gap: 16px;
+}
+
+/* ── Header row ── */
+.sc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sc-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sc-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sc-title);
+  line-height: 1.2;
+}
+
+.sc-subtitle {
+  font-size: 11px;
+  color: var(--sc-sub);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* live pulse indicator */
+.sc-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  padding: 3px 9px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.sc-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: sc-live-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes sc-live-blink {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 8px #22c55e;
+  }
+  50% {
+    opacity: 0.25;
+    box-shadow: none;
+  }
+}
+
+/* ── Stat tiles ── */
+.sc-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .sc-tiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.sc-tile {
+  position: relative;
+  overflow: hidden;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--sc-tile-bg);
+  border: 1px solid var(--sc-tile-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: sc-tile-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sc-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.sc-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--sc-tile-accent, #3b82f6);
+  border-radius: 2px 2px 0 0;
+  opacity: 0.7;
+}
+
+.sc-tile:nth-child(1) {
+  animation-delay: 0.1s;
+  --sc-tile-accent: #3b82f6;
+}
+.sc-tile:nth-child(2) {
+  animation-delay: 0.17s;
+  --sc-tile-accent: #06b6d4;
+}
+.sc-tile:nth-child(3) {
+  animation-delay: 0.24s;
+  --sc-tile-accent: #22c55e;
+}
+.sc-tile:nth-child(4) {
+  animation-delay: 0.31s;
+  --sc-tile-accent: #f59e0b;
+}
+
+@keyframes sc-tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sc-tile-label {
+  font-size: 10px;
+  color: var(--sc-tile-label);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-tile-value {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--sc-tile-value);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-tile-value span {
+  color: var(--sc-tile-accent, #3b82f6);
+}
+
+/* ── Legend pills ── */
+.sc-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sc-legend-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid;
+  cursor: default;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  animation: sc-pill-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sc-legend-pill:nth-child(1) {
+  animation-delay: 0.4s;
+}
+.sc-legend-pill:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+@keyframes sc-pill-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.sc-legend-pill:hover {
+  transform: translateY(-1px);
+}
+
+.sc-pill-score {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.12);
+}
+
+.sc-pill-attend {
+  color: #06b6d4;
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.25);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.12);
+}
+
+.sc-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sc-pill-score .sc-pill-dot {
+  background: #3b82f6;
+  box-shadow: 0 0 6px #3b82f6;
+  animation: sc-dot-glow-blue 2s ease-in-out infinite alternate;
+}
+
+.sc-pill-attend .sc-pill-dot {
+  background: #06b6d4;
+  box-shadow: 0 0 6px #06b6d4;
+  animation: sc-dot-glow-cyan 2s ease-in-out infinite alternate;
+}
+
+@keyframes sc-dot-glow-blue {
+  from {
+    box-shadow: 0 0 4px #3b82f6;
+  }
+  to {
+    box-shadow:
+      0 0 10px #3b82f6,
+      0 0 20px rgba(59, 130, 246, 0.4);
+  }
+}
+@keyframes sc-dot-glow-cyan {
+  from {
+    box-shadow: 0 0 4px #06b6d4;
+  }
+  to {
+    box-shadow:
+      0 0 10px #06b6d4,
+      0 0 20px rgba(6, 182, 212, 0.4);
+  }
+}
+
+/* ── Chart area ── */
+.sc-chart-wrap {
+  flex: 1;
+  min-height: 180px;
+  position: relative;
+}
+
+/* chart fade-in mask — reveals from left */
+.sc-chart-wrap {
+  animation: sc-chart-reveal 1.2s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sc-chart-reveal {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0% 0 0);
+  }
+}
+
+/* ── Custom tooltip ── */
+.sc-tooltip {
+  background: var(--sc-tooltip-bg);
+  border: 1px solid var(--sc-tooltip-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  min-width: 130px;
+}
+
+.sc-tooltip-month {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sc-tooltip-sub);
+  margin-bottom: 8px;
+}
+
+.sc-tooltip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.sc-tooltip-row:last-child {
+  margin-bottom: 0;
+}
+
+.sc-tooltip-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--sc-tooltip-sub);
+}
+
+.sc-tooltip-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sc-tooltip-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sc-tooltip-text);
+  font-variant-numeric: tabular-nums;
+}

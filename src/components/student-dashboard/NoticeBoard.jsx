@@ -1,72 +1,118 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { FileText } from 'lucide-react'
+import { FileText, Bell } from 'lucide-react'
 import { useNotices } from '@/hooks/useNoticeBoard'
 import { SkeletonCard } from '../extra/SkeletonCardList'
+import './NoticeBoard.css'
 
 export function NoticeBoard({ title = 'Notices' }) {
+  /* ── All original logic — untouched ── */
   const { data: notice, isLoading, isError } = useNotices()
 
-  if (isLoading) {
-    return <SkeletonCard rows={4} />
-  }
+  if (isLoading) return <SkeletonCard rows={4} />
 
   if (isError) {
     return (
-      <Card className="h-full rounded-sm w-full">
-        <CardHeader className="flex justify-between items-center px-4">
-          <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-        </CardHeader>
-
-        <CardContent className="px-4 py-6">
-          <p className="text-sm text-red-500">Failed to load notices.</p>
-        </CardContent>
-      </Card>
+      <div className="nb-wrap">
+        <div className="nb-aurora" aria-hidden="true" />
+        <div className="nb-grid" aria-hidden="true" />
+        <div className="nb-border-spin" aria-hidden="true" />
+        <div className="nb-header">
+          <div className="nb-header-left">
+            <div className="nb-header-icon">
+              <Bell />
+            </div>
+            <span className="nb-title">{title}</span>
+          </div>
+        </div>
+        <div className="nb-list">
+          <div className="nb-empty">
+            <Bell />
+            Failed to load notices.
+          </div>
+        </div>
+      </div>
     )
   }
 
   if (!notice?.data || notice.data.length === 0) {
     return (
-      <Card className="h-full rounded-sm w-full">
-        <CardHeader className="flex justify-between items-center px-4">
-          <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-        </CardHeader>
-
-        <CardContent className="px-4 py-6">
-          <p className="text-sm text-muted-foreground">No notices available.</p>
-        </CardContent>
-      </Card>
+      <div className="nb-wrap">
+        <div className="nb-aurora" aria-hidden="true" />
+        <div className="nb-grid" aria-hidden="true" />
+        <div className="nb-border-spin" aria-hidden="true" />
+        <div className="nb-header">
+          <div className="nb-header-left">
+            <div className="nb-header-icon">
+              <Bell />
+            </div>
+            <span className="nb-title">{title}</span>
+          </div>
+        </div>
+        <div className="nb-list">
+          <div className="nb-empty">
+            <Bell />
+            No notices available.
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card className="h-full rounded-sm w-full">
-      <CardHeader className="flex justify-between items-center px-4">
-        <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-        <Button variant="ghost" size="sm" className="text-xs">
-          View All
-        </Button>
-      </CardHeader>
+    <div className="nb-wrap">
+      {/* ── Live background — same as LeaveStatus ── */}
+      <div className="nb-aurora" aria-hidden="true" />
+      <div className="nb-grid" aria-hidden="true" />
+      <div className="nb-border-spin" aria-hidden="true" />
 
-      <CardContent className="space-y-3 px-4 py-2 max-h-96 overflow-y-auto">
-        {notice.data.map((item) => (
+      {/* ── Header ── */}
+      <div className="nb-header">
+        <div className="nb-header-left">
+          <div className="nb-header-icon">
+            <Bell />
+          </div>
+          <span className="nb-title">{title}</span>
+        </div>
+
+        {/* original View All button */}
+        <button className="nb-view-btn">View All</button>
+      </div>
+
+      {/* ── Scrollable list ── */}
+      <div className="nb-list">
+        {/* original notice.data.map — untouched */}
+        {notice.data.map((item, index) => (
           <div
             key={item.NoticeID}
-            className="flex gap-2 items-start p-3 bg-muted/60 dark:bg-muted/40 rounded-md shadow"
+            className="nb-row"
+            style={{ animationDelay: `${0.07 + index * 0.08}s` }}
           >
-            <div className="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-500">
-              <FileText className="h-4 w-4" />
+            {/* shimmer layer */}
+            <div className="nb-row-shimmer" aria-hidden="true" />
+
+            {/* Icon */}
+            <div className="nb-icon-box">
+              <FileText />
             </div>
 
-            <div className="flex flex-col min-w-0">
-              <p className="text-sm font-medium truncate">{item.Description || '—'}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                Classes: {item.Classes || 'All'}
-              </p>
+            {/* Text — original fields untouched */}
+            <div className="nb-text">
+              <p className="nb-desc">{item.Description || '—'}</p>
+              <span className="nb-classes">Classes: {item.Classes || 'All'}</span>
             </div>
           </div>
         ))}
-      </CardContent>
-    </Card>
+
+        {/* scroll hint */}
+        {notice.data.length > 3 && (
+          <div className="nb-scroll-hint">
+            <div className="nb-hint-dots">
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
