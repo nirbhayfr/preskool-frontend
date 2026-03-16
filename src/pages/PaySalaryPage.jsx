@@ -1,6 +1,9 @@
 import { CircleLoader } from '@/components/layout/RouteLoader'
+import AdvancePaymentList from '@/components/pay-salary/AdvancePaymentList'
 import AdvancePaymentModal from '@/components/pay-salary/AdvancePaymentModal'
 import AttendanceSummaryCard from '@/components/pay-salary/AttendanceSummaryCard'
+import PaySalarySection from '@/components/pay-salary/PaySalarySection'
+import PreviousSalaryRecords from '@/components/pay-salary/PreviousSalaryRecords'
 import SalaryCalculationCard from '@/components/pay-salary/SalaryCalculationCard'
 import TeacherDetailCard from '@/components/pay-salary/TeacherDetailsCardPS'
 import { useTeacher } from '@/hooks/useTeacher'
@@ -32,6 +35,9 @@ function PaySalaryPage() {
       <TeacherDetailCard teacher={teacher} />
       <AttendanceSummaryCard teacherId={teacher.TeacherID} />
       <SalaryCalculationCard teacherId={teacher.TeacherID} baseSalary={teacher.Salary} />
+      <AdvancePaymentList teacherId={teacher.TeacherID} />
+      <PreviousSalaryRecords teacherId={teacher.TeacherID} />
+      <PaySalarySection teacherId={teacher.TeacherID} />
     </section>
   )
 }

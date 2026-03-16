@@ -6,6 +6,7 @@ import {
   updateTeacherSalary,
   deleteTeacherSalary,
   bulkMarkTeacherSalaryPaid,
+  getTeacherSalaryByTeacherId,
 } from '@/api/teacherSalary'
 
 export const useTeacherSalaries = () =>
@@ -65,3 +66,10 @@ export const useDeleteTeacherSalary = () => {
     },
   })
 }
+
+export const useTeacherSalaryByTeacherId = (teacherId) =>
+  useQuery({
+    queryKey: ['teacher-salary', teacherId],
+    queryFn: () => getTeacherSalaryByTeacherId(teacherId),
+    enabled: !!teacherId,
+  })

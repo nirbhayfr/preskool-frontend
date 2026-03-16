@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { useCreateTeacherSalary } from '@/hooks/useTeacherSalary'
 import { toast } from 'sonner'
 
@@ -19,7 +18,6 @@ function TeacherSalaryHeader({ month, onMonthChange, totalTeachers }) {
           <span className="ml-2 text-sm text-muted-foreground">({totalTeachers})</span>
         )}
       </h2>
-
       <Input
         type="month"
         value={month}
@@ -51,10 +49,8 @@ export default function TeacherSalaryPage() {
     return new Date(Number(year), Number(monthStr), 0).getDate()
   }, [month])
 
-  // ✅ Single editable state
   const [rows, setRows] = useState([])
 
-  // Initialize rows when data changes
   useEffect(() => {
     if (!tableData.length) {
       setRows([])
@@ -73,10 +69,11 @@ export default function TeacherSalaryPage() {
       const totalHalfDays = halfDays + halfFromLate
       const leaveFromHalf = Math.floor(totalHalfDays / 2)
       const totalLeaves = absent + leaveFromHalf
-
       const effectiveLeaves = Math.max(totalLeaves - paidLeaves, 0)
 
-      const deduction = perDaySalary * effectiveLeaves
+      const attendanceDeduction = perDaySalary * effectiveLeaves
+      const deduction = attendanceDeduction
+
       const finalSalary = Math.max(baseSalary - deduction, 0)
 
       return {
@@ -85,6 +82,7 @@ export default function TeacherSalaryPage() {
         totalLeaves,
         effectiveLeaves,
         allowance: 0,
+
         deduction,
         finalSalary,
       }
@@ -93,16 +91,12 @@ export default function TeacherSalaryPage() {
     setRows(mapped)
   }, [tableData, daysInMonth, paidLeaves])
 
-  // ✅ Stable row updater
   const updateRow = (teacherId, field, value) => {
     setRows((prev) =>
       prev.map((row) => {
         if (row.teacherId !== teacherId) return row
 
-        const updated = {
-          ...row,
-          [field]: Number(value) || 0,
-        }
+        const updated = { ...row, [field]: Number(value) || 0 }
 
         if (field === 'allowance' || field === 'deduction') {
           updated.finalSalary = Math.max(
@@ -153,14 +147,6 @@ export default function TeacherSalaryPage() {
 
   const columns = useMemo(
     () => [
-      // {
-      //   header: 'Status',
-      //   cell: () => (
-      //     <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
-      //       Active
-      //     </Badge>
-      //   ),
-      // },
       {
         header: 'Teacher ID',
         accessorKey: 'teacherId',
@@ -220,6 +206,20 @@ export default function TeacherSalaryPage() {
         cell: ({ getValue }) => (
           <span className="font-semibold text-red-700">{getValue()}</span>
         ),
+      },
+      {
+        header: 'Advance',
+        accessorFn: (row) => row.advanceDeduction,
+        cell: ({ getValue }) => {
+          const val = getValue()
+          return val > 0 ? (
+            <span className="font-semibold text-orange-500">
+              − ₹ {Number(val).toLocaleString()}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )
+        },
       },
       {
         header: 'Allowance',
@@ -299,6 +299,7 @@ export default function TeacherSalaryPage() {
           <p>• 1 Absent = 1 Leave</p>
           <p>• 2 Late = 1 Half Day</p>
           <p>• 2 Half Days = 1 Leave</p>
+          <p>• Advance (Pending) is auto-deducted</p>
           <p>• Final Salary = Base + Allowance − Deduction</p>
         </CardContent>
       </Card>

@@ -31,3 +31,8 @@ export const deleteTeacherSalary = async (id) => {
   const { data } = await api.delete(`/teacher-salary/${id}`)
   return data
 }
+
+export const getTeacherSalaryByTeacherId = async (teacherId) => {
+  const response = await api.get(`/teacher-salary/teacher/${teacherId}`)
+  return response.data
+}

@@ -1,12 +1,14 @@
-// components/salary/SalaryCalculationCard.jsx
-
 import { useMemo, useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { useTeacherMonthlySummaryById } from '@/hooks/useTeacherAttendance'
+import { useCreateTeacherSalary } from '@/hooks/useTeacherSalary'
+import { toast } from 'sonner'
 
 const getCurrentMonth = () => new Date().toISOString().slice(0, 7)
 
@@ -30,6 +32,7 @@ function SalaryCalculationCard({ teacherId, baseSalary }) {
   const [paidLeaves, setPaidLeaves] = useState(0)
 
   const { data, isLoading, isError } = useTeacherMonthlySummaryById(teacherId, month)
+  const { mutate: createSalary, isPending: isCreating } = useCreateTeacherSalary()
 
   const summary = data?.summary ?? {}
   const absent = summary.AbsentDays ?? 0
@@ -60,6 +63,7 @@ function SalaryCalculationCard({ teacherId, baseSalary }) {
       effectiveLeaves,
       halfDayDeduction,
       leaveDeduction,
+      totalDeductions,
       netSalary,
     }
   }, [
@@ -72,6 +76,26 @@ function SalaryCalculationCard({ teacherId, baseSalary }) {
     allowance,
     extraDeduction,
   ])
+
+  const handleCreateSalary = () => {
+    createSalary(
+      [
+        {
+          teacherId,
+          basicSalary: Number(baseSalary.toFixed(2)),
+          allowances: Number(allowance.toFixed(2)),
+          deductions: Number((calc.leaveDeduction + extraDeduction).toFixed(2)),
+          salaryMonth: month,
+          paymentDate: null,
+          isPaid: false,
+        },
+      ],
+      {
+        onSuccess: () => toast.success('Salary created successfully'),
+        onError: () => toast.error('Failed to create salary'),
+      }
+    )
+  }
 
   if (isLoading) return <SalaryCalculationSkeleton />
   if (isError)
@@ -197,6 +221,13 @@ function SalaryCalculationCard({ teacherId, baseSalary }) {
           <p>• 2 Half Days = 1 Leave</p>
           <p>• Paid leaves are excluded from deductions</p>
         </div>
+
+        {/* Create salary button */}
+        <div className="flex justify-end">
+          <Button onClick={handleCreateSalary} disabled={isCreating}>
+            {isCreating ? <Spinner /> : 'Create Salary'}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )
@@ -222,6 +253,9 @@ function SalaryCalculationSkeleton() {
           {Array.from({ length: 7 }).map((_, i) => (
             <Skeleton key={i} className="h-6 w-full" />
           ))}
+        </div>
+        <div className="flex justify-end">
+          <Skeleton className="h-9 w-32" />
         </div>
       </CardContent>
     </Card>

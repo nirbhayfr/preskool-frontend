@@ -2,6 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: 'https://erp-backend-2ybf.onrender.com/api',
+  // baseURL: 'http://localhost:3000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -16,4 +17,3 @@ api.interceptors.request.use((config) => {
 })
 
 export default api
-// https://preskool-project.onrender.com
