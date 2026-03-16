@@ -1,18 +1,18 @@
 /**
- * StudentMeetingPage.jsx
+ * JoinMeeting.jsx
  * ─────────────────────────────────────────────────────────────────────────────
  * Student-only page to find and join class meetings via Jitsi.
  *
  * API Base: https://erp-backend-2ybf.onrender.com/api
  * Auth:     Bearer token auto-read from localStorage('token')
- * Endpoint: GET /api/meetings/:classID/:sectionID
+ * Endpoint: GET /api/online-meetings/list/:classID/:sectionID
  *
  * Usage:
- *   import StudentMeetingPage from './StudentMeetingPage'
- *   <StudentMeetingPage />
+ *   import StudentMeetingPage from './JoinMeeting'
+ *   <Route path="/student/meeting" element={<StudentMeetingPage />} />
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 /* ─── API Config ─────────────────────────────────────────────────────────── */
 const API_BASE = "https://erp-backend-2ybf.onrender.com/api";
@@ -31,44 +31,56 @@ const apiFetch = async (url) => {
 const CLASS_OPTIONS = [
   { value: "LKG", label: "LKG" },
   { value: "UKG", label: "UKG" },
-  { value: "1",  label: "Class 1" },
-  { value: "2",  label: "Class 2" },
-  { value: "3",  label: "Class 3" },
-  { value: "4",  label: "Class 4" },
-  { value: "5",  label: "Class 5" },
-  { value: "6",  label: "Class 6" },
-  { value: "7",  label: "Class 7" },
-  { value: "8",  label: "Class 8" },
-  { value: "9",  label: "Class 9" },
-  { value: "10", label: "Class 10" },
-  { value: "11", label: "Class 11" },
-  { value: "12", label: "Class 12" },
+  { value: "1",   label: "Class 1" },
+  { value: "2",   label: "Class 2" },
+  { value: "3",   label: "Class 3" },
+  { value: "4",   label: "Class 4" },
+  { value: "5",   label: "Class 5" },
+  { value: "6",   label: "Class 6" },
+  { value: "7",   label: "Class 7" },
+  { value: "8",   label: "Class 8" },
+  { value: "9",   label: "Class 9" },
+  { value: "10",  label: "Class 10" },
+  { value: "11",  label: "Class 11" },
+  { value: "12",  label: "Class 12" },
 ];
 
 const SECTION_OPTIONS = [
-  { value: "A", label: "Section A" },
-  { value: "B", label: "Section B" },
-  { value: "C", label: "Section C" },
+  { value: "1", label: "Section A" },
+  { value: "2", label: "Section B" },
+  { value: "3", label: "Section C" },
 ];
 
+/* ─── SVG Icon Helper (fixed) ────────────────────────────────────────────── */
 const Icon = ({ d, size = 18, stroke = "currentColor", className = "" }) => (
   <svg
-    width={size} height={size} viewBox="0 0 24 24"
-    fill="none" stroke={stroke} strokeWidth="2"
-    strokeLinecap="round" strokeLinejoin="round"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={stroke}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
     className={className}
   >
     {Array.isArray(d)
       ? d.map((path, i) => <path key={i} d={path} />)
-      : <path d={d} />}   {/* ← FIXED: was p, now d */}
+      : <path d={d} />}
   </svg>
 );
 
 /* ─── Icon Paths ─────────────────────────────────────────────────────────── */
 const ICONS = {
-  video:   ["M23 7l-7 5 7 5V7z", "M1 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H1a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"],
+  video:   [
+    "M23 7l-7 5 7 5V7z",
+    "M1 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H1a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
+  ],
   join:    "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3",
-  clock:   ["M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z", "M12 6v6l4 2"],
+  clock:   [
+    "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z",
+    "M12 6v6l4 2",
+  ],
   warn:    "M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
   phone:   "M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 16.29 7.62 14.48 6.29 12.37A19.79 19.79 0 0 1 3.22 3.74 2 2 0 0 1 5.21 1.56L8 1.56a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9 9.48",
   chevron: "M6 9l6 6 6-6",
@@ -78,9 +90,12 @@ const ICONS = {
 
 /* ─── Spinner ────────────────────────────────────────────────────────────── */
 const Spinner = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-    className="animate-spin">
+  <svg
+    width={size} height={size} viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round"
+    className="animate-spin"
+  >
     <path d={ICONS.spin} />
   </svg>
 );
@@ -94,15 +109,17 @@ const Select = ({ label, value, onChange, options, placeholder }) => (
     <div className="relative">
       <select
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         className="w-full appearance-none bg-background border border-border rounded-xl
           text-sm text-foreground px-3.5 py-2.5 pr-9 outline-none cursor-pointer
           focus:border-primary focus:ring-2 focus:ring-primary/15
           hover:border-border/80 transition-all duration-200"
       >
         <option value="">{placeholder}</option>
-        {options.map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
         ))}
       </select>
       <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
@@ -128,9 +145,10 @@ const MeetingCard = ({ meeting, onJoin }) => {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-foreground truncate">{meeting.Subject}</p>
+        <p className="font-semibold text-sm text-foreground truncate">
+          {meeting.Subject}
+        </p>
         <div className="flex items-center gap-1.5 mt-0.5 text-muted-foreground">
-          {/* Live pulse dot */}
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
           <Icon d={ICONS.clock} size={11} />
           <span className="text-[11px]">{dateStr}</span>
@@ -167,7 +185,8 @@ function FindMeetingsPanel({ onEnterRoom }) {
     setFetched(false);
     setMeetings([]);
     try {
-      const data = await apiFetch(`/meetings/${classID}/${sectionID}`);
+      // ✅ Correct endpoint: /online-meetings/list/:classID/:sectionID
+      const data = await apiFetch(`/online-meetings/list/${classID}/${sectionID}`);
       setMeetings(Array.isArray(data) ? data : []);
       setFetched(true);
     } catch (err) {
@@ -211,9 +230,13 @@ function FindMeetingsPanel({ onEnterRoom }) {
           disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
-          <><Spinner size={15} /> Searching…</>
+          <>
+            <Spinner size={15} /> Searching…
+          </>
         ) : (
-          <><Icon d={ICONS.search} size={15} stroke="currentColor" /> Find Meetings</>
+          <>
+            <Icon d={ICONS.search} size={15} stroke="currentColor" /> Find Meetings
+          </>
         )}
       </button>
 
@@ -238,7 +261,6 @@ function FindMeetingsPanel({ onEnterRoom }) {
       {/* Meetings list */}
       {meetings.length > 0 && (
         <div className="mt-5">
-          {/* Section header */}
           <div className="flex items-center justify-between mb-3">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Available Sessions
@@ -250,7 +272,7 @@ function FindMeetingsPanel({ onEnterRoom }) {
           </div>
 
           <div className="flex flex-col gap-2.5 max-h-72 overflow-y-auto pr-0.5">
-            {meetings.map(m => (
+            {meetings.map((m) => (
               <MeetingCard
                 key={m.MeetingID}
                 meeting={m}
@@ -293,7 +315,8 @@ function LandingPage({ onEnterRoom }) {
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Join Your Class</h1>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            Select your class and section to find active sessions and join instantly — no downloads needed.
+            Select your class and section to find active sessions and join instantly — no
+            downloads needed.
           </p>
         </div>
       </div>
@@ -341,8 +364,10 @@ function LandingPage({ onEnterRoom }) {
 /* ─── Confirm Leave Modal ────────────────────────────────────────────────── */
 function ConfirmModal({ subject, onStay, onLeave }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)" }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)" }}
+    >
       <div className="bg-card border border-border rounded-2xl p-7 max-w-sm w-full text-center shadow-2xl">
         <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4
           bg-destructive/10 border border-destructive/20 text-destructive">
@@ -351,8 +376,7 @@ function ConfirmModal({ subject, onStay, onLeave }) {
         <p className="font-bold text-lg text-foreground mb-1">Leave session?</p>
         <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
           You'll be disconnected from{" "}
-          <strong className="text-foreground">{subject}</strong>.
-          You can rejoin anytime.
+          <strong className="text-foreground">{subject}</strong>. You can rejoin anytime.
         </p>
         <div className="grid grid-cols-2 gap-2.5">
           <button
@@ -381,11 +405,11 @@ function MeetingRoom({ meetingData, onLeave }) {
   const [confirm, setConfirm] = useState(false);
 
   useEffect(() => {
-    const t = setInterval(() => setSecs(s => s + 1), 1000);
+    const t = setInterval(() => setSecs((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const fmt = s =>
+  const fmt = (s) =>
     `${String(Math.floor(s / 3600)).padStart(2, "0")}:` +
     `${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:` +
     `${String(s % 60).padStart(2, "0")}`;
@@ -409,15 +433,19 @@ function MeetingRoom({ meetingData, onLeave }) {
           <div className="flex items-center gap-3">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
+              <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
                 <Icon d={ICONS.video} size={13} stroke="white" />
               </div>
-              <span className="font-bold text-foreground text-sm hidden sm:block">ClassMeet</span>
+              <span className="font-bold text-foreground text-sm hidden sm:block">
+                ClassMeet
+              </span>
             </div>
             <div className="w-px h-5 bg-border hidden sm:block" />
             {/* Meeting info */}
             <div>
-              <p className="font-semibold text-foreground text-sm leading-tight">{meetingData.Subject}</p>
+              <p className="font-semibold text-foreground text-sm leading-tight">
+                {meetingData.Subject}
+              </p>
               <p className="text-xs text-muted-foreground">
                 Class {meetingData.ClassID} · Section {meetingData.SectionID}
               </p>
@@ -459,7 +487,10 @@ function MeetingRoom({ meetingData, onLeave }) {
         <ConfirmModal
           subject={meetingData.Subject}
           onStay={() => setConfirm(false)}
-          onLeave={() => { setConfirm(false); onLeave(); }}
+          onLeave={() => {
+            setConfirm(false);
+            onLeave();
+          }}
         />
       )}
     </>
@@ -468,20 +499,11 @@ function MeetingRoom({ meetingData, onLeave }) {
 
 /* ─── Root Export ────────────────────────────────────────────────────────── */
 export default function StudentMeetingPage() {
-  const [room, setRoom] = useState(null); // meetingData object
+  const [room, setRoom] = useState(null);
 
   if (room) {
-    return (
-      <MeetingRoom
-        meetingData={room}
-        onLeave={() => setRoom(null)}
-      />
-    );
+    return <MeetingRoom meetingData={room} onLeave={() => setRoom(null)} />;
   }
 
-  return (
-    <LandingPage
-      onEnterRoom={(meetingData) => setRoom(meetingData)}
-    />
-  );
+  return <LandingPage onEnterRoom={(meetingData) => setRoom(meetingData)} />;
 }
