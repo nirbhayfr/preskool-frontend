@@ -7,8 +7,13 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useTeacherMonthlySummaryById } from '@/hooks/useTeacherAttendance'
-import { useCreateTeacherSalary } from '@/hooks/useTeacherSalary'
+import {
+  useCreateTeacherSalary,
+  useTeacherSalaryByTeacherId,
+} from '@/hooks/useTeacherSalary'
 import { toast } from 'sonner'
+import { CircleCheck } from 'lucide-react'
+import { format } from 'date-fns'
 
 const getCurrentMonth = () => new Date().toISOString().slice(0, 7)
 
@@ -32,7 +37,15 @@ function SalaryCalculationCard({ teacherId, baseSalary }) {
   const [paidLeaves, setPaidLeaves] = useState(0)
 
   const { data, isLoading, isError } = useTeacherMonthlySummaryById(teacherId, month)
+  const { data: salaryData, isLoading: isSalaryLoading } =
+    useTeacherSalaryByTeacherId(teacherId)
   const { mutate: createSalary, isPending: isCreating } = useCreateTeacherSalary()
+
+  // Check if salary already exists for selected month
+  const salaryExists = useMemo(() => {
+    const records = salaryData?.data ?? []
+    return records.some((r) => r.SalaryMonth === month)
+  }, [salaryData, month])
 
   const summary = data?.summary ?? {}
   const absent = summary.AbsentDays ?? 0
@@ -97,7 +110,7 @@ function SalaryCalculationCard({ teacherId, baseSalary }) {
     )
   }
 
-  if (isLoading) return <SalaryCalculationSkeleton />
+  if (isLoading || isSalaryLoading) return <SalaryCalculationSkeleton />
   if (isError)
     return <p className="text-sm text-destructive">Failed to load attendance summary</p>
 
@@ -224,9 +237,16 @@ function SalaryCalculationCard({ teacherId, baseSalary }) {
 
         {/* Create salary button */}
         <div className="flex justify-end">
-          <Button onClick={handleCreateSalary} disabled={isCreating}>
-            {isCreating ? <Spinner /> : 'Create Salary'}
-          </Button>
+          {salaryExists ? (
+            <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
+              <CircleCheck className="size-4" />
+              Salary already created for {format(new Date(`${month}-01`), 'MMMM yyyy')}
+            </div>
+          ) : (
+            <Button onClick={handleCreateSalary} disabled={isCreating}>
+              {isCreating ? <Spinner /> : 'Create Salary'}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { useTeacherSalaryByTeacherId } from '@/hooks/useTeacherSalary'
 
 function PreviousSalaryRecords({ teacherId }) {
+  const currentMonth = new Date().toISOString().slice(0, 7)
   const { data, isLoading, isError } = useTeacherSalaryByTeacherId(teacherId)
 
   const records = data?.data ?? []
@@ -38,7 +39,19 @@ function PreviousSalaryRecords({ teacherId }) {
                 {/* Top row — month + status */}
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <p className="text-sm font-semibold">{record.SalaryMonth}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">
+                        {format(new Date(`${record.SalaryMonth}-01`), 'MMMM yyyy')}
+                      </p>
+                      {record.SalaryMonth === currentMonth && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-primary/10 text-primary text-xs"
+                        >
+                          Current
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       ID: #{record.SalaryID} · Created{' '}
                       {format(new Date(record.CreatedAt), 'dd MMM yyyy')}

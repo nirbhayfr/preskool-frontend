@@ -97,15 +97,6 @@ function PaySalarySection({ teacherId }) {
   const handlePay = useCallback(
     (salary) => {
       const updatedDeductions = Number(salary.Deductions ?? 0) + selectedAdvanceTotal
-      // Step 1 — update salary with new deductions and net
-
-      console.log({
-        basicSalary: Number(salary.BasicSalary),
-        allowances: Number(salary.Allowances ?? 0),
-        deductions: updatedDeductions,
-        paymentDate: new Date().toISOString().slice(0, 10),
-        isPaid: true,
-      })
 
       updateSalary(
         {
@@ -196,7 +187,9 @@ function PaySalarySection({ teacherId }) {
                 <div key={record.SalaryID} className="py-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <p className="text-sm font-semibold">{record.SalaryMonth}</p>
+                      <p className="text-sm font-semibold">
+                        {format(new Date(`${record.SalaryMonth}-01`), 'MMMM yyyy')}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         ID: #{record.SalaryID} · Created{' '}
                         {format(new Date(record.CreatedAt), 'dd MMM yyyy')}
