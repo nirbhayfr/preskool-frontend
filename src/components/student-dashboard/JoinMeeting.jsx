@@ -7,7 +7,8 @@
  *   - No prejoin / lobby screen
  *   - No "open in app" mobile prompt
  *   - Custom toolbar: mic, camera, screenshare, raise hand, chat, leave
- *   - Mobile responsive
+ *   - Chat broadcasts to ALL participants via endpointTextMessage
+ *   - Mobile responsive (chat as bottom sheet)
  *
  * API: GET /online-meetings/list/:classID/:sectionID
  */
@@ -45,10 +46,15 @@ const SECTION_OPTIONS = [
 
 /* ─── SVG Icon ───────────────────────────────────────────────────────────── */
 const Icon = ({ d, size = 20, stroke = "currentColor", className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-    className={className}>
-    {Array.isArray(d) ? d.map((path, i) => <path key={i} d={path} />) : <path d={d} />}
+  <svg
+    width={size} height={size} viewBox="0 0 24 24"
+    fill="none" stroke={stroke} strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round"
+    className={className}
+  >
+    {Array.isArray(d)
+      ? d.map((path, i) => <path key={i} d={path} />)
+      : <path d={d} />}
   </svg>
 );
 
@@ -73,9 +79,12 @@ const ICONS = {
 
 /* ─── Spinner ────────────────────────────────────────────────────────────── */
 const Spinner = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-    className="animate-spin">
+  <svg
+    width={size} height={size} viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round"
+    className="animate-spin"
+  >
     <path d={ICONS.spin} />
   </svg>
 );
@@ -87,11 +96,14 @@ const Select = ({ label, value, onChange, options, placeholder }) => (
       {label}
     </label>
     <div className="relative">
-      <select value={value} onChange={(e) => onChange(e.target.value)}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         className="w-full appearance-none bg-background border border-border rounded-xl
           text-sm text-foreground px-3.5 py-2.5 pr-9 outline-none cursor-pointer
           focus:border-primary focus:ring-2 focus:ring-primary/15
-          hover:border-border/80 transition-all duration-200">
+          hover:border-border/80 transition-all duration-200"
+      >
         <option value="">{placeholder}</option>
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
@@ -122,10 +134,12 @@ const MeetingCard = ({ meeting, onJoin }) => {
           <span className="text-[11px]">{dateStr}</span>
         </div>
       </div>
-      <button onClick={() => onJoin(meeting)}
+      <button
+        onClick={() => onJoin(meeting)}
         className="flex-shrink-0 px-4 py-1.5 bg-primary text-primary-foreground
           text-xs font-semibold rounded-lg hover:opacity-90 active:scale-[.97]
-          transition-all duration-150">
+          transition-all duration-150"
+      >
         Join
       </button>
     </div>
@@ -161,11 +175,14 @@ function FindMeetingsPanel({ onEnterRoom }) {
         <Select label="Section" value={sectionID} onChange={setSectionID} options={SECTION_OPTIONS} placeholder="Select section" />
       </div>
 
-      <button onClick={handleFind} disabled={!classID || !sectionID || loading}
+      <button
+        onClick={handleFind}
+        disabled={!classID || !sectionID || loading}
         className="mt-4 w-full flex items-center justify-center gap-2 py-3 px-5
           bg-primary text-primary-foreground font-semibold text-sm rounded-xl
           hover:opacity-90 active:scale-[.98] transition-all duration-200
-          disabled:opacity-50 disabled:cursor-not-allowed">
+          disabled:opacity-50 disabled:cursor-not-allowed"
+      >
         {loading
           ? <><Spinner size={15} /> Searching…</>
           : <><Icon d={ICONS.search} size={15} /> Find Meetings</>
@@ -262,8 +279,12 @@ function LandingPage({ onEnterRoom }) {
         </div>
         <p className="text-center text-xs text-muted-foreground mt-6">
           Meetings powered by{" "}
-          <a href="https://meet.jit.si" target="_blank" rel="noreferrer"
-            className="text-primary underline underline-offset-2">Jitsi Meet</a>
+          <a
+            href="https://meet.jit.si" target="_blank" rel="noreferrer"
+            className="text-primary underline underline-offset-2"
+          >
+            Jitsi Meet
+          </a>
         </p>
       </div>
     </div>
@@ -274,57 +295,95 @@ function LandingPage({ onEnterRoom }) {
 function ChatPanel({ onClose, apiRef }) {
   const [msgs, setMsgs] = useState([
     {
-      id: 1, sender: "System",
+      id: 1,
+      sender: "System",
       text: "Welcome to the session!",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       self: false,
     },
   ]);
-  const [txt, setTxt] = useState("");
-  const endRef = useRef(null);
+  const [txt, setTxt]   = useState("");
+  const endRef          = useRef(null);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
+  /* Auto-scroll */
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs]);
 
+  /* Listen for incoming messages from other participants */
   useEffect(() => {
     if (!apiRef?.current) return;
-    const handler = ({ nick, message }) => {
-      setMsgs((m) => [...m, {
-        id: Date.now(), sender: nick || "Participant", text: message,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        self: false,
-      }]);
+
+    const handler = ({ from, nick, message, privateMessage }) => {
+      if (privateMessage) return; // skip private/direct messages
+      setMsgs((m) => [
+        ...m,
+        {
+          id: Date.now(),
+          sender: nick || from || "Participant",
+          text: message,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          self: false,
+        },
+      ]);
     };
+
+    // Listen on both event names — Jitsi uses both depending on version/config
     apiRef.current.addListener("incomingMessage", handler);
-    return () => apiRef.current?.removeListener("incomingMessage", handler);
+    apiRef.current.addListener("endpointTextMessageReceived", handler);
+
+    return () => {
+      apiRef.current?.removeListener("incomingMessage", handler);
+      apiRef.current?.removeListener("endpointTextMessageReceived", handler);
+    };
   }, [apiRef]);
 
+  /* Send message — uses endpointTextMessage to broadcast to ALL participants */
   const send = () => {
     if (!txt.trim()) return;
     const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    try { apiRef?.current?.executeCommand("sendChatMessage", txt.trim(), ""); } catch (_) {}
-    setMsgs((m) => [...m, { id: Date.now(), sender: "You", text: txt.trim(), time, self: true }]);
+
+    try {
+      // sendEndpointTextMessage broadcasts over WebRTC data channel to everyone
+      apiRef?.current?.executeCommand("sendEndpointTextMessage", "", txt.trim());
+    } catch (_) {}
+
+    setMsgs((m) => [
+      ...m,
+      { id: Date.now(), sender: "You", text: txt.trim(), time, self: true },
+    ]);
     setTxt("");
   };
 
   return (
     <div className="flex flex-col h-full bg-card">
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
         <p className="font-semibold text-sm text-foreground">Live Chat</p>
-        <button onClick={onClose}
-          className="w-7 h-7 rounded-lg flex items-center justify-center bg-muted hover:bg-accent text-muted-foreground transition-colors">
+        <button
+          onClick={onClose}
+          className="w-7 h-7 rounded-lg flex items-center justify-center bg-muted hover:bg-accent text-muted-foreground transition-colors"
+        >
           <Icon d={ICONS.close} size={13} />
         </button>
       </div>
+
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2.5">
         {msgs.map((m) => (
           <div key={m.id} className={`flex flex-col ${m.self ? "items-end" : "items-start"}`}>
             {!m.self && (
-              <span className="text-[11px] font-medium text-primary mb-0.5 px-1">{m.sender}</span>
+              <span className="text-[11px] font-medium text-primary mb-0.5 px-1">
+                {m.sender}
+              </span>
             )}
-            <div className={`max-w-[86%] px-3 py-2 text-sm leading-snug rounded-2xl
-              ${m.self
-                ? "bg-primary text-primary-foreground rounded-br-sm"
-                : "bg-muted text-foreground rounded-bl-sm"}`}>
+            <div
+              className={`max-w-[86%] px-3 py-2 text-sm leading-snug rounded-2xl
+                ${m.self
+                  ? "bg-primary text-primary-foreground rounded-br-sm"
+                  : "bg-muted text-foreground rounded-bl-sm"
+                }`}
+            >
               {m.text}
             </div>
             <span className="text-[10px] text-muted-foreground mt-0.5 px-1">{m.time}</span>
@@ -332,15 +391,25 @@ function ChatPanel({ onClose, apiRef }) {
         ))}
         <div ref={endRef} />
       </div>
+
+      {/* Input */}
       <div className="px-3 py-3 border-t border-border flex-shrink-0">
         <div className="flex items-center gap-2 bg-muted rounded-xl px-3 py-2 border border-border focus-within:border-primary transition-colors">
-          <input value={txt} onChange={(e) => setTxt(e.target.value)}
+          <input
+            value={txt}
+            onChange={(e) => setTxt(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
             placeholder="Type a message…"
-            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" />
-          <button onClick={send}
+            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+          />
+          <button
+            onClick={send}
             className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all
-              ${txt.trim() ? "bg-primary text-primary-foreground" : "bg-border text-muted-foreground"}`}>
+              ${txt.trim()
+                ? "bg-primary text-primary-foreground"
+                : "bg-border text-muted-foreground"
+              }`}
+          >
             <Icon d={ICONS.send} size={13} />
           </button>
         </div>
@@ -352,8 +421,10 @@ function ChatPanel({ onClose, apiRef }) {
 /* ─── Confirm Modal ──────────────────────────────────────────────────────── */
 function ConfirmModal({ subject, onStay, onLeave }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center px-4"
-      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}>
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
+    >
       <div className="bg-card border border-border rounded-2xl p-7 max-w-sm w-full text-center shadow-2xl">
         <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4
           bg-destructive/10 border border-destructive/20 text-destructive">
@@ -365,14 +436,18 @@ function ConfirmModal({ subject, onStay, onLeave }) {
           <strong className="text-foreground">{subject}</strong>. You can rejoin anytime.
         </p>
         <div className="grid grid-cols-2 gap-2.5">
-          <button onClick={onStay}
+          <button
+            onClick={onStay}
             className="py-2.5 rounded-xl bg-muted border border-border text-foreground
-              text-sm font-semibold hover:bg-accent transition-colors">
+              text-sm font-semibold hover:bg-accent transition-colors"
+          >
             Stay
           </button>
-          <button onClick={onLeave}
+          <button
+            onClick={onLeave}
             className="py-2.5 rounded-xl bg-destructive text-white
-              text-sm font-semibold hover:opacity-90 transition-opacity">
+              text-sm font-semibold hover:opacity-90 transition-opacity"
+          >
             Leave
           </button>
         </div>
@@ -383,15 +458,20 @@ function ConfirmModal({ subject, onStay, onLeave }) {
 
 /* ─── Control Button ─────────────────────────────────────────────────────── */
 const CtrlBtn = ({ icon, label, active = false, danger = false, onClick, badge = 0, activeColor = "" }) => (
-  <button onClick={onClick} title={label}
-    className="relative flex flex-col items-center gap-1 group focus:outline-none">
-    <span className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all duration-200
-      ${danger
-        ? "bg-destructive text-white hover:opacity-90"
-        : active
-          ? activeColor || "bg-primary/15 text-primary border border-primary/40 hover:bg-primary/25"
-          : "bg-muted text-muted-foreground border border-border hover:bg-accent hover:text-foreground"
-      }`}>
+  <button
+    onClick={onClick}
+    title={label}
+    className="relative flex flex-col items-center gap-1 group focus:outline-none"
+  >
+    <span
+      className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all duration-200
+        ${danger
+          ? "bg-destructive text-white hover:opacity-90"
+          : active
+            ? activeColor || "bg-primary/15 text-primary border border-primary/40 hover:bg-primary/25"
+            : "bg-muted text-muted-foreground border border-border hover:bg-accent hover:text-foreground"
+        }`}
+    >
       <Icon d={icon} size={18} />
       {badge > 0 && (
         <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 text-[9px] font-bold
@@ -400,7 +480,9 @@ const CtrlBtn = ({ icon, label, active = false, danger = false, onClick, badge =
         </span>
       )}
     </span>
-    <span className="text-[10px] text-muted-foreground group-hover:text-foreground hidden sm:block">{label}</span>
+    <span className="text-[10px] text-muted-foreground group-hover:text-foreground hidden sm:block">
+      {label}
+    </span>
   </button>
 );
 
@@ -430,7 +512,7 @@ function MeetingRoom({ meetingData, onLeave }) {
     `${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:` +
     `${String(s % 60).padStart(2, "0")}`;
 
-  /* Load Jitsi External API */
+  /* Load Jitsi External API & init */
   useEffect(() => {
     let domain   = "meet.jit.si";
     let roomName = meetingData.MeetingLink || "";
@@ -461,45 +543,49 @@ function MeetingRoom({ meetingData, onLeave }) {
         height: "100%",
         userInfo: { displayName },
         configOverwrite: {
-          // ── Remove prejoin & deep-link prompts ──────────────────────────
-          prejoinPageEnabled:           false,
-          prejoinConfig:                { enabled: false },
-          disableDeepLinking:           true,   // removes "open in app" on mobile
-          enableWelcomePage:            false,
-          // ── Hide Jitsi toolbar (we use our own) ─────────────────────────
-          toolbarButtons:               [],
-          // ── Media defaults ──────────────────────────────────────────────
-          startWithAudioMuted:          false,
-          startWithVideoMuted:          false,
-          startScreenSharing:           false,
-          // ── Misc ────────────────────────────────────────────────────────
-          disableThirdPartyRequests:    false,
-          enableNoAudioDetection:       false,
-          enableNoisyMicDetection:      false,
+          prejoinPageEnabled:        false,  // removes prejoin screen
+          prejoinConfig:             { enabled: false },
+          disableDeepLinking:        true,   // removes "open in app" on mobile
+          enableWelcomePage:         false,
+          toolbarButtons:            [],     // hide Jitsi's own toolbar
+          startWithAudioMuted:       false,
+          startWithVideoMuted:       false,
+          startScreenSharing:        false,
+          disableThirdPartyRequests: false,
+          enableNoAudioDetection:    false,
+          enableNoisyMicDetection:   false,
         },
         interfaceConfigOverwrite: {
-          TOOLBAR_BUTTONS:              [],     // hide default toolbar
-          MOBILE_APP_PROMO:             false,  // no "download app" on mobile
-          SHOW_JITSI_WATERMARK:         false,
-          SHOW_WATERMARK_FOR_GUESTS:    false,
-          SHOW_BRAND_WATERMARK:         false,
-          SHOW_POWERED_BY:              false,
-          HIDE_INVITE_MORE_HEADER:      true,
+          TOOLBAR_BUTTONS:           [],     // hide default toolbar
+          MOBILE_APP_PROMO:          false,  // no "download app" on mobile
+          SHOW_JITSI_WATERMARK:      false,
+          SHOW_WATERMARK_FOR_GUESTS: false,
+          SHOW_BRAND_WATERMARK:      false,
+          SHOW_POWERED_BY:           false,
+          HIDE_INVITE_MORE_HEADER:   true,
           DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
         },
       });
 
       apiRef.current = api;
 
-      api.addListener("videoConferenceJoined",       ()        => setApiReady(true));
-      api.addListener("audioMuteStatusChanged",      ({ muted }) => setMic(!muted));
-      api.addListener("videoMuteStatusChanged",      ({ muted }) => setCam(!muted));
-      api.addListener("screenSharingStatusChanged",  ({ on })    => setSharing(on));
-      api.addListener("raiseHandUpdated",            ({ handRaised: h }) => setHandRaised(h));
-      api.addListener("incomingMessage",             ()        => {
-        setChatOpen((open) => { if (!open) setUnread((u) => u + 1); return open; });
-      });
-      api.addListener("readyToClose", () => { api.dispose(); onLeave(); });
+      /* State sync listeners */
+      api.addListener("videoConferenceJoined",      ()          => setApiReady(true));
+      api.addListener("audioMuteStatusChanged",     ({ muted }) => setMic(!muted));
+      api.addListener("videoMuteStatusChanged",     ({ muted }) => setCam(!muted));
+      api.addListener("screenSharingStatusChanged", ({ on })    => setSharing(on));
+      api.addListener("raiseHandUpdated",           ({ handRaised: h }) => setHandRaised(h));
+      api.addListener("readyToClose",               ()          => { api.dispose(); onLeave(); });
+
+      /* Unread badge — fires for both event names */
+      const unreadHandler = () => {
+        setChatOpen((open) => {
+          if (!open) setUnread((u) => u + 1);
+          return open;
+        });
+      };
+      api.addListener("incomingMessage",            unreadHandler);
+      api.addListener("endpointTextMessageReceived", unreadHandler);
     };
 
     const scriptSrc = `https://${domain}/external_api.js`;
@@ -517,7 +603,10 @@ function MeetingRoom({ meetingData, onLeave }) {
       }
     }
 
-    return () => { try { apiRef.current?.dispose(); } catch (_) {} apiRef.current = null; };
+    return () => {
+      try { apiRef.current?.dispose(); } catch (_) {}
+      apiRef.current = null;
+    };
   }, [meetingData]);
 
   /* Controls */
@@ -532,9 +621,9 @@ function MeetingRoom({ meetingData, onLeave }) {
   try {
     const raw = localStorage.getItem("user");
     if (raw) {
-      const u = JSON.parse(raw);
+      const u    = JSON.parse(raw);
       const name = u?.Name || u?.name || "Student";
-      initials = name.split(" ").map((w) => w[0]).join("").substring(0, 2).toUpperCase();
+      initials   = name.split(" ").map((w) => w[0]).join("").substring(0, 2).toUpperCase();
     }
   } catch (_) {}
 
@@ -554,7 +643,9 @@ function MeetingRoom({ meetingData, onLeave }) {
               <Icon d={ICONS.video} size={13} stroke="white" />
             </div>
             <div>
-              <p className="font-semibold text-foreground text-sm leading-tight">{meetingData.Subject}</p>
+              <p className="font-semibold text-foreground text-sm leading-tight">
+                {meetingData.Subject}
+              </p>
               <p className="text-[11px] text-muted-foreground">
                 Class {meetingData.ClassID} · Section {meetingData.SectionID}
               </p>
@@ -565,7 +656,7 @@ function MeetingRoom({ meetingData, onLeave }) {
               LIVE · {fmt(secs)}
             </span>
           </div>
-          {/* Mobile timer */}
+          {/* Mobile live timer */}
           <span className="flex sm:hidden items-center gap-1 text-destructive text-[11px] font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-destructive blink" />
             {fmt(secs)}
@@ -574,7 +665,7 @@ function MeetingRoom({ meetingData, onLeave }) {
 
         {/* ── Main body ── */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Jitsi */}
+          {/* Jitsi container */}
           <main className="flex-1 relative bg-black min-w-0">
             {!apiReady && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-white gap-3 z-10">
@@ -595,15 +686,18 @@ function MeetingRoom({ meetingData, onLeave }) {
 
         {/* Chat — mobile bottom sheet */}
         {chatOpen && (
-          <div className="sm:hidden flex flex-col border-t border-border flex-shrink-0" style={{ height: "45vh" }}>
+          <div
+            className="sm:hidden flex flex-col border-t border-border flex-shrink-0"
+            style={{ height: "45vh" }}
+          >
             <ChatPanel onClose={() => setChatOpen(false)} apiRef={apiRef} />
           </div>
         )}
 
-        {/* ── Controls ── */}
+        {/* ── Controls bar ── */}
         <footer className="flex items-center justify-between px-3 sm:px-5 py-3 bg-card border-t border-border flex-shrink-0">
 
-          {/* User info — desktop */}
+          {/* User info — desktop only */}
           <div className="hidden sm:flex items-center gap-2 min-w-[110px]">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center
               text-primary-foreground text-xs font-bold flex-shrink-0">
@@ -650,9 +744,13 @@ function MeetingRoom({ meetingData, onLeave }) {
               onClick={toggleChat}
               badge={!chatOpen ? unread : 0}
             />
-            {/* Leave */}
-            <button onClick={() => setConfirm(true)} title="Leave"
-              className="relative flex flex-col items-center gap-1 group focus:outline-none">
+
+            {/* Leave button */}
+            <button
+              onClick={() => setConfirm(true)}
+              title="Leave"
+              className="relative flex flex-col items-center gap-1 group focus:outline-none"
+            >
               <span className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center
                 bg-destructive text-white hover:opacity-90 transition-opacity">
                 <Icon d={ICONS.phone} size={18} />
@@ -668,6 +766,7 @@ function MeetingRoom({ meetingData, onLeave }) {
         </footer>
       </div>
 
+      {/* Confirm leave modal */}
       {confirm && (
         <ConfirmModal
           subject={meetingData.Subject}
