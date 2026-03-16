@@ -100,7 +100,7 @@ function StudentProfileCard() {
       <div className="px-5 pt-5 pb-1">
         {/* Row: name + avatar */}
         <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0 pr-3">
+          <div className="flex-1 min-w-0 pr-3 mt-3">
             <h2 className="text-lg font-bold leading-tight break-words">
               {student.FullName}
             </h2>
