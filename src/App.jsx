@@ -62,6 +62,9 @@ import AdmissionForm from './pages/AdmissionForm'
 import PayFeesPage from './pages/PayFeesPage'
 // App.jsx or routes.jsx
 import JitsiMeetingRoom from './pages/JitsiMeetingRoom'
+import StudentMeetingPage from './components/student-dashboard/JoinMeeting'
+
+
 import PaySalaryPage from './pages/PaySalaryPage'
 
 function App() {
@@ -155,6 +158,8 @@ function App() {
 
               <Route path="/admission-form" element={<AdmissionForm />} />
               <Route path="/meeting" element={<JitsiMeetingRoom />} />
+              <Route path="/student/meeting" element={<StudentMeetingPage />} />
+            
             </Route>
           </Route>
         </Routes>

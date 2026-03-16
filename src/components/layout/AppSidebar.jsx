@@ -236,18 +236,24 @@ function getSidebarDataByRole(role) {
   }
 
   if (role === 'Student') {
-    return {
-      ...data,
-      people: [],
-      attendance: [],
-      attendanceMark: [],
-      fees: [],
-      salary: [],
-      additional: [],
-      library: [],
-      documents: [],
-    }
+  return {
+    ...data,
+    people: [],
+    attendance: [],
+    attendanceMark: [],
+    fees: [],
+    salary: [],
+    additional: [],
+    library: [],
+    documents: [
+      {
+        title: 'Join Meeting',
+        url: '/student/meeting',  // ← matches the route in App.jsx
+        icon: Form,
+      },
+    ],
   }
+}
 
   if (role === 'Librarian') {
     return {
