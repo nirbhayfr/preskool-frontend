@@ -1,7 +1,7 @@
 import TeacherDetailsAndInfoCard from '@/components/teacher-details/TeacherDetailsAndInfo'
 import TeacherDetailsTabsLayout from '@/components/teacher-details/TeacherDetailsTabs'
-import { Outlet, useNavigate, useParams } from 'react-router-dom'
-import { PenBoxIcon, Trash } from 'lucide-react'
+import { Link, Outlet, useNavigate, useParams } from 'react-router-dom'
+import { Banknote, PenBoxIcon, Trash } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -63,6 +63,15 @@ function TeacherDetails() {
 
         {user?.Role !== 'Teacher' && (
           <div className="flex gap-2">
+            {user?.Role === 'Admin' && (
+              <Button asChild>
+                <Link to={`/pay-salary/${id}`} className="flex items-center">
+                  <Banknote className="mr-1 h-4 w-4" />
+                  Pay Salary
+                </Link>
+              </Button>
+            )}
+
             {/* Edit */}
             <Button onClick={() => handleEdit(id)}>
               <PenBoxIcon className="mr-2 h-4 w-4" />

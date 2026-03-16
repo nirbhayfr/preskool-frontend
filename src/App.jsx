@@ -62,8 +62,7 @@ import AdmissionForm from './pages/AdmissionForm'
 import PayFeesPage from './pages/PayFeesPage'
 // App.jsx or routes.jsx
 import JitsiMeetingRoom from './pages/JitsiMeetingRoom'
-
-
+import PaySalaryPage from './pages/PaySalaryPage'
 
 function App() {
   return (
@@ -108,6 +107,7 @@ function App() {
               />
 
               <Route path="/pay-fees/:id" element={<PayFeesPage />} />
+              <Route path="/pay-salary/:id" element={<PaySalaryPage />} />
 
               <Route path="/student-details/:id" element={<StudentDetails />}>
                 <Route index element={<Navigate to="details" replace />} />
