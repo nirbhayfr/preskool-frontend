@@ -30,7 +30,8 @@ function StudentDashboard() {
         <div className="lg:col-span-2">
           <StudentProfileCard />
         </div>
-        <div className="px-4 -mt-20 relative z-10">
+        <div className="px-4 -mt-20 lg:mt-4 relative z-10">
+          {' '}
           <StudentActions openModal={setActiveModal} />{' '}
         </div>
         {/* <FeesReminder /> */}
