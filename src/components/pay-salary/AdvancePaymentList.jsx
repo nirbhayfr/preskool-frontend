@@ -3,9 +3,12 @@
 import { format } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePaymentsByPerson } from '@/hooks/usePayment'
-import { IndianRupee } from 'lucide-react'
+import { IndianRupee, Download } from 'lucide-react'
+import { pdf } from '@react-pdf/renderer'
+import AdvanceSlipPDF from '@/components/pdfs/AdvanceSlipPDF'
 
 const statusConfig = {
   Pending: {
@@ -14,6 +17,10 @@ const statusConfig = {
   },
   Adjusted: {
     label: 'Adjusted',
+    className: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40',
+  },
+  Settled: {
+    label: 'Settled',
     className: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40',
   },
   Paid: {
@@ -35,7 +42,17 @@ function StatusBadge({ status }) {
   )
 }
 
-function AdvancePaymentList({ teacherId }) {
+const handleDownloadAdvanceSlip = async (payment, teacher) => {
+  const blob = await pdf(<AdvanceSlipPDF teacher={teacher} payment={payment} />).toBlob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `advance-slip-${teacher?.FullName ?? 'teacher'}-${payment.ReferenceNo ?? payment.PaymentID}.pdf`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function AdvancePaymentList({ teacherId, teacher }) {
   const {
     data: paymentsData,
     isLoading,
@@ -92,7 +109,7 @@ function AdvancePaymentList({ teacherId }) {
                   )}
                 </div>
 
-                {/* Right — amount + status */}
+                {/* Right — amount + status + download */}
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="flex items-center gap-0.5 text-sm font-semibold">
                     <IndianRupee className="size-3.5" />
@@ -101,6 +118,15 @@ function AdvancePaymentList({ teacherId }) {
                     })}
                   </div>
                   <StatusBadge status={payment.PaymentStatus} />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => handleDownloadAdvanceSlip(payment, teacher)}
+                  >
+                    <Download className="size-3 mr-1" />
+                    Slip
+                  </Button>
                 </div>
               </div>
             ))}
@@ -130,6 +156,7 @@ function AdvancePaymentListSkeleton() {
             <div className="flex items-center gap-3">
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-7 w-14 rounded-md" />
             </div>
           </div>
         ))}

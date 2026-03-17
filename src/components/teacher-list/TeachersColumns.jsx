@@ -61,6 +61,7 @@ export const teachersColumns = () => [
     accessorKey: 'TeacherID',
     header: ({ column }) => <SearchHeader column={column} title="Teacher ID" />,
     filterFn: advancedFilter,
+    meta: { sticky: true, left: 0 },
     cell: ({ row }) => (
       <Link
         to={`/teacher-details/${row.original.TeacherID}`}
@@ -74,6 +75,7 @@ export const teachersColumns = () => [
   {
     accessorKey: 'ProfilePhoto',
     header: 'Profile Photo',
+    meta: { sticky: true, left: 80 },
     cell: ({ row }) => {
       const { ProfilePhoto, FullName } = row.original
 
@@ -115,6 +117,7 @@ export const teachersColumns = () => [
     accessorKey: 'FullName',
     header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
     filterFn: advancedFilter,
+    meta: { sticky: true, left: 160 },
     cell: ({ row }) => formatValue(row.original.FullName),
   },
 

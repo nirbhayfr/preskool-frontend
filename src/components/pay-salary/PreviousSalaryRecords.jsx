@@ -3,12 +3,26 @@
 import { format } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
 import { useTeacherSalaryByTeacherId } from '@/hooks/useTeacherSalary'
+import { pdf } from '@react-pdf/renderer'
+import SalarySlipPDF from '@/components/pdfs/SalarySlip'
+import { Download } from 'lucide-react'
 
-function PreviousSalaryRecords({ teacherId }) {
-  const currentMonth = new Date().toISOString().slice(0, 7)
+const currentMonth = new Date().toISOString().slice(0, 7)
+
+const handleDownloadSalarySlip = async (record, teacher) => {
+  const blob = await pdf(<SalarySlipPDF teacher={teacher} salary={record} />).toBlob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `salary-slip-${teacher.FullName}-${record.SalaryMonth}.pdf`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function PreviousSalaryRecords({ teacherId, teacher }) {
   const { data, isLoading, isError } = useTeacherSalaryByTeacherId(teacherId)
 
   const records = data?.data ?? []
@@ -16,8 +30,6 @@ function PreviousSalaryRecords({ teacherId }) {
   if (isLoading) return <PreviousSalaryRecordsSkeleton />
   if (isError)
     return <p className="text-sm text-destructive">Failed to load salary records</p>
-
-  console.log(records)
 
   return (
     <Card className="rounded-xl border-muted/60">
@@ -92,12 +104,23 @@ function PreviousSalaryRecords({ teacherId }) {
                   />
                 </div>
 
-                {/* Payment date */}
-                <p className="text-xs text-muted-foreground">
-                  {record.PaymentDate
-                    ? `Paid on ${format(new Date(record.PaymentDate), 'dd MMM yyyy')}`
-                    : 'Payment date not set'}
-                </p>
+                {/* Payment date + download */}
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {record.PaymentDate
+                      ? `Paid on ${format(new Date(record.PaymentDate), 'dd MMM yyyy')}`
+                      : 'Payment date not set'}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => handleDownloadSalarySlip(record, teacher)}
+                  >
+                    <Download className="size-3 mr-1" />
+                    Slip
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -139,7 +162,10 @@ function PreviousSalaryRecordsSkeleton() {
                 <Skeleton key={j} className="h-14 rounded-lg" />
               ))}
             </div>
-            <Skeleton className="h-3 w-40" />
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-3 w-40" />
+              <Skeleton className="h-7 w-16 rounded-md" />
+            </div>
           </div>
         ))}
       </CardContent>

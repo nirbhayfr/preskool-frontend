@@ -5,6 +5,7 @@ import AttendanceSummaryCard from '@/components/pay-salary/AttendanceSummaryCard
 import PaySalarySection from '@/components/pay-salary/PaySalarySection'
 import PreviousSalaryRecords from '@/components/pay-salary/PreviousSalaryRecords'
 import SalaryCalculationCard from '@/components/pay-salary/SalaryCalculationCard'
+import SalaryMonthGrid from '@/components/pay-salary/SalaryMonthGrid'
 import TeacherDetailCard from '@/components/pay-salary/TeacherDetailsCardPS'
 import { useTeacher } from '@/hooks/useTeacher'
 import { useParams } from 'react-router-dom'
@@ -35,9 +36,10 @@ function PaySalaryPage() {
       <TeacherDetailCard teacher={teacher} />
       <AttendanceSummaryCard teacherId={teacher.TeacherID} />
       <SalaryCalculationCard teacherId={teacher.TeacherID} baseSalary={teacher.Salary} />
-      <AdvancePaymentList teacherId={teacher.TeacherID} />
-      <PreviousSalaryRecords teacherId={teacher.TeacherID} />
+      <AdvancePaymentList teacherId={teacher.TeacherID} teacher={teacher} />
+      <PreviousSalaryRecords teacherId={teacher.TeacherID} teacher={teacher} />
       <PaySalarySection teacherId={teacher.TeacherID} />
+      <SalaryMonthGrid teacherId={teacher.TeacherID} />
     </section>
   )
 }

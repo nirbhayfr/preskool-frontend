@@ -9,6 +9,9 @@ import IdCardPDF from '../pdfs/IdCardPDF'
 import { pdf } from '@react-pdf/renderer'
 import SearchHeader from '../layout/SearchHeader'
 import { classes, sections } from '@/data/basicData'
+import TransferCertificatePDF from '../pdfs/TransferCertificatePDF'
+import AdmitCardPDF from '../pdfs/AdmitCard'
+import MigrationCertificatePDF from '../pdfs/MIgrationCertificatePDF'
 
 const encryptedUser = localStorage.getItem('user')
 const user = encryptedUser ? decryptData(encryptedUser) : null
@@ -18,14 +21,155 @@ const handlePrintId = async (student) => {
     student.FullName || 'Student'
   )}&size=256`
 
-  const imageUrl = student.PhotoUrl || avatarUrl
+  const imageUrl = student.PhotoUrl || student.ProfilePhoto || avatarUrl
 
-  const blob = await pdf(<IdCardPDF student={student} photo={imageUrl} />).toBlob()
+  const blob = await pdf(
+    <IdCardPDF
+      student={{
+        FullName: student.FullName,
+        ClassID: student.ClassID,
+        SectionID: student.SectionID,
+        RollNo: student.RollNo,
+        DOB: student.DOB,
+        AdmissionNo: student.AdmissionNo,
+        Session: '2024-25',
+        photo: imageUrl,
+        FatherName: student.GuardianRelation === 'Father' ? student.GuardianName : '',
+        MotherName: student.GuardianRelation === 'Mother' ? student.GuardianName : '',
+        ContactNo: student.ContactNumber || student.GuardianContact,
+        BloodGroup: student.BloodGroup || '',
+        Address: student.Address || '',
+      }}
+    />
+  ).toBlob()
 
   const url = URL.createObjectURL(blob)
   window.open(url)
 }
 
+const handlePrintTC = async (student) => {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+  }
+
+  const dobWords = (dateStr) => {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    return d.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  }
+
+  const blob = await pdf(
+    <TransferCertificatePDF
+      data={{
+        admNo: student.AdmissionNo || '',
+        pupilName: student.FullName || '',
+        motherName: student.GuardianRelation === 'Mother' ? student.GuardianName : '',
+        fatherName:
+          student.GuardianRelation === 'Father'
+            ? student.GuardianName
+            : student.GuardianName || '',
+        dob: formatDate(student.DOB),
+        dobWords: dobWords(student.DOB),
+        nationality: student.Nationality || 'INDIAN',
+        casteCategory: student.Cast || '',
+        firstAdmDate: formatDate(student.JoiningDate || student.AdmissionDate),
+        firstAdmClass: student.ClassID || '',
+        lastClassFigure: student.ClassID || '',
+        lastClassWords: '',
+        subjects: student.Subjects
+          ? student.Subjects.split(',').map((s) => s.trim())
+          : [],
+        qualifiedPromo: '',
+        promoClassFig: '',
+        promoClassWords: '',
+        conduct: '',
+        appDate: formatDate(new Date()),
+        issueDate: formatDate(new Date()),
+        leavingReason: '',
+        otherRemark: 'NO',
+      }}
+    />
+  ).toBlob()
+
+  const url = URL.createObjectURL(blob)
+  window.open(url)
+}
+
+const handlePrintAdmitCard = async (student) => {
+  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    student.FullName || 'Student'
+  )}&size=256`
+
+  const blob = await pdf(
+    <AdmitCardPDF
+      student={{
+        srNo: student.AdmissionNo || '',
+        fullName: student.FullName || '',
+        fatherName:
+          student.GuardianRelation === 'Father'
+            ? student.GuardianName
+            : student.GuardianName || '',
+        className: `${student.ClassID || ''}-${student.SectionID || ''}`,
+        duesPending: student.PendingFee ? `${student.PendingFee} /-` : '0 /-',
+        availTransport: student.TransportStatus || 'No',
+        photo: student.PhotoUrl || avatarUrl,
+        examTitle: 'ANNUAL EXAMINATION (2025-26)',
+        affiliationNo: '2134266',
+      }}
+    />
+  ).toBlob()
+
+  const url = URL.createObjectURL(blob)
+  window.open(url)
+}
+
+const handlePrintMigration = async (student) => {
+  const formatDate = (d) => {
+    if (!d) return ''
+    const dt = new Date(d)
+    return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`
+  }
+
+  const blob = await pdf(
+    <MigrationCertificatePDF
+      data={{
+        certNo: '',
+        pupilName: student.FullName || '',
+        fatherName:
+          student.GuardianRelation === 'Father'
+            ? student.GuardianName
+            : student.GuardianName || '',
+        motherName: student.GuardianRelation === 'Mother' ? student.GuardianName : '',
+        dob: formatDate(student.DOB),
+        nationality: student.Nationality || 'Indian',
+        category: student.Cast || 'General',
+        admissionNo: student.AdmissionNo || '',
+        admissionDate: formatDate(student.JoiningDate || student.AdmissionDate),
+        classAdmitted: student.ClassID || '',
+        lastClassStudied: student.ClassID || '',
+        lastClassWords: '',
+        board: 'CBSE',
+        rollNo: student.RollNo || '',
+        examYear: '2025-26',
+        result: '',
+        conduct: '',
+        reason: '',
+        appDate: formatDate(new Date()),
+        issueDate: formatDate(new Date()),
+        otherRemark: 'No',
+      }}
+    />
+  ).toBlob()
+
+  const url = URL.createObjectURL(blob)
+  window.open(url)
+}
 const advancedFilter = (row, columnId, filterValue) => {
   if (!filterValue) return true
 
@@ -79,6 +223,7 @@ export const studentsColumns = (setSelectedStudent) => [
     accessorKey: 'StudentID',
     header: ({ column }) => <SearchHeader column={column} title="Student ID" />,
     filterFn: advancedFilter,
+    meta: { sticky: true, left: 0 },
     cell: ({ row }) => (
       <Link
         to={`/student-details/${row.original.StudentID}`}
@@ -92,6 +237,7 @@ export const studentsColumns = (setSelectedStudent) => [
   {
     accessorKey: 'PhotoUrl',
     header: 'Profile',
+    meta: { sticky: true, left: 80 },
     cell: ({ row }) => {
       const { PhotoUrl, FullName } = row.original
 
@@ -133,6 +279,7 @@ export const studentsColumns = (setSelectedStudent) => [
     accessorKey: 'FullName',
     header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
     filterFn: advancedFilter,
+    meta: { sticky: true, left: 160 },
     cell: ({ row }) => <span className="capitalize">{row.original.FullName}</span>,
   },
 
@@ -508,10 +655,6 @@ export const studentsColumns = (setSelectedStudent) => [
           <MessageSquare className="h-4 w-4" />
         </Button>
 
-        {/* {user?.Role === 'Admin' && (
-          <CollectFeesDialog studentId={row.original.StudentID} />
-        )} */}
-
         {(user?.Role === 'Admin' || user?.Role === 'Librarian') && (
           <Button
             size="sm"
@@ -523,14 +666,43 @@ export const studentsColumns = (setSelectedStudent) => [
         )}
 
         {user?.Role === 'Admin' && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-xs"
-            onClick={() => handlePrintId(row.original)}
-          >
-            Print ID
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => handlePrintId(row.original)}
+            >
+              Print ID
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => handlePrintTC(row.original)}
+            >
+              TC
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => handlePrintAdmitCard(row.original)}
+            >
+              Admit Card
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => handlePrintMigration(row.original)}
+            >
+              Migration
+            </Button>
+          </div>
         )}
       </div>
     ),

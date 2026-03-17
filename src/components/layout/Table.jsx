@@ -41,7 +41,6 @@ export default function TableLayout({ columns, data }) {
         <button onClick={scrollLeft} className="border rounded-md p-1">
           <ChevronLeft size={18} />
         </button>
-
         <button onClick={scrollRight} className="border rounded-md p-1">
           <ChevronRight size={18} />
         </button>
@@ -53,14 +52,26 @@ export default function TableLayout({ columns, data }) {
           <TableHeader className="bg-gray-100 dark:bg-stone-700">
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id}>
-                {group.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="px-6 py-3 text-left whitespace-nowrap"
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
+                {group.headers.map((header) => {
+                  const sticky = header.column.columnDef.meta?.sticky
+                  const left = header.column.columnDef.meta?.left ?? 0
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className={`
+                          px-6 py-3 text-left whitespace-nowrap
+                          ${
+                            sticky
+                              ? 'sticky z-20 bg-gray-100 dark:bg-stone-700 after:absolute after:inset-y-0 after:right-0 after:w-px'
+                              : ''
+                          }
+                        `}
+                      style={sticky ? { left } : undefined}
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  )
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -68,11 +79,26 @@ export default function TableLayout({ columns, data }) {
           <TableBody>
             {table.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="px-6 py-2 whitespace-nowrap">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+                {row.getVisibleCells().map((cell) => {
+                  const sticky = cell.column.columnDef.meta?.sticky
+                  const left = cell.column.columnDef.meta?.left ?? 0
+                  return (
+                    <TableCell
+                      key={cell.id}
+                      className={`
+                            px-6 py-2 whitespace-nowrap
+                            ${
+                              sticky
+                                ? 'sticky z-10 bg-background dark:bg-[#18181B] after:absolute after:inset-y-0 after:right-0 after:w-px'
+                                : ''
+                            }
+                          `}
+                      style={sticky ? { left } : undefined}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  )
+                })}
               </TableRow>
             ))}
           </TableBody>
