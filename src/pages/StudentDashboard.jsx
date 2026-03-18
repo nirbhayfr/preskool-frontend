@@ -7,7 +7,6 @@ import { StudentActions } from '@/components/student-dashboard/StudentActions'
 import StudentProfileCard from '@/components/student-dashboard/StudentProfileCard'
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-
 function StudentDashboard() {
   const [activeModal, setActiveModal] = useState(null)
   useEffect(() => {

@@ -1,19 +1,48 @@
 import * as React from 'react'
 import { useParams } from 'react-router-dom'
-import { Calendar } from '@/components/ui/calendar'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { CheckCheck, X, Calendar as CalendarIcon } from 'lucide-react'
-
+import {
+  CheckCheck,
+  X,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 import { useAttendanceMatrixByStudentId } from '@/hooks/useAttendance'
-import { DayPicker } from 'react-day-picker'
-import 'react-day-picker/style.css'
 
 function toLocalDateKey(date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
+}
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+const WEEK_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
+/** Returns array of Date | null for every cell in the 7-col grid */
+function buildCalendarDays(year, month) {
+  const firstDay = new Date(year, month - 1, 1).getDay() // 0 = Sun
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const cells = []
+  for (let i = 0; i < firstDay; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month - 1, d))
+  while (cells.length % 7 !== 0) cells.push(null)
+  return cells
 }
 
 function StudentAttendance() {
@@ -31,127 +60,139 @@ function StudentAttendance() {
   const attendanceMap = React.useMemo(() => {
     const map = {}
     Object.entries(attendanceRow).forEach(([key, value]) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
-        map[key] = value
-      }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(key)) map[key] = value
     })
     return map
   }, [attendanceRow])
+
+  console.log('attendanceMap:', attendanceMap)
 
   if (isLoading) return <AttendanceSkeleton />
   if (isError) return <p>Failed to load attendance</p>
 
   const todayKey = new Date().toISOString().slice(0, 10)
+  const [year, month] = selectedMonth.split('-').map(Number)
+  const calendarDays = buildCalendarDays(year, month)
 
-  console.log(todayKey)
+  const goPrev = () => {
+    const d = new Date(year, month - 2, 1)
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+  const goNext = () => {
+    const d = new Date(year, month, 1)
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
 
   return (
-    <div className="space-y-6">
-      <Card className="rounded-xl border-muted/60">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="w-full space-y-4">
+      <Card className="rounded-xl border-muted/60 w-full">
+        <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold tracking-tight">
             Attendance
           </CardTitle>
-
-          {/* Month Selector */}
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Month</span>
-            <Input
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-40"
-            />
-          </div>
         </CardHeader>
 
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-4 px-3 sm:px-6">
           {/* Legend */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap gap-2">
             <LegendItem
-              icon={<CheckCheck className="h-4 w-4" />}
+              icon={<CheckCheck className="h-3 w-3" />}
               label="Present"
-              bg="bg-emerald-600"
+              bg="bg-emerald-500"
             />
-            <LegendItem icon={<X className="h-4 w-4" />} label="Absent" bg="bg-red-600" />
+            <LegendItem icon={<X className="h-3 w-3" />} label="Absent" bg="bg-red-500" />
             <LegendItem
-              icon={<CalendarIcon className="h-4 w-4" />}
+              icon={<CalendarIcon className="h-3 w-3" />}
               label="Holiday"
-              bg="bg-blue-600"
+              bg="bg-blue-500"
             />
           </div>
 
           {/* Calendar */}
-          <div className="flex justify-center sm:justify-start pt-2">
-            <div className="flex flex-col items-center justify-center">
-              <DayPicker
-                style={{
-                  '--rdp-day-width': '44px',
-                  '--rdp-day-height': '44px',
-                  '--rdp-day_button-width': '28px',
-                  '--rdp-day_button-height': '28px',
-                  '--rdp-day_button-border-radius': '9999px',
-                }}
-                month={new Date(`${selectedMonth}-01`)}
-                onMonthChange={(date) =>
-                  setSelectedMonth(
-                    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-                  )
+          <div className="w-full rounded-xl border border-muted/50 overflow-hidden bg-card">
+            {/* Month nav */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-muted/40">
+              <button
+                onClick={goPrev}
+                className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm font-semibold">
+                {MONTH_NAMES[month - 1]} {year}
+              </span>
+              <button
+                onClick={goNext}
+                className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Weekday headers */}
+            <div className="grid grid-cols-7 bg-muted/10 border-b border-muted/30">
+              {WEEK_DAYS.map((d) => (
+                <div
+                  key={d}
+                  className="py-2 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wide"
+                >
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Day grid — fluid circles that scale with column width */}
+            <div className="grid grid-cols-7 gap-y-1 p-2">
+              {calendarDays.map((date, idx) => {
+                if (!date) return <div key={`e-${idx}`} className="aspect-square" />
+
+                const key = toLocalDateKey(date)
+                const status = attendanceMap[key]
+                const isFuture = key > todayKey
+                const isToday = key === todayKey
+
+                // Use inline styles to avoid Tailwind JIT purging dynamic class strings
+                let bgColor = 'transparent'
+                let textColor = 'inherit'
+                let fontWeight = '400'
+                let boxShadow = 'none'
+                let opacity = isFuture ? '0.35' : '1'
+
+                if (status === 'P') {
+                  bgColor = '#22c55e' // green-500
+                  textColor = '#ffffff'
+                  fontWeight = '600'
+                } else if (status === 'A') {
+                  bgColor = '#ef4444' // red-500
+                  textColor = '#ffffff'
+                  fontWeight = '600'
+                } else if (status === null && !isFuture) {
+                  bgColor = '#3b82f6' // blue-500
+                  textColor = '#ffffff'
+                  fontWeight = '600'
+                } else if (isToday) {
+                  boxShadow = '0 0 0 2px #6366f1'
+                  fontWeight = '700'
+                  textColor = '#6366f1'
                 }
-                hideNavigation
-                classNames={{
-                  table: 'border-separate border-spacing-x-6 border-spacing-y-6',
-                  cell: 'p-1 text-center',
-                  day_button: 'mx-auto',
-                }}
-                modifiers={{
-                  present: (date) => attendanceMap[toLocalDateKey(date)] === 'P',
-                  absent: (date) => attendanceMap[toLocalDateKey(date)] === 'A',
-                  holiday: (date) => {
-                    const key = toLocalDateKey(date)
 
-                    return attendanceMap[key] === null && key <= todayKey
-                  },
-                }}
-                modifiersClassNames={{
-                  present: 'bg-emerald-200 text-gray-900 w-5 h-5 rounded-full',
-                  absent: 'bg-red-200 text-gray-900 w-9 h-9 rounded-full',
-                  holiday: 'bg-blue-200 text-gray-900 w-9 h-9 rounded-full',
-                }}
-                components={{
-                  DayButton: ({ day }) => {
-                    const key = day.date.toISOString().slice(0, 10)
-                    const status = attendanceMap[key]
-                    const isFuture = key > todayKey
-
-                    return (
-                      <div className="w-[10px] h-[10px] bg-black">
-                        <button
-                          disabled
-                          className="w-8 h-8 flex items-center justify-center"
-                        >
-                          <span
-                            className={`
-                            px-2 py-1 rounded-full text-xs font-medium
-                            ${
-                              status === 'P'
-                                ? 'bg-emerald-200 text-gray-900'
-                                : status === 'A'
-                                  ? 'bg-red-200 text-gray-900'
-                                  : status === null && !isFuture
-                                    ? 'bg-blue-200 text-gray-900'
-                                    : ''
-                            }
-                          `}
-                          >
-                            {day.date.getDate()}
-                          </span>
-                        </button>
-                      </div>
-                    )
-                  },
-                }}
-              />
+                return (
+                  <div key={key} className="flex items-center justify-center p-0.5">
+                    <div
+                      className="w-full max-w-[38px] aspect-square flex items-center justify-center rounded-full text-[11px] sm:text-xs select-none"
+                      style={{
+                        backgroundColor: bgColor,
+                        color: textColor,
+                        fontWeight,
+                        boxShadow,
+                        opacity,
+                      }}
+                    >
+                      {date.getDate()}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </CardContent>
@@ -164,9 +205,9 @@ export default StudentAttendance
 
 function LegendItem({ icon, label, bg }) {
   return (
-    <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-muted/60 text-sm font-medium">
+    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 text-xs font-medium">
       <span
-        className={`flex h-6 w-6 items-center justify-center rounded-md text-white ${bg}`}
+        className={`flex h-5 w-5 items-center justify-center rounded-md text-white flex-shrink-0 ${bg}`}
       >
         {icon}
       </span>
@@ -177,28 +218,23 @@ function LegendItem({ icon, label, bg }) {
 
 function AttendanceSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="h-5 w-32 bg-muted rounded" />
-        <div className="h-9 w-40 bg-muted rounded" />
-      </div>
-
-      {/* Legend */}
-      <div className="flex gap-4">
+    <div className="space-y-4 animate-pulse px-3">
+      <div className="h-5 w-32 bg-muted rounded" />
+      <div className="flex gap-3">
         {[1, 2, 3].map((i) => (
           <div key={i} className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-muted" />
-            <div className="h-4 w-16 bg-muted rounded" />
+            <div className="h-5 w-5 rounded bg-muted" />
+            <div className="h-4 w-14 bg-muted rounded" />
           </div>
         ))}
       </div>
-
-      {/* Calendar Skeleton */}
-      <div className="grid grid-cols-7 gap-3 max-w-sm">
-        {Array.from({ length: 35 }).map((_, i) => (
-          <div key={i} className="h-10 w-10 rounded-full bg-muted" />
-        ))}
+      <div className="rounded-xl border border-muted/50 overflow-hidden">
+        <div className="h-11 bg-muted/30 border-b border-muted/30" />
+        <div className="grid grid-cols-7 gap-1 p-2">
+          {Array.from({ length: 35 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded-full bg-muted/40" />
+          ))}
+        </div>
       </div>
     </div>
   )
