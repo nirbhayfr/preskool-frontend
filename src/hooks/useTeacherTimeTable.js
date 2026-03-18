@@ -56,14 +56,19 @@ export const useDeleteTeacherTimeTable = () => {
   })
 }
 
-export const useTeacherTimeTableByTeacher = (teacherId) => {
+export const useTeacherTimeTableByTeacher = (teacherId, selectedDay) => {
   return useQuery({
-    queryKey: ['teacherTimeTable', teacherId],
+    queryKey: ['teacherTimeTable', teacherId, selectedDay],
     queryFn: async () => {
       if (!teacherId) return []
 
       const res = await api.get(`/teacher-timetable/teacher/${teacherId}`)
-      return res?.data?.data || []
+      const data = res?.data?.data || []
+
+      return data.filter(
+        (item) =>
+          item.DayOfWeek?.trim().toLowerCase() === selectedDay.trim().toLowerCase()
+      )
     },
     enabled: !!teacherId,
     retry: false,

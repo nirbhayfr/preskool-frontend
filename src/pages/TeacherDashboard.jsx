@@ -1,4 +1,4 @@
-import { ClassSlider } from '@/components/teacher-dashboard/ClassSlider'
+import ClassSlider from '@/components/teacher-dashboard/ClassSlider'
 import { StudentMarksTable } from '@/components/teacher-dashboard/StudentMarksTableTD'
 import SyllabusCard from '@/components/teacher-dashboard/SyllabusCard'
 import SyllabusSlider from '@/components/teacher-dashboard/SyllabusSlider'
