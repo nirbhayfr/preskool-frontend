@@ -15,7 +15,11 @@ function TeacherProfilecard() {
     }
   }, [])
 
-  const { data: teacher, isLoading, isError } = useTeacher(user?.LinkedID)
+  const {
+    data: teacher,
+    isLoading,
+    isError,
+  } = useTeacher(user?.LinkedID, !!user?.LinkedID)
   if (isLoading) {
     return (
       <div className="relative overflow-hidden rounded-sm bg-[#202C4B] p-4 flex items-center">

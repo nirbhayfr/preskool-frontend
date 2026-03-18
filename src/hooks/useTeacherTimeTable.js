@@ -5,8 +5,10 @@ import {
   createTeacherTimeTable,
   updateTeacherTimeTable,
   deleteTeacherTimeTable,
+  getTeacherTimeTableByTeacherId,
 } from '@/api/teacherTimeTable'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import api from '@/api/api' // 👈 ADD THIS
 
 export const useTeacherTimeTables = () =>
   useQuery({
@@ -51,5 +53,20 @@ export const useDeleteTeacherTimeTable = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teacherTimeTables'] })
     },
+  })
+}
+
+export const useTeacherTimeTableByTeacher = (teacherId) => {
+  return useQuery({
+    queryKey: ['teacherTimeTable', teacherId],
+    queryFn: async () => {
+      if (!teacherId) return []
+
+      const res = await api.get(`/teacher-timetable/teacher/${teacherId}`)
+      return res?.data?.data || []
+    },
+    enabled: !!teacherId,
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
