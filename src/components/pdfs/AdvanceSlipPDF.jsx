@@ -249,23 +249,23 @@ const AdvanceSlipBlock = ({ teacher, payment, copyLabel }) => {
         </View>
         <View style={styles.tableDataRow}>
           <View style={styles.cell50}>
-            <Text style={styles.tdText}>Subject : {teacher?.Subject || ''}</Text>
-          </View>
-          <View style={styles.cell50Last}>
             <Text style={styles.tdText}>Payment Date : {paymentDate}</Text>
           </View>
+          <View style={styles.cell50Last}>
+            <Text style={styles.tdText}>Status : {payment?.PaymentStatus || ''}</Text>
+          </View>
         </View>
-        <View style={styles.tableDataRow}>
+        {/* <View style={styles.tableDataRow}>
           <View style={styles.cell50}>
             <Text style={styles.tdText}>
               Class : {teacher?.Class || ''}
               {teacher?.Section ? ` - ${teacher.Section}` : ''}
             </Text>
           </View>
-          <View style={styles.cell50Last}>
-            <Text style={styles.tdText}>Status : {payment?.PaymentStatus || ''}</Text>
+          <View style={styles.cell50}>
+            <Text style={styles.tdText}>Subject : {teacher?.Subject || ''}</Text>
           </View>
-        </View>
+        </View> */}
       </View>
 
       {/* Amount Box */}

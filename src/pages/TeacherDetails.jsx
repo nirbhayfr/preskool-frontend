@@ -50,10 +50,9 @@ function TeacherDetails() {
 
   return (
     <section className="p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Teacher Details</h1>
-
           <p className="mt-1 text-sm text-muted-foreground">
             Dashboard
             <span className="mx-1">{'>'}</span>
@@ -62,9 +61,9 @@ function TeacherDetails() {
         </div>
 
         {user?.Role !== 'Teacher' && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {user?.Role === 'Admin' && (
-              <Button asChild>
+              <Button asChild size="sm">
                 <Link to={`/pay-salary/${id}`} className="flex items-center">
                   <Banknote className="mr-1 h-4 w-4" />
                   Pay Salary
@@ -72,16 +71,14 @@ function TeacherDetails() {
               </Button>
             )}
 
-            {/* Edit */}
-            <Button onClick={() => handleEdit(id)}>
+            <Button size="sm" onClick={() => handleEdit(id)}>
               <PenBoxIcon className="mr-2 h-4 w-4" />
               Edit Profile
             </Button>
 
-            {/* Delete */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive">
+                <Button size="sm" variant="destructive">
                   <Trash className="mr-2 h-4 w-4" />
                   Delete
                 </Button>

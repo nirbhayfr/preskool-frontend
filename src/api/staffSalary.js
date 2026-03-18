@@ -31,3 +31,7 @@ export const deleteStaffSalary = async (id) => {
   const { data } = await api.delete(`/staff-salary/${id}`)
   return data
 }
+export const getStaffSalaryByStaffId = async (staffId) => {
+  const response = await api.get(`/staff-salary/staff/${staffId}`)
+  return response.data
+}

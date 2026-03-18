@@ -1,7 +1,7 @@
 import StaffDetailsAndInfoCard from '@/components/staff-details/StaffDetailsAndInfo'
 import StaffDetailsTabsLayout from '@/components/staff-details/StaffDetailsTabs'
-import { Outlet, useNavigate, useParams } from 'react-router-dom'
-import { PenBoxIcon, Trash } from 'lucide-react'
+import { Link, Outlet, useNavigate, useParams } from 'react-router-dom'
+import { Banknote, PenBoxIcon, Trash } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -16,8 +16,18 @@ import {
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useDeleteStaff } from '@/hooks/useStaff'
+import { useMemo } from 'react'
+import { decryptData } from '@/utils/crypto'
 
 function StaffDetails() {
+  const user = useMemo(() => {
+    try {
+      const encrypted = localStorage.getItem('user')
+      return encrypted ? decryptData(encrypted) : null
+    } catch {
+      return null
+    }
+  }, [])
   const { id } = useParams()
   const navigate = useNavigate()
   const { mutate: deleteTeacher } = useDeleteStaff()
@@ -39,10 +49,9 @@ function StaffDetails() {
   }
   return (
     <section className="p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Staff Details</h1>
-
           <p className="mt-1 text-sm text-muted-foreground">
             Dashboard
             <span className="mx-1">{'>'}</span>
@@ -50,17 +59,24 @@ function StaffDetails() {
           </p>
         </div>
 
-        <div className="flex gap-2">
-          {/* Edit */}
-          <Button onClick={() => handleEdit(id)}>
+        <div className="flex flex-wrap gap-2">
+          {user?.Role === 'Admin' && (
+            <Button asChild size="sm">
+              <Link to={`/pay-staff-salary/${id}`} className="flex items-center">
+                <Banknote className="mr-1 h-4 w-4" />
+                Pay Salary
+              </Link>
+            </Button>
+          )}
+
+          <Button size="sm" onClick={() => handleEdit(id)}>
             <PenBoxIcon className="mr-2 h-4 w-4" />
             Edit Profile
           </Button>
 
-          {/* Delete */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">
+              <Button size="sm" variant="destructive">
                 <Trash className="mr-2 h-4 w-4" />
                 Delete
               </Button>

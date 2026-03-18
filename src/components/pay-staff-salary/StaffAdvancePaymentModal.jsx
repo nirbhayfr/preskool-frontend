@@ -1,4 +1,4 @@
-// components/salary/AdvancePaymentModal.jsx
+// components/staff-salary/StaffAdvancePaymentModal.jsx
 
 import { useState } from 'react'
 import { useCreatePayment } from '@/hooks/usePayment'
@@ -37,7 +37,7 @@ const generateReferenceNo = () => {
 
 const getToday = () => new Date().toISOString().slice(0, 10)
 
-function AdvancePaymentModal({ teacherId, teacher }) {
+function StaffAdvancePaymentModal({ staffId, staff }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
     totalAmount: '',
@@ -60,27 +60,25 @@ function AdvancePaymentModal({ teacherId, teacher }) {
       remarks: '',
     })
 
+  // Map staff object to the shape AdvanceSlipPDF expects (same as teacher)
+  const staffAsTeacher = {
+    FullName: staff?.FullName,
+    TeacherID: staff?.StaffID,
+    Subject: staff?.Role,
+    Salary: staff?.Salary,
+    ProfilePhoto: staff?.ProfilePhoto || staff?.ProfilePictureUrl,
+  }
+
   const handleSubmit = () => {
     if (!form.totalAmount || !form.paymentMethod) {
       toast.error('Please fill in all required fields')
       return
     }
 
-    console.log({
-      personType: 'teacher',
-      personId: teacherId,
-      paymentCategory: 'Advance',
-      totalAmount: Number(form.totalAmount),
-      paymentMethod: form.paymentMethod,
-      paymentDate: new Date(form.paymentDate).toISOString(),
-      referenceNo: form.referenceNo,
-      remarks: form.remarks || null,
-    })
-
     createPayment(
       {
-        personType: 'teacher',
-        personId: teacherId,
+        personType: 'staff',
+        personId: staffId,
         paymentCategory: 'Advance',
         totalAmount: Number(form.totalAmount),
         paymentMethod: form.paymentMethod,
@@ -104,7 +102,7 @@ function AdvancePaymentModal({ teacherId, teacher }) {
               PaymentCategory: 'Advance',
             }
             const blob = await pdf(
-              <AdvanceSlipPDF teacher={teacher} payment={payment} />
+              <AdvanceSlipPDF teacher={staffAsTeacher} payment={payment} />
             ).toBlob()
             const url = URL.createObjectURL(blob)
             window.open(url)
@@ -114,6 +112,7 @@ function AdvancePaymentModal({ teacherId, teacher }) {
 
           resetForm()
         },
+        onError: () => toast.error('Failed to record payment'),
       }
     )
   }
@@ -139,11 +138,10 @@ function AdvancePaymentModal({ teacherId, teacher }) {
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Fixed fields */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Person Type</Label>
-              <Input value="Teacher" disabled />
+              <Input value="Staff" disabled />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Payment Category</Label>
@@ -164,7 +162,6 @@ function AdvancePaymentModal({ teacherId, teacher }) {
 
           <Separator />
 
-          {/* Editable fields */}
           <div className="space-y-1.5">
             <Label>
               Amount (₹) <span className="text-destructive">*</span>
@@ -191,9 +188,9 @@ function AdvancePaymentModal({ teacherId, teacher }) {
                 <SelectValue placeholder="Select method" />
               </SelectTrigger>
               <SelectContent>
-                {PAYMENT_METHODS.map((method) => (
-                  <SelectItem key={method} value={method}>
-                    {method}
+                {PAYMENT_METHODS.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -226,4 +223,4 @@ function AdvancePaymentModal({ teacherId, teacher }) {
   )
 }
 
-export default AdvancePaymentModal
+export default StaffAdvancePaymentModal

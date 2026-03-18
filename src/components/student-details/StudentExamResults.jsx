@@ -4,10 +4,12 @@ import { useParams } from 'react-router-dom'
 import { useExamResultsByStudent } from '@/hooks/useExamResults'
 import { Skeleton } from '../ui/skeleton'
 import ExamTypeTable from './ExamTypeTable'
+import { useStudent } from '@/hooks/useStudents'
 
 function ExamsResultsCard() {
   const { id } = useParams()
   const { data: result, isLoading, isError } = useExamResultsByStudent(id)
+  const { data: student, isLoading: isStudentLoading } = useStudent(id)
 
   /* ------------------ Group By Exam Type ------------------ */
   const groupedResults = useMemo(() => {
@@ -21,7 +23,7 @@ function ExamsResultsCard() {
     }, {})
   }, [result])
 
-  if (isLoading) return <ExamsResultsSkeleton />
+  if (isLoading || isStudentLoading) return <ExamsResultsSkeleton />
   if (isError) return <p>Failed to load student results</p>
   if (!result?.data?.length)
     return <p className="text-muted-foreground">No results available.</p>
@@ -29,7 +31,12 @@ function ExamsResultsCard() {
   return (
     <div className="space-y-6">
       {Object.entries(groupedResults).map(([examType, examData]) => (
-        <ExamTypeTable key={examType} examType={examType} examData={examData} />
+        <ExamTypeTable
+          key={examType}
+          examType={examType}
+          examData={examData}
+          student={student}
+        />
       ))}
     </div>
   )
