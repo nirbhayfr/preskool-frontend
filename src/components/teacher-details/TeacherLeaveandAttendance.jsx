@@ -1,12 +1,16 @@
 import * as React from 'react'
 import { useParams } from 'react-router-dom'
-import { DayPicker } from 'react-day-picker'
-import 'react-day-picker/style.css'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CheckCheck, X, Calendar as CalendarIcon, Clock } from 'lucide-react'
+import {
+  CheckCheck,
+  X,
+  Calendar as CalendarIcon,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 import { useTeacherAttendanceMatrixById } from '@/hooks/useTeacherAttendance'
 
 function toLocalDateKey(date) {
@@ -14,6 +18,43 @@ function toLocalDateKey(date) {
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
+}
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+const WEEK_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
+/** Returns array of Date | null for every cell in the 7-col grid */
+function buildCalendarDays(year, month) {
+  const firstDay = new Date(year, month - 1, 1).getDay() // 0 = Sun
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const cells = []
+  for (let i = 0; i < firstDay; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month - 1, d))
+  while (cells.length % 7 !== 0) cells.push(null)
+  return cells
+}
+
+// Inline color map keyed by status — avoids Tailwind JIT purging dynamic class strings
+const STATUS_COLORS = {
+  P: { bg: '#22c55e', text: '#ffffff' }, // green-500  — Present
+  A: { bg: '#ef4444', text: '#ffffff' }, // red-500    — Absent
+  L: { bg: '#eab308', text: '#ffffff' }, // yellow-500 — Late
+  H: { bg: '#f97316', text: '#ffffff' }, // orange-500 — Half Day
+  null: { bg: '#3b82f6', text: '#ffffff' }, // blue-500 — Holiday
 }
 
 function TeacherAttendanceCalendar() {
@@ -41,120 +82,148 @@ function TeacherAttendanceCalendar() {
   if (isLoading) return <TeacherAttendanceSkeleton />
   if (isError) return <p>Failed to load attendance</p>
 
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const [year, month] = selectedMonth.split('-').map(Number)
+  const calendarDays = buildCalendarDays(year, month)
+
+  const goPrev = () => {
+    const d = new Date(year, month - 2, 1)
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+  const goNext = () => {
+    const d = new Date(year, month, 1)
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+
   return (
-    <div className="space-y-6">
-      <Card className="rounded-xl border-muted/60">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-lg font-semibold tracking-tight">
+    <div className="w-full space-y-4">
+      <Card className="rounded-xl border-muted/60 w-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base sm:text-lg font-semibold tracking-tight">
             Teacher Attendance
           </CardTitle>
-
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Month</span>
-            <Input
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-[160px]"
-            />
-          </div>
         </CardHeader>
 
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-4 px-3 sm:px-6">
           {/* Legend */}
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-2">
             <LegendItem
               label="Present"
-              icon={<CheckCheck className="h-4 w-4" />}
-              bg="bg-emerald-600"
+              icon={<CheckCheck className="h-3 w-3" />}
+              bg="bg-emerald-500"
             />
-            <LegendItem label="Absent" icon={<X className="h-4 w-4" />} bg="bg-red-600" />
+            <LegendItem label="Absent" icon={<X className="h-3 w-3" />} bg="bg-red-500" />
             <LegendItem
               label="Late"
-              icon={<Clock className="h-4 w-4" />}
+              icon={<Clock className="h-3 w-3" />}
               bg="bg-yellow-500"
             />
             <LegendItem
               label="Half Day"
-              icon={<Clock className="h-4 w-4" />}
-              bg="bg-orange-600"
+              icon={<Clock className="h-3 w-3" />}
+              bg="bg-orange-500"
             />
             <LegendItem
               label="Holiday"
-              icon={<CalendarIcon className="h-4 w-4" />}
-              bg="bg-blue-600"
+              icon={<CalendarIcon className="h-3 w-3" />}
+              bg="bg-blue-500"
             />
           </div>
 
           {/* Calendar */}
-          <div className="flex justify-center sm:justify-start pt-2">
-            <DayPicker
-              style={{
-                '--rdp-day-width': '44px',
-                '--rdp-day-height': '44px',
-                '--rdp-day_button-width': '28px',
-                '--rdp-day_button-height': '28px',
-                '--rdp-day_button-border-radius': '9999px',
-              }}
-              month={new Date(`${selectedMonth}-01`)}
-              onMonthChange={(date) =>
-                setSelectedMonth(
-                  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-                )
-              }
-              hideNavigation
-              classNames={{
-                table: 'border-separate border-spacing-x-6 border-spacing-y-6',
-                cell: 'p-1 text-center',
-                day_button: 'mx-auto',
-              }}
-              modifiers={{
-                present: (date) => attendanceMap[toLocalDateKey(date)] === 'P',
-                absent: (date) => attendanceMap[toLocalDateKey(date)] === 'A',
-                late: (date) => attendanceMap[toLocalDateKey(date)] === 'L',
-                halfDay: (date) => attendanceMap[toLocalDateKey(date)] === 'H',
-                holiday: (date) => attendanceMap[toLocalDateKey(date)] === null,
-              }}
-              modifiersClassNames={{
-                present: 'bg-emerald-200 text-gray-900 w-8 h-8 rounded-full',
-                absent: 'bg-red-200 text-gray-900 w-8 h-8 rounded-full',
-                late: 'bg-yellow-200 text-gray-900 w-8 h-8 rounded-full',
-                halfDay: 'bg-orange-200 text-gray-900 w-8 h-8 rounded-full',
-                holiday: 'bg-blue-200 text-gray-900 w-8 h-8 rounded-full',
-              }}
-              components={{
-                DayButton: ({ day }) => {
-                  const key = day.date.toISOString().slice(0, 10)
-                  const status = attendanceMap[key]
+          <div className="w-full rounded-xl border border-muted/50 overflow-hidden bg-card">
+            {/* Month nav */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-muted/40">
+              <button
+                onClick={goPrev}
+                className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm font-semibold">
+                {MONTH_NAMES[month - 1]} {year}
+              </span>
+              <button
+                onClick={goNext}
+                className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
 
-                  return (
-                    <button disabled className="w-8 h-8 flex items-center justify-center">
-                      <span
-                        className={`
-                text-xs font-medium rounded-full
-                ${
-                  status === 'P'
-                    ? 'bg-emerald-200 text-gray-900'
-                    : status === 'A'
-                      ? 'bg-red-200 text-gray-900'
-                      : status === 'L'
-                        ? 'bg-yellow-200 text-gray-900'
-                        : status === 'H'
-                          ? 'bg-orange-200 text-gray-900'
-                          : status === null
-                            ? 'bg-blue-200 text-gray-900'
-                            : ''
+            {/* Weekday headers */}
+            <div className="grid grid-cols-7 bg-muted/10 border-b border-muted/30">
+              {WEEK_DAYS.map((d) => (
+                <div
+                  key={d}
+                  className="py-2 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wide"
+                >
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Day grid — fluid circles via w-full + aspect-square */}
+            <div className="grid grid-cols-7 gap-y-1 p-2">
+              {calendarDays.map((date, idx) => {
+                if (!date) return <div key={`e-${idx}`} className="aspect-square" />
+
+                const key = toLocalDateKey(date)
+                const status = attendanceMap[key] // 'P' | 'A' | 'L' | 'H' | null | undefined
+                const isFuture = key > todayKey
+                const isToday = key === todayKey
+
+                // Resolve colors — use inline styles to guarantee they apply
+                let bgColor = 'transparent'
+                let textColor = 'inherit'
+                let fontWeight = '400'
+                let boxShadow = 'none'
+                let opacity = isFuture ? '0.35' : '1'
+
+                if (status === 'P') {
+                  bgColor = STATUS_COLORS.P.bg
+                  textColor = STATUS_COLORS.P.text
+                  fontWeight = '600'
+                } else if (status === 'A') {
+                  bgColor = STATUS_COLORS.A.bg
+                  textColor = STATUS_COLORS.A.text
+                  fontWeight = '600'
+                } else if (status === 'L') {
+                  bgColor = STATUS_COLORS.L.bg
+                  textColor = STATUS_COLORS.L.text
+                  fontWeight = '600'
+                } else if (status === 'H') {
+                  bgColor = STATUS_COLORS.H.bg
+                  textColor = STATUS_COLORS.H.text
+                  fontWeight = '600'
+                } else if (status === null && !isFuture) {
+                  bgColor = STATUS_COLORS.null.bg
+                  textColor = STATUS_COLORS.null.text
+                  fontWeight = '600'
+                } else if (isToday) {
+                  boxShadow = '0 0 0 2px #6366f1'
+                  fontWeight = '700'
+                  textColor = '#6366f1'
                 }
-                w-8 h-8 flex items-center justify-center
-              `}
-                      >
-                        {day.date.getDate()}
-                      </span>
-                    </button>
-                  )
-                },
-              }}
-            />
+
+                return (
+                  <div key={key} className="flex items-center justify-center p-0.5">
+                    <div
+                      className="w-full max-w-[38px] aspect-square flex items-center justify-center rounded-full text-[11px] sm:text-xs select-none"
+                      style={{
+                        backgroundColor: bgColor,
+                        color: textColor,
+                        fontWeight,
+                        boxShadow,
+                        opacity,
+                      }}
+                    >
+                      {date.getDate()}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -168,9 +237,9 @@ export default TeacherAttendanceCalendar
 
 function LegendItem({ icon, label, bg }) {
   return (
-    <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-muted/60 text-sm font-medium">
+    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 text-xs font-medium">
       <span
-        className={`flex h-6 w-6 items-center justify-center rounded-md text-white ${bg}`}
+        className={`flex h-5 w-5 items-center justify-center rounded-md text-white flex-shrink-0 ${bg}`}
       >
         {icon}
       </span>
@@ -187,15 +256,19 @@ function TeacherAttendanceSkeleton() {
         <Skeleton className="h-9 w-40" />
       </CardHeader>
 
-      <CardContent className="space-y-8">
-        <div className="flex gap-4 flex-wrap">
+      <CardContent className="space-y-4 px-3">
+        <div className="flex gap-2 flex-wrap">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-28 rounded-lg" />
+            <Skeleton key={i} className="h-8 w-24 rounded-lg" />
           ))}
         </div>
-
-        <div className="flex justify-center">
-          <Skeleton className="h-[360px] w-[320px] rounded-xl" />
+        <div className="rounded-xl border border-muted/50 overflow-hidden">
+          <div className="h-11 bg-muted/30 border-b border-muted/30" />
+          <div className="grid grid-cols-7 gap-1 p-2">
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div key={i} className="aspect-square rounded-full bg-muted/40" />
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>
