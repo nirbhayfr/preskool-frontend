@@ -8,7 +8,8 @@ import {
   getTeacherTimeTableByTeacherId,
 } from '@/api/teacherTimeTable'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import api from '@/api/api' // 👈 ADD THIS
+import { useMemo } from 'react'
+import api from '@/api/api'
 
 export const useTeacherTimeTables = () =>
   useQuery({
@@ -25,7 +26,6 @@ export const useTeacherTimeTable = (id) =>
 
 export const useCreateTeacherTimeTable = () => {
   const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: createTeacherTimeTable,
     onSuccess: () => {
@@ -36,7 +36,6 @@ export const useCreateTeacherTimeTable = () => {
 
 export const useUpdateTeacherTimeTable = () => {
   const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: updateTeacherTimeTable,
     onSuccess: () => {
@@ -47,7 +46,6 @@ export const useUpdateTeacherTimeTable = () => {
 
 export const useDeleteTeacherTimeTable = () => {
   const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: deleteTeacherTimeTable,
     onSuccess: () => {
@@ -56,23 +54,32 @@ export const useDeleteTeacherTimeTable = () => {
   })
 }
 
-export const useTeacherTimeTableByTeacher = (teacherId, selectedDay) => {
+// ✅ Fetches ALL days ONCE and caches — never refetches on day change
+const useTeacherTimeTableAll = (teacherId) => {
   return useQuery({
-    queryKey: ['teacherTimeTable', teacherId, selectedDay],
+    queryKey: ['teacherTimeTable', teacherId, 'all'],
     queryFn: async () => {
       if (!teacherId) return []
-
       const res = await api.get(`/teacher-timetable/teacher/${teacherId}`)
-      const data = res?.data?.data || []
-
-      return data.filter(
-        (item) =>
-          item.DayOfWeek?.trim().toLowerCase() === selectedDay.trim().toLowerCase()
-      )
+      return res?.data?.data || []
     },
     enabled: !!teacherId,
     retry: false,
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 5, // ✅ ADD THIS
+    staleTime: 1000 * 60 * 5,
   })
+}
+
+// ✅ Filters client-side — zero network cost when switching day tabs
+export const useTeacherTimeTableByTeacher = (teacherId, selectedDay) => {
+  const { data: allData = [], isLoading, isError } = useTeacherTimeTableAll(teacherId)
+
+  const data = useMemo(() => {
+    if (!selectedDay || !Array.isArray(allData)) return []
+    return allData.filter(
+      (item) => item.DayOfWeek?.trim().toLowerCase() === selectedDay.trim().toLowerCase()
+    )
+  }, [allData, selectedDay])
+
+  return { data, isLoading, isError }
 }
