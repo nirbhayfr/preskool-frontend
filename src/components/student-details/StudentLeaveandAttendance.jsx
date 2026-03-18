@@ -34,9 +34,8 @@ const MONTH_NAMES = [
 
 const WEEK_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
-/** Returns array of Date | null for every cell in the 7-col grid */
 function buildCalendarDays(year, month) {
-  const firstDay = new Date(year, month - 1, 1).getDay() // 0 = Sun
+  const firstDay = new Date(year, month - 1, 1).getDay()
   const daysInMonth = new Date(year, month, 0).getDate()
   const cells = []
   for (let i = 0; i < firstDay; i++) cells.push(null)
@@ -141,7 +140,6 @@ function StudentAttendance() {
               ))}
             </div>
 
-            {/* Day grid — fluid circles that scale with column width */}
             <div className="grid grid-cols-7 gap-y-1 p-2">
               {calendarDays.map((date, idx) => {
                 if (!date) return <div key={`e-${idx}`} className="aspect-square" />
@@ -151,7 +149,6 @@ function StudentAttendance() {
                 const isFuture = key > todayKey
                 const isToday = key === todayKey
 
-                // Use inline styles to avoid Tailwind JIT purging dynamic class strings
                 let bgColor = 'transparent'
                 let textColor = 'inherit'
                 let fontWeight = '400'
@@ -159,15 +156,15 @@ function StudentAttendance() {
                 let opacity = isFuture ? '0.35' : '1'
 
                 if (status === 'P') {
-                  bgColor = '#22c55e' // green-500
+                  bgColor = '#22c55e'
                   textColor = '#ffffff'
                   fontWeight = '600'
                 } else if (status === 'A') {
-                  bgColor = '#ef4444' // red-500
+                  bgColor = '#ef4444'
                   textColor = '#ffffff'
                   fontWeight = '600'
                 } else if (status === null && !isFuture) {
-                  bgColor = '#3b82f6' // blue-500
+                  bgColor = '#3b82f6'
                   textColor = '#ffffff'
                   fontWeight = '600'
                 } else if (isToday) {
