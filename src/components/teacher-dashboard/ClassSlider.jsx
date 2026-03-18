@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from 'react'
+import { memo, useRef, useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -11,12 +11,14 @@ export function ClassSlider({ teacherId }) {
   const todayDay = new Date().toLocaleString('en-US', { weekday: 'long' })
   const [selectedDay, setSelectedDay] = useState(todayDay)
 
-  const { data, isLoading } = useTeacherTimeTableByTeacher(teacherId)
-  const classes = Array.isArray(data) ? data : data?.data || []
+  const { data = [], isLoading } = useTeacherTimeTableByTeacher(teacherId)
+  const classes = data
 
-  const filteredClasses = classes.filter((item) => {
-    return item.DayOfWeek?.trim().toLowerCase() === selectedDay.trim().toLowerCase()
-  })
+  const filteredClasses = useMemo(() => {
+    return classes.filter((item) => {
+      return item.DayOfWeek?.trim().toLowerCase() === selectedDay.trim().toLowerCase()
+    })
+  }, [classes, selectedDay])
   const scroll = (dir) => {
     const node = sliderRef.current
     if (!node) return
@@ -46,7 +48,6 @@ export function ClassSlider({ teacherId }) {
   ]
 
   if (isLoading) return <p className="text-sm">Loading...</p>
-
   return (
     <Card className="rounded-sm p-4 space-y-3 overflow-hidden">
       {/* Header */}
