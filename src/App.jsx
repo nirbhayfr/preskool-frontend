@@ -50,8 +50,6 @@ import StaffSalaryPage from './pages/StaffSalaryPage'
 
 import ExamResultPage from './pages/ExamResultPage'
 import ClassTimeTable from './pages/ClassTimeTable'
-import PayTeacherSalary from './pages/PayTeacherSalary'
-import PayStaffSalary from './pages/PayStaffSalary'
 
 import BookList from './pages/BookList'
 import InventoryPage from './pages/InventoryPage'
@@ -60,12 +58,12 @@ import RevenuePage from './pages/RevenuePage'
 import BudgetPage from './pages/BudgetPage'
 import AdmissionForm from './pages/AdmissionForm'
 import PayFeesPage from './pages/PayFeesPage'
-// App.jsx or routes.jsx
+
 import JitsiMeetingRoom from './pages/JitsiMeetingRoom'
 import StudentMeetingPage from './components/student-dashboard/JoinMeeting'
 
-
 import PaySalaryPage from './pages/PaySalaryPage'
+import PayStaffSalaryPage from './pages/PayStaffSalaryPage'
 
 function App() {
   return (
@@ -150,8 +148,7 @@ function App() {
 
               <Route path="/teacher-salary" element={<TeacherSalaryPage />} />
               <Route path="/staff-salary" element={<StaffSalaryPage />} />
-              <Route path="/pay-teacher-salary" element={<PayTeacherSalary />} />
-              <Route path="/pay-staff-salary" element={<PayStaffSalary />} />
+              <Route path="/pay-staff-salary/:id" element={<PayStaffSalaryPage />} />
 
               <Route path="/book-list" element={<BookList />} />
               <Route path="/book-issues" element={<BookIssues />} />
@@ -159,7 +156,6 @@ function App() {
               <Route path="/admission-form" element={<AdmissionForm />} />
               <Route path="/meeting" element={<JitsiMeetingRoom />} />
               <Route path="/student/meeting" element={<StudentMeetingPage />} />
-            
             </Route>
           </Route>
         </Routes>

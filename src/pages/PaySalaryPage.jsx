@@ -30,7 +30,7 @@ function PaySalaryPage() {
             Manage and collect teacher salary
           </p>
         </div>
-        <AdvancePaymentModal teacherId={teacher.TeacherID} />
+        <AdvancePaymentModal teacherId={teacher.TeacherID} teacher={teacher} />
       </div>
 
       <TeacherDetailCard teacher={teacher} />
@@ -38,7 +38,7 @@ function PaySalaryPage() {
       <SalaryCalculationCard teacherId={teacher.TeacherID} baseSalary={teacher.Salary} />
       <AdvancePaymentList teacherId={teacher.TeacherID} teacher={teacher} />
       <PreviousSalaryRecords teacherId={teacher.TeacherID} teacher={teacher} />
-      <PaySalarySection teacherId={teacher.TeacherID} />
+      <PaySalarySection teacherId={teacher.TeacherID} teacher={teacher} />
       <SalaryMonthGrid teacherId={teacher.TeacherID} />
     </section>
   )

@@ -279,7 +279,7 @@ function formatMonth(salaryMonth) {
 }
 
 // ─── SLIP BLOCK ─────────────────────────────────────────────────────────────
-const SalarySlipBlock = ({ teacher, salary, copyLabel }) => {
+const SalarySlipBlock = ({ teacher = null, salary, copyLabel, staff = null }) => {
   const basicSalary = Number(salary?.BasicSalary ?? 0)
   const allowances = Number(salary?.Allowances ?? 0)
   const deductions = Number(salary?.Deductions ?? 0)
@@ -323,39 +323,45 @@ const SalarySlipBlock = ({ teacher, salary, copyLabel }) => {
         <View style={styles.tableDataRow}>
           <View style={styles.cell50}>
             <Text style={styles.tdText}>
-              Employee ID : TCH-{teacher?.TeacherID || ''}
-            </Text>
-          </View>
-          <View style={styles.cell50Last}>
-            <Text style={styles.tdText}>Name : {teacher?.FullName || ''}</Text>
-          </View>
-        </View>
-        <View style={styles.tableDataRow}>
-          <View style={styles.cell50}>
-            <Text style={styles.tdText}>Subject : {teacher?.Subject || ''}</Text>
-          </View>
-          <View style={styles.cell50Last}>
-            <Text style={styles.tdText}>
-              Class : {teacher?.Class || ''}
-              {teacher?.Section ? ` - ${teacher.Section}` : ''}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.tableDataRow}>
-          <View style={styles.cell50}>
-            <Text style={styles.tdText}>
-              Qualification : {teacher?.Qualification || ''}
+              Employee ID : {teacher?.TeacherID || staff?.StaffID || ''}
             </Text>
           </View>
           <View style={styles.cell50Last}>
             <Text style={styles.tdText}>
-              Date of Joining :{' '}
-              {teacher?.DateOfJoining
-                ? new Date(teacher.DateOfJoining).toLocaleDateString('en-GB')
-                : ''}
+              Name : {teacher?.FullName || staff?.FullName || ''}
             </Text>
           </View>
         </View>
+        {/* {teacher?.TeacherID && (
+          <>
+            <View style={styles.tableDataRow}>
+              <View style={styles.cell50}>
+                <Text style={styles.tdText}>Subject : {teacher?.Subject || ''}</Text>
+              </View>
+              <View style={styles.cell50Last}>
+                <Text style={styles.tdText}>
+                  Class : {teacher?.Class || ''}
+                  {teacher?.Section ? ` - ${teacher.Section}` : ''}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.tableDataRow}>
+              <View style={styles.cell50}>
+                <Text style={styles.tdText}>
+                  Qualification : {teacher?.Qualification || ''}
+                </Text>
+              </View>
+              <View style={styles.cell50Last}>
+                <Text style={styles.tdText}>
+                  Date of Joining :{' '}
+                  {teacher?.DateOfJoining
+                    ? new Date(teacher.DateOfJoining).toLocaleDateString('en-GB')
+                    : ''}
+                </Text>
+              </View>
+            </View>{' '}
+          </>
+        )} */}
       </View>
 
       {/* Salary Breakdown */}

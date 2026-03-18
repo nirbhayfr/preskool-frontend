@@ -153,22 +153,22 @@ const data = {
       url: '/teacher-salary',
       icon: HandCoins,
     },
-    {
-      title: 'Pay Teacher Salary',
-      url: '/pay-teacher-salary',
-      icon: Banknote,
-    },
+    // {
+    //   title: 'Pay Teacher Salary',
+    //   url: '/pay-teacher-salary',
+    //   icon: Banknote,
+    // },
     {
       title: 'Staff Salary',
       url: '/staff-salary',
       icon: HandCoins,
     },
 
-    {
-      title: 'Pay Staff Salary',
-      url: '/pay-staff-salary',
-      icon: Banknote,
-    },
+    // {
+    //   title: 'Pay Staff Salary',
+    //   url: '/pay-staff-salary',
+    //   icon: Banknote,
+    // },
   ],
   additional: [
     {
@@ -207,13 +207,12 @@ const data = {
       url: '/admission-form',
       icon: Form,
     },
-     {
+    {
       title: 'Create/Join Meeting',
       url: '/meeting',
       icon: Form,
     },
   ],
-  
 }
 
 function getSidebarDataByRole(role) {
@@ -236,24 +235,24 @@ function getSidebarDataByRole(role) {
   }
 
   if (role === 'Student') {
-  return {
-    ...data,
-    people: [],
-    attendance: [],
-    attendanceMark: [],
-    fees: [],
-    salary: [],
-    additional: [],
-    library: [],
-    documents: [
-      {
-        title: 'Join Meeting',
-        url: '/student/meeting',  // ← matches the route in App.jsx
-        icon: Form,
-      },
-    ],
+    return {
+      ...data,
+      people: [],
+      attendance: [],
+      attendanceMark: [],
+      fees: [],
+      salary: [],
+      additional: [],
+      library: [],
+      documents: [
+        {
+          title: 'Join Meeting',
+          url: '/student/meeting',
+          icon: Form,
+        },
+      ],
+    }
   }
-}
 
   if (role === 'Librarian') {
     return {

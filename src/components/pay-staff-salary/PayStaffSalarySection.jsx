@@ -1,5 +1,3 @@
-// components/salary/PaySalarySection.jsx
-
 import { useCallback, useMemo, useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,19 +5,21 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+
 import {
-  useTeacherSalaryByTeacherId,
-  useUpdateTeacherSalary,
-} from '@/hooks/useTeacherSalary'
-import {
-  useBulkMarkTeacherSalaryPaid,
-  useDeleteTeacherSalary,
-} from '@/hooks/useTeacherSalary'
+  useStaffSalaryByStaffId,
+  useUpdateStaffSalary,
+  useBulkMarkStaffSalaryPaid,
+  useDeleteStaffSalary,
+} from '@/hooks/useStaffSalary'
+
 import { usePaymentsByPerson, useUpdatePayment } from '@/hooks/usePayment'
+
 import { Spinner } from '@/components/ui/spinner'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { IndianRupee } from 'lucide-react'
+
 import { pdf } from '@react-pdf/renderer'
 import SalarySlipPDF from '../pdfs/SalarySlip'
 
@@ -60,26 +60,32 @@ function StatusBadge({ status }) {
   )
 }
 
-function PaySalarySection({ teacherId, teacher }) {
+function PayStaffSalarySection({ staffId, staff }) {
   const [selectedAdvanceIds, setSelectedAdvanceIds] = useState([])
 
-  const { data, isLoading, isError } = useTeacherSalaryByTeacherId(teacherId)
-  const { mutate: bulkPay, isPending: isPaying } = useBulkMarkTeacherSalaryPaid()
-  const { mutate: deleteSalary, isPending: isDeleting } = useDeleteTeacherSalary()
+  const { data, isLoading, isError } = useStaffSalaryByStaffId(staffId)
+
+  const { mutate: bulkPay, isPending: isPaying } = useBulkMarkStaffSalaryPaid()
+
+  const { mutate: deleteSalary, isPending: isDeleting } = useDeleteStaffSalary()
+
   const { mutate: updatePayment } = useUpdatePayment()
 
   const { data: paymentsData } = usePaymentsByPerson({
-    personType: 'teacher',
-    personId: teacherId,
+    personType: 'staff',
+    personId: staffId,
   })
 
   const records = data?.data ?? []
+
   const pendingRecords = records.filter((r) => !r.IsPaid)
+
   const hasPendingSalary = pendingRecords.length > 0
 
   const advances = (paymentsData?.data ?? paymentsData ?? []).filter(
     (p) => p.PaymentCategory === 'Advance'
   )
+
   const pendingAdvances = advances.filter((p) => p.PaymentStatus === 'Pending')
 
   const toggleAdvance = (id) => {
@@ -94,10 +100,10 @@ function PaySalarySection({ teacherId, teacher }) {
       .reduce((sum, p) => sum + Number(p.TotalAmount ?? 0), 0)
   }, [pendingAdvances, selectedAdvanceIds])
 
-  const { mutate: updateSalary } = useUpdateTeacherSalary()
+  const { mutate: updateSalary } = useUpdateStaffSalary()
 
   const handlePay = useCallback(
-    (salary, teacher) => {
+    (salary, staff) => {
       const updatedDeductions = Number(salary.Deductions ?? 0) + selectedAdvanceTotal
 
       updateSalary(
@@ -112,12 +118,11 @@ function PaySalarySection({ teacherId, teacher }) {
           },
         },
         {
-          onSuccess: (updatedData) => {
-            bulkPay([salary.TeacherID], {
+          onSuccess: () => {
+            bulkPay([salary.StaffID], {
               onSuccess: async () => {
                 toast.success('Salary marked as paid')
 
-                // Auto-print salary slip
                 try {
                   const updatedSalary = {
                     ...salary,
@@ -129,33 +134,43 @@ function PaySalarySection({ teacherId, teacher }) {
                     IsPaid: true,
                     PaymentDate: new Date().toISOString().slice(0, 10),
                   }
+
                   const blob = await pdf(
-                    <SalarySlipPDF teacher={teacher} salary={updatedSalary} />
+                    <SalarySlipPDF staff={staff} salary={updatedSalary} teacher={null} />
                   ).toBlob()
+
                   const url = URL.createObjectURL(blob)
+
                   window.open(url)
                 } catch (err) {
                   console.error('Failed to print salary slip', err)
                 }
 
-                // Settle selected advances
                 if (selectedAdvanceIds.length > 0) {
                   selectedAdvanceIds.forEach((id) => {
-                    updatePayment({ id, data: { paymentStatus: 'Settled' } })
+                    updatePayment({
+                      id,
+                      data: { paymentStatus: 'Settled' },
+                    })
                   })
+
                   toast.success(
                     `${selectedAdvanceIds.length} advance(s) marked as settled`
                   )
+
                   setSelectedAdvanceIds([])
                 }
               },
+
               onError: () => toast.error('Failed to mark salary as paid'),
             })
           },
+
           onError: () => toast.error('Failed to update salary'),
         }
       )
     },
+
     [bulkPay, updatePayment, updateSalary, selectedAdvanceIds, selectedAdvanceTotal]
   )
 
@@ -166,15 +181,23 @@ function PaySalarySection({ teacherId, teacher }) {
           toast.success('Salary record deleted')
 
           const remarks = salary.Remarks ?? ''
+
           const match = remarks.match(/settled_advances:([\d,]+)/)
+
           if (match) {
             const ids = match[1].split(',').map(Number)
+
             ids.forEach((id) => {
-              updatePayment({ id, data: { paymentStatus: 'Pending' } })
+              updatePayment({
+                id,
+                data: { paymentStatus: 'Pending' },
+              })
             })
+
             toast.info(`${ids.length} advance(s) reverted to Pending`)
           }
         },
+
         onError: () => toast.error('Failed to delete salary record'),
       })
     },
@@ -182,6 +205,7 @@ function PaySalarySection({ teacherId, teacher }) {
   )
 
   if (isLoading) return <PaySalarySkeleton />
+
   if (isError)
     return <p className="text-sm text-destructive">Failed to load salary records</p>
 
@@ -192,7 +216,6 @@ function PaySalarySection({ teacherId, teacher }) {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Salary records */}
         {pendingRecords.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
             No pending salary records. Create a salary first.
@@ -212,11 +235,13 @@ function PaySalarySection({ teacherId, teacher }) {
                       <p className="text-sm font-semibold">
                         {format(new Date(`${record.SalaryMonth}-01`), 'MMMM yyyy')}
                       </p>
+
                       <p className="text-xs text-muted-foreground">
                         ID: #{record.SalaryID} · Created{' '}
                         {format(new Date(record.CreatedAt), 'dd MMM yyyy')}
                       </p>
                     </div>
+
                     <Badge
                       variant="secondary"
                       className="bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40"
@@ -228,32 +253,49 @@ function PaySalarySection({ teacherId, teacher }) {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <SalaryCell
                       label="Basic Salary"
-                      value={`₹ ${Number(record.BasicSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                      value={`₹ ${Number(record.BasicSalary).toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                      })}`}
                     />
+
                     <SalaryCell
                       label="Allowances"
-                      value={`+ ₹ ${Number(record.Allowances ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                      value={`+ ₹ ${Number(record.Allowances ?? 0).toLocaleString(
+                        'en-IN',
+                        {
+                          minimumFractionDigits: 2,
+                        }
+                      )}`}
                       valueClass="text-emerald-600"
                     />
+
                     <SalaryCell
                       label="Deductions"
-                      value={`− ₹ ${Number(record.Deductions ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                      value={`− ₹ ${Number(record.Deductions ?? 0).toLocaleString(
+                        'en-IN',
+                        {
+                          minimumFractionDigits: 2,
+                        }
+                      )}`}
                       valueClass="text-red-500"
                     />
+
                     <SalaryCell
                       label="Net Salary"
-                      value={`₹ ${Number(record.NetSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                      value={`₹ ${Number(record.NetSalary).toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                      })}`}
                       valueClass="text-primary font-semibold"
                     />
                   </div>
 
-                  {/* Advance selection — only shown if pending salary exists */}
                   {pendingAdvances.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                           Deduct Advances
                         </p>
+
                         {selectedAdvanceTotal > 0 && (
                           <Badge
                             variant="secondary"
@@ -269,6 +311,7 @@ function PaySalarySection({ teacherId, teacher }) {
 
                       {advances.map((payment) => {
                         const isPending = payment.PaymentStatus === 'Pending'
+
                         return (
                           <div
                             key={payment.PaymentID}
@@ -288,15 +331,18 @@ function PaySalarySection({ teacherId, teacher }) {
                                 }
                                 onClick={(e) => e.stopPropagation()}
                               />
+
                               <div className="space-y-0.5">
                                 <p className="text-sm font-medium">
                                   {format(new Date(payment.PaymentDate), 'dd MMM yyyy')}
                                 </p>
+
                                 <p className="text-xs text-muted-foreground">
                                   {payment.ReferenceNo ?? '—'} · {payment.PaymentMethod}
                                 </p>
                               </div>
                             </div>
+
                             <div className="flex items-center gap-3 shrink-0">
                               <div className="flex items-center gap-0.5 text-sm font-semibold text-orange-600">
                                 <IndianRupee className="size-3.5" />
@@ -304,6 +350,7 @@ function PaySalarySection({ teacherId, teacher }) {
                                   minimumFractionDigits: 2,
                                 })}
                               </div>
+
                               <StatusBadge status={payment.PaymentStatus} />
                             </div>
                           </div>
@@ -312,12 +359,12 @@ function PaySalarySection({ teacherId, teacher }) {
                     </div>
                   )}
 
-                  {/* Net after advance */}
                   {selectedAdvanceTotal > 0 && (
                     <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-2.5">
                       <p className="text-sm text-muted-foreground">
                         Net Payable After Advance
                       </p>
+
                       <p className="text-sm font-semibold text-primary">
                         ₹{' '}
                         {netAfterAdvance.toLocaleString('en-IN', {
@@ -337,10 +384,11 @@ function PaySalarySection({ teacherId, teacher }) {
                     <Button
                       size="sm"
                       disabled={isPaying}
-                      onClick={() => handlePay(record, teacher)}
+                      onClick={() => handlePay(record, staff)}
                     >
                       {isPaying ? <Spinner /> : 'Mark as Paid'}
                     </Button>
+
                     <Button
                       size="sm"
                       variant="destructive"
@@ -356,14 +404,15 @@ function PaySalarySection({ teacherId, teacher }) {
           </div>
         )}
 
-        {/* Show all advances read-only if no pending salary */}
         {!hasPendingSalary && advances.length > 0 && (
           <>
             <Separator />
+
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Advance Payments
               </p>
+
               <div className="divide-y divide-border">
                 {advances.map((payment) => (
                   <div
@@ -374,17 +423,21 @@ function PaySalarySection({ teacherId, teacher }) {
                       <p className="text-sm font-medium">
                         {format(new Date(payment.PaymentDate), 'dd MMM yyyy')}
                       </p>
+
                       <p className="text-xs text-muted-foreground truncate">
                         {payment.ReferenceNo ?? '—'} · {payment.PaymentMethod}
                       </p>
                     </div>
+
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="flex items-center gap-0.5 text-sm font-semibold">
                         <IndianRupee className="size-3.5" />
+
                         {Number(payment.TotalAmount).toLocaleString('en-IN', {
                           minimumFractionDigits: 2,
                         })}
                       </div>
+
                       <StatusBadge status={payment.PaymentStatus} />
                     </div>
                   </div>
@@ -398,7 +451,7 @@ function PaySalarySection({ teacherId, teacher }) {
   )
 }
 
-export default PaySalarySection
+export default PayStaffSalarySection
 
 function PaySalarySkeleton() {
   return (
@@ -406,26 +459,33 @@ function PaySalarySkeleton() {
       <CardHeader>
         <Skeleton className="h-5 w-32" />
       </CardHeader>
+
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-1.5">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-3 w-36" />
           </div>
+
           <Skeleton className="h-5 w-16 rounded-full" />
         </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-14 rounded-lg" />
           ))}
         </div>
+
         <Skeleton className="h-px w-full" />
+
         <div className="space-y-2">
           {Array.from({ length: 2 }).map((_, i) => (
             <Skeleton key={i} className="h-12 rounded-lg" />
           ))}
         </div>
+
         <Skeleton className="h-px w-full" />
+
         <div className="flex gap-3">
           <Skeleton className="h-9 w-28" />
           <Skeleton className="h-9 w-20" />
