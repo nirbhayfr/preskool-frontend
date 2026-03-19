@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import SyllabusSlider from './SyllabusSlider'
 import { StudentMarksTable } from './StudentMarksTableTD'
-import { UpcomingEvents } from './UpcomingEventsTD'
+import UpcomingEvents from './UpcomingEventsTD'
 const actions = [
   {
     label: 'Syllabus',

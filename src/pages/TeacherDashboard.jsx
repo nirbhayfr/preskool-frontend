@@ -3,11 +3,12 @@ import { StudentMarksTable } from '@/components/teacher-dashboard/StudentMarksTa
 import SyllabusCard from '@/components/teacher-dashboard/SyllabusCard'
 import SyllabusSlider from '@/components/teacher-dashboard/SyllabusSlider'
 import TeacherProfilecard from '@/components/teacher-dashboard/TeacherProfilecard'
-import { UpcomingEvents } from '@/components/teacher-dashboard/UpcomingEventsTD'
 import TeacherMobileActions from '@/components/teacher-dashboard/TeacherMobileActions'
 import { useTeacher } from '@/hooks/useTeacher'
 import { decryptData } from '@/utils/crypto'
 import { useMemo } from 'react'
+import { CircleLoader } from '@/components/layout/RouteLoader'
+import UpcomingEvents from '@/components/teacher-dashboard/UpcomingEventsTD'
 
 function TeacherDashboard() {
   const user = useMemo(() => {
@@ -21,8 +22,7 @@ function TeacherDashboard() {
 
   const linkedId = user?.LinkedID ?? null
   const { data: teacher, isLoading } = useTeacher(linkedId, !!linkedId)
-
-  // ✅ Memoize so ClassSlider never gets a new reference on re-render
+  if (isLoading) return <CircleLoader />
 
   return (
     <section className="p-6 space-y-6">

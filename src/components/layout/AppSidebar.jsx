@@ -153,22 +153,22 @@ const data = {
       url: '/teacher-salary',
       icon: HandCoins,
     },
-    // {
-    //   title: 'Pay Teacher Salary',
-    //   url: '/pay-teacher-salary',
-    //   icon: Banknote,
-    // },
+    {
+      title: 'Teacher Salary List',
+      url: '/teacher-salary-list',
+      icon: Banknote,
+    },
     {
       title: 'Staff Salary',
       url: '/staff-salary',
       icon: HandCoins,
     },
 
-    // {
-    //   title: 'Pay Staff Salary',
-    //   url: '/pay-staff-salary',
-    //   icon: Banknote,
-    // },
+    {
+      title: 'Staff Salary List',
+      url: '/staff-salary-list',
+      icon: Banknote,
+    },
   ],
   additional: [
     {

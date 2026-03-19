@@ -1,54 +1,29 @@
 import { useMemo } from 'react'
 import TableLayout from '@/components/layout/Table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useClasswiseBudget } from '@/hooks/useBudget'
+import { CircleLoader } from '@/components/layout/RouteLoader'
+import { classes } from '@/data/basicData'
 
 export default function BudgetPage() {
-  /* DUMMY API RESPONSE */
+  const { data, isLoading, isError } = useClasswiseBudget()
 
-  const response = {
-    status: 'success',
-    data: [
-      {
-        ClassID: '1',
-        ClassStrength: 42,
-        TransportStudents: 15,
-        MonthlyTuitionBudget: 42000,
-        AnnualTuitionBudget: 504000,
-        MonthlyTransportBudget: 7500,
-        AnnualTransportBudget: 90000,
-      },
-      {
-        ClassID: '2',
-        ClassStrength: 38,
-        TransportStudents: 12,
-        MonthlyTuitionBudget: 38000,
-        AnnualTuitionBudget: 456000,
-        MonthlyTransportBudget: 6000,
-        AnnualTransportBudget: 72000,
-      },
-      {
-        ClassID: '3',
-        ClassStrength: 45,
-        TransportStudents: 18,
-        MonthlyTuitionBudget: 45000,
-        AnnualTuitionBudget: 540000,
-        MonthlyTransportBudget: 9000,
-        AnnualTransportBudget: 108000,
-      },
-    ],
-  }
-
-  const budgetData = response?.data || []
+  const budgetData = useMemo(() => {
+    const raw = data?.data || []
+    return [...raw].sort(
+      (a, b) => classes.indexOf(a.ClassID) - classes.indexOf(b.ClassID)
+    )
+  }, [data])
 
   /* TOTALS */
 
   const totals = useMemo(() => {
     return budgetData.reduce(
       (acc, curr) => {
-        acc.monthlyTuition += curr.MonthlyTuitionBudget
-        acc.annualTuition += curr.AnnualTuitionBudget
-        acc.monthlyTransport += curr.MonthlyTransportBudget
-        acc.annualTransport += curr.AnnualTransportBudget
+        acc.monthlyTuition += curr.MonthlyTuitionBudget ?? 0
+        acc.annualTuition += curr.AnnualTuitionBudget ?? 0
+        acc.monthlyTransport += curr.MonthlyTransportBudget ?? 0
+        acc.annualTransport += curr.AnnualTransportBudget ?? 0
         return acc
       },
       {
@@ -78,40 +53,55 @@ export default function BudgetPage() {
     {
       accessorKey: 'MonthlyTuitionBudget',
       header: 'Monthly Tuition',
-      cell: ({ row }) => (
-        <span className="text-blue-600 font-medium">
-          ₹ {row.original.MonthlyTuitionBudget.toLocaleString()}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const val = row.original.MonthlyTuitionBudget
+        return val != null ? (
+          <span className="text-blue-600 font-medium">₹ {val.toLocaleString()}</span>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        )
+      },
     },
     {
       accessorKey: 'AnnualTuitionBudget',
       header: 'Annual Tuition',
-      cell: ({ row }) => (
-        <span className="font-semibold">
-          ₹ {row.original.AnnualTuitionBudget.toLocaleString()}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const val = row.original.AnnualTuitionBudget
+        return val != null ? (
+          <span className="font-semibold">₹ {val.toLocaleString()}</span>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        )
+      },
     },
     {
       accessorKey: 'MonthlyTransportBudget',
       header: 'Monthly Transport',
-      cell: ({ row }) => (
-        <span className="text-orange-600 font-medium">
-          ₹ {row.original.MonthlyTransportBudget.toLocaleString()}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const val = row.original.MonthlyTransportBudget
+        return val != null ? (
+          <span className="text-orange-600 font-medium">₹ {val.toLocaleString()}</span>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        )
+      },
     },
     {
       accessorKey: 'AnnualTransportBudget',
       header: 'Annual Transport',
-      cell: ({ row }) => (
-        <span className="font-semibold">
-          ₹ {row.original.AnnualTransportBudget.toLocaleString()}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const val = row.original.AnnualTransportBudget
+        return val != null ? (
+          <span className="font-semibold">₹ {val.toLocaleString()}</span>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        )
+      },
     },
   ]
+
+  if (isLoading) return <CircleLoader />
+  if (isError) return <p className="p-6 text-red-500">Failed to load budget data.</p>
 
   return (
     <div className="p-6 space-y-6">

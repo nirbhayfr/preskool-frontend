@@ -64,6 +64,8 @@ import StudentMeetingPage from './components/student-dashboard/JoinMeeting'
 
 import PaySalaryPage from './pages/PaySalaryPage'
 import PayStaffSalaryPage from './pages/PayStaffSalaryPage'
+import TeacherSalaryList from './pages/TeacherSalaryList'
+import StaffSalaryList from './pages/StaffSalaryList'
 
 function App() {
   return (
@@ -109,6 +111,7 @@ function App() {
 
               <Route path="/pay-fees/:id" element={<PayFeesPage />} />
               <Route path="/pay-salary/:id" element={<PaySalaryPage />} />
+              <Route path="/pay-staff-salary/:id" element={<PayStaffSalaryPage />} />
 
               <Route path="/student-details/:id" element={<StudentDetails />}>
                 <Route index element={<Navigate to="details" replace />} />
@@ -148,7 +151,8 @@ function App() {
 
               <Route path="/teacher-salary" element={<TeacherSalaryPage />} />
               <Route path="/staff-salary" element={<StaffSalaryPage />} />
-              <Route path="/pay-staff-salary/:id" element={<PayStaffSalaryPage />} />
+              <Route path="/teacher-salary-list" element={<TeacherSalaryList />} />
+              <Route path="/staff-salary-list" element={<StaffSalaryList />} />
 
               <Route path="/book-list" element={<BookList />} />
               <Route path="/book-issues" element={<BookIssues />} />

@@ -41,7 +41,10 @@ function Header() {
         <ProfileMenu />
 
         {!isPWA && (
-          <Button onClick={installApp} className="flex items-center justify-center gap-2">
+          <Button
+            onClick={installApp}
+            className="flex items-center justify-center gap-2 md:hidden"
+          >
             <Download className="h-5 w-5 sm:hidden" />
             <span className="hidden sm:flex items-center gap-2">
               <Download className="h-4 w-4" />
