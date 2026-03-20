@@ -203,13 +203,13 @@ const data = {
 
   documents: [
     {
-      title: 'Admission Form',
-      url: '/admission-form',
+      title: 'Create/Join Meeting',
+      url: '/meeting',
       icon: Form,
     },
     {
-      title: 'Create/Join Meeting',
-      url: '/meeting',
+      title: 'Export Student Data',
+      url: '/export-student-data',
       icon: Form,
     },
   ],
@@ -273,6 +273,10 @@ function getSidebarDataByRole(role) {
 export function AppSidebar({ ...props }) {
   const encryptedUser = localStorage.getItem('user')
   const user = encryptedUser ? decryptData(encryptedUser) : null
+
+  if (user?.Role === 'Teacher' || user?.Role === 'Student') {
+    return null
+  }
   const sidebarData = getSidebarDataByRole(user?.Role)
 
   return (
@@ -329,7 +333,7 @@ export function AppSidebar({ ...props }) {
         )}
 
         {sidebarData.documents?.length > 0 && (
-          <NavSecondary items={sidebarData.documents} name="docs" />
+          <NavSecondary items={sidebarData.documents} name="meetings & data" />
         )}
       </SidebarContent>
 
@@ -384,7 +388,7 @@ function NavMain({ items, name }) {
                     </Collapsible>
                   ) : (
                     <SidebarMenuButton asChild>
-                      <a href={item.url}>
+                      <a href={item.url} target="_blank" rel="noopener noreferrer">
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </a>
@@ -425,6 +429,7 @@ function NavSecondary({ items, name }) {
               >
                 <a
                   href={item.url}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2"
                 >

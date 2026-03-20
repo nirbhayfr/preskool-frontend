@@ -20,8 +20,10 @@ function Header() {
   const isPWA = useIsPWA()
   return (
     <header className="p-3 px-2 md:px-6 flex justify-between md:justify-end items-center w-full ">
-      <SidebarTrigger className="mr-auto" />
-      <div className="flex gap-2 items-center">
+      {user?.Role !== 'Teacher' && user?.Role !== 'Student' && (
+        <SidebarTrigger className="mr-auto" />
+      )}
+      <div className="flex gap-2 items-center ml-auto">
         <ClockDisplay />
 
         <Button variant="outline" size="sm" className="gap-2 pointer-events-none">

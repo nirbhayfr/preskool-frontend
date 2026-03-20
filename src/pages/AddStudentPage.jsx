@@ -30,6 +30,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { decryptData } from '@/utils/crypto'
 import { classes, sections } from '@/data/basicData'
+import { pdf } from '@react-pdf/renderer'
+import AdmissionFormPDF from '@/components/pdfs/AdmissionFormPDF'
 
 const STUDENT_FIELDS = [
   { name: 'fullName', required: true },
@@ -288,10 +290,105 @@ export default function StudentFormPage({ defaultValues }) {
         studentId: isEdit ? String(id) : undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           toast.success(
             isEdit ? 'Student updated successfully' : 'Student saved successfully'
           )
+
+          if (!isEdit) {
+            try {
+              const pdfData = {
+                srNo: values.admissionNo || '',
+                classAdmission: values.class,
+                session: '', // not in student form — hardcode or pull from context if available
+
+                fullName: values.fullName,
+                gender: values.gender,
+                dob: values.dob,
+                dobWords: '', // not in student form — leave blank or compute if needed
+                ageYear: '', // not in student form — leave blank or compute if needed
+                ageMonth: '',
+                ageDay: '',
+
+                bloodGroup: '', // not in student form — add field if needed
+                category: values.caste || '', // closest match; rename if you have a dedicated category field
+
+                motherName: '', // not in student form
+                motherNationality: '',
+                motherOffice: '',
+                motherAddress: values.address,
+                motherPermAddr: values.address,
+                motherIncome: '',
+
+                fatherName:
+                  values.guardianRelation?.toLowerCase() === 'father'
+                    ? values.guardianName
+                    : '',
+                fatherNationality: values.nationality || '',
+                fatherOffice: '',
+                fatherAddress: values.guardianAddress || values.address,
+                fatherPermAddr: values.guardianAddress || values.address,
+                fatherIncome: '',
+
+                localGuardian: values.guardianName
+                  ? `${values.guardianName}, ${values.guardianAddress || ''}`
+                  : '',
+                lastSchool: values.previousRecord || '',
+                cbseAffiliated: '',
+                otherBoard: '',
+                lastResult: values.gpa || '',
+                subjects: values.subjects
+                  ? values.subjects.split(',').map((s) => s.trim().toUpperCase())
+                  : [],
+                tcAttached: '',
+                motherTongue: '',
+
+                admissionDate: values.joiningDate || '',
+                section: values.section,
+                feeReceiptNo: '',
+                feeReceiptDate: '',
+                admissionFee: '',
+                tuitionFee: '',
+                otherFee: '',
+                computerFee: '',
+                totalFee: values.pendingFee || '',
+                awrNo: '',
+                awrVol: '',
+
+                transportStatus: values.transportStatus || 'non-transport',
+                village: '', // not in student form — add field if needed
+                guardianContact: values.guardianContact || values.contact,
+                route: values.route || '',
+                driverName: '', // not in student form
+                driverMobile: '',
+
+                photo: values.photo || '',
+              }
+
+              const blob = await pdf(<AdmissionFormPDF student={pdfData} />).toBlob()
+              const url = URL.createObjectURL(blob)
+
+              const win = window.open(url, '_blank')
+              if (win) {
+                win.addEventListener('load', () => {
+                  win.focus()
+                  win.print()
+                  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+                })
+              } else {
+                // Fallback if popup was blocked
+                toast.warning('Allow popups to auto-print the admission form')
+                const a = document.createElement('a')
+                a.href = url
+                a.target = '_blank'
+                a.click()
+              }
+            } catch (err) {
+              console.error('PDF generation failed:', err)
+              toast.error('Could not generate admission form PDF')
+            }
+          }
+
           navigate('/student-list')
         },
       }

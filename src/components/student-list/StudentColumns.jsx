@@ -12,6 +12,7 @@ import { classes, sections } from '@/data/basicData'
 import TransferCertificatePDF from '../pdfs/TransferCertificatePDF'
 import AdmitCardPDF from '../pdfs/AdmitCard'
 import MigrationCertificatePDF from '../pdfs/MIgrationCertificatePDF'
+import AdmissionFormPDF from '../pdfs/AdmissionFormPDF'
 
 const encryptedUser = localStorage.getItem('user')
 const user = encryptedUser ? decryptData(encryptedUser) : null
@@ -170,6 +171,95 @@ const handlePrintMigration = async (student) => {
   const url = URL.createObjectURL(blob)
   window.open(url)
 }
+
+const handlePrintAdmissionForm = async (student) => {
+  const blob = await pdf(
+    <AdmissionFormPDF
+      student={{
+        srNo: student.AdmissionNo || '',
+        classAdmission: String(student.ClassID || ''),
+        session: '',
+
+        fullName: student.FullName || '',
+        gender: student.Gender || '',
+        dob: student.DOB ? student.DOB.split('T')[0] : '',
+        dobWords: '',
+        ageYear: '',
+        ageMonth: '',
+        ageDay: '',
+
+        bloodGroup: '',
+        category: student.Cast || '',
+
+        motherName: student.GuardianRelation === 'Mother' ? student.GuardianName : '',
+        motherNationality: student.Nationality || 'Indian',
+        motherOffice: '',
+        motherAddress: student.Address || '',
+        motherPermAddr: student.Address || '',
+        motherIncome: '',
+
+        fatherName: student.GuardianRelation === 'Father' ? student.GuardianName : '',
+        fatherNationality: student.Nationality || 'Indian',
+        fatherOffice: '',
+        fatherAddress: student.GuardianAddress || student.Address || '',
+        fatherPermAddr: student.GuardianAddress || student.Address || '',
+        fatherIncome: '',
+
+        localGuardian: student.GuardianName
+          ? `${student.GuardianName}, ${student.GuardianAddress || ''}`
+          : '',
+        lastSchool: student.PreviousRecord || '',
+        cbseAffiliated: '',
+        otherBoard: '',
+        lastResult: student.GPA ? String(student.GPA) : '',
+        subjects: student.Subjects
+          ? student.Subjects.split(',').map((s) => s.trim().toUpperCase())
+          : [],
+        tcAttached: '',
+        motherTongue: '',
+
+        admissionDate: student.JoiningDate ? student.JoiningDate.split('T')[0] : '',
+        section: String(student.SectionID || ''),
+        feeReceiptNo: '',
+        feeReceiptDate: '',
+        admissionFee: '',
+        tuitionFee: '',
+        otherFee: '',
+        computerFee: '',
+        totalFee: student.PendingFee ? String(student.PendingFee) : '',
+        awrNo: '',
+        awrVol: '',
+
+        transportStatus: (student.TransportStatus || '').trim() || 'non-transport',
+        village: '',
+        guardianContact: student.GuardianContact
+          ? String(student.GuardianContact)
+          : String(student.ContactNumber || ''),
+        route: student.Route || '',
+        driverName: '',
+        driverMobile: '',
+
+        photo: student.PhotoUrl || '',
+      }}
+    />
+  ).toBlob()
+
+  const url = URL.createObjectURL(blob)
+  const win = window.open(url, '_blank')
+  if (win) {
+    win.addEventListener('load', () => {
+      win.focus()
+      win.print()
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    })
+  } else {
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.click()
+  }
+}
+
 const advancedFilter = (row, columnId, filterValue) => {
   if (!filterValue) return true
 
@@ -223,7 +313,7 @@ export const studentsColumns = (setSelectedStudent) => [
     accessorKey: 'StudentID',
     header: ({ column }) => <SearchHeader column={column} title="Student ID" />,
     filterFn: advancedFilter,
-    meta: { sticky: true, left: 0 },
+    // meta: { sticky: true, left: 0 },
     cell: ({ row }) => (
       <Link
         to={`/student-details/${row.original.StudentID}`}
@@ -237,7 +327,7 @@ export const studentsColumns = (setSelectedStudent) => [
   {
     accessorKey: 'PhotoUrl',
     header: 'Profile',
-    meta: { sticky: true, left: 80 },
+    // meta: { sticky: true, left: 80 },
     cell: ({ row }) => {
       const { PhotoUrl, FullName } = row.original
 
@@ -279,7 +369,7 @@ export const studentsColumns = (setSelectedStudent) => [
     accessorKey: 'FullName',
     header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
     filterFn: advancedFilter,
-    meta: { sticky: true, left: 160 },
+    meta: { sticky: true, left: 0 },
     cell: ({ row }) => <span className="capitalize">{row.original.FullName}</span>,
   },
 
@@ -701,6 +791,15 @@ export const studentsColumns = (setSelectedStudent) => [
               onClick={() => handlePrintMigration(row.original)}
             >
               Migration
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => handlePrintAdmissionForm(row.original)}
+            >
+              Admission Form
             </Button>
           </div>
         )}

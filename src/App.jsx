@@ -56,7 +56,6 @@ import InventoryPage from './pages/InventoryPage'
 import BookIssues from './pages/BookIssues'
 import RevenuePage from './pages/RevenuePage'
 import BudgetPage from './pages/BudgetPage'
-import AdmissionForm from './pages/AdmissionForm'
 import PayFeesPage from './pages/PayFeesPage'
 
 import JitsiMeetingRoom from './pages/JitsiMeetingRoom'
@@ -66,6 +65,8 @@ import PaySalaryPage from './pages/PaySalaryPage'
 import PayStaffSalaryPage from './pages/PayStaffSalaryPage'
 import TeacherSalaryList from './pages/TeacherSalaryList'
 import StaffSalaryList from './pages/StaffSalaryList'
+
+import ExportStudentData from './pages/ExportStudentData'
 
 function App() {
   return (
@@ -157,9 +158,10 @@ function App() {
               <Route path="/book-list" element={<BookList />} />
               <Route path="/book-issues" element={<BookIssues />} />
 
-              <Route path="/admission-form" element={<AdmissionForm />} />
               <Route path="/meeting" element={<JitsiMeetingRoom />} />
               <Route path="/student/meeting" element={<StudentMeetingPage />} />
+
+              <Route path="/export-student-data" element={<ExportStudentData />} />
             </Route>
           </Route>
         </Routes>
