@@ -2,6 +2,7 @@ import { CircleLoader } from '@/components/layout/RouteLoader'
 import TableLayout from '@/components/layout/Table'
 import { staffColumns } from '@/components/staff-list/StaffColumns'
 import StaffHeader from '@/components/staff-list/StaffHeader'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { useStaffs } from '@/hooks/useStaff'
 import { handleExportPDF } from '@/utils/export'
 import { useMemo, useState } from 'react'
@@ -9,6 +10,7 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 function StaffList() {
+  const isMobile = useIsMobile()
   const { data, isLoading, error } = useStaffs()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -114,7 +116,7 @@ function StaffList() {
         onSortChange={setSortOrder}
         onExport={handleExport}
       />
-      <TableLayout columns={staffColumns()} data={displayedStaff} />
+      <TableLayout columns={staffColumns(isMobile)} data={displayedStaff} />
     </section>
   )
 }

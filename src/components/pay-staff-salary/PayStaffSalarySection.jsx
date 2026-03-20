@@ -253,14 +253,14 @@ function PayStaffSalarySection({ staffId, staff }) {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <SalaryCell
                       label="Basic Salary"
-                      value={`₹ ${Number(record.BasicSalary).toLocaleString('en-IN', {
+                      value={`₹ ${Number(record.BasicSalary)?.toLocaleString('en-IN', {
                         minimumFractionDigits: 2,
                       })}`}
                     />
 
                     <SalaryCell
                       label="Allowances"
-                      value={`+ ₹ ${Number(record.Allowances ?? 0).toLocaleString(
+                      value={`+ ₹ ${Number(record.Allowances ?? 0)?.toLocaleString(
                         'en-IN',
                         {
                           minimumFractionDigits: 2,
@@ -271,7 +271,7 @@ function PayStaffSalarySection({ staffId, staff }) {
 
                     <SalaryCell
                       label="Deductions"
-                      value={`− ₹ ${Number(record.Deductions ?? 0).toLocaleString(
+                      value={`− ₹ ${Number(record.Deductions ?? 0)?.toLocaleString(
                         'en-IN',
                         {
                           minimumFractionDigits: 2,
@@ -282,7 +282,7 @@ function PayStaffSalarySection({ staffId, staff }) {
 
                     <SalaryCell
                       label="Net Salary"
-                      value={`₹ ${Number(record.NetSalary).toLocaleString('en-IN', {
+                      value={`₹ ${Number(record.NetSalary)?.toLocaleString('en-IN', {
                         minimumFractionDigits: 2,
                       })}`}
                       valueClass="text-primary font-semibold"
@@ -302,7 +302,7 @@ function PayStaffSalarySection({ staffId, staff }) {
                             className="text-orange-600 bg-orange-50 dark:bg-orange-950/40"
                           >
                             − ₹{' '}
-                            {selectedAdvanceTotal.toLocaleString('en-IN', {
+                            {selectedAdvanceTotal?.toLocaleString('en-IN', {
                               minimumFractionDigits: 2,
                             })}
                           </Badge>
@@ -346,7 +346,7 @@ function PayStaffSalarySection({ staffId, staff }) {
                             <div className="flex items-center gap-3 shrink-0">
                               <div className="flex items-center gap-0.5 text-sm font-semibold text-orange-600">
                                 <IndianRupee className="size-3.5" />
-                                {Number(payment.TotalAmount).toLocaleString('en-IN', {
+                                {Number(payment.TotalAmount)?.toLocaleString('en-IN', {
                                   minimumFractionDigits: 2,
                                 })}
                               </div>
@@ -367,7 +367,7 @@ function PayStaffSalarySection({ staffId, staff }) {
 
                       <p className="text-sm font-semibold text-primary">
                         ₹{' '}
-                        {netAfterAdvance.toLocaleString('en-IN', {
+                        {netAfterAdvance?.toLocaleString('en-IN', {
                           minimumFractionDigits: 2,
                         })}
                       </p>
@@ -433,7 +433,7 @@ function PayStaffSalarySection({ staffId, staff }) {
                       <div className="flex items-center gap-0.5 text-sm font-semibold">
                         <IndianRupee className="size-3.5" />
 
-                        {Number(payment.TotalAmount).toLocaleString('en-IN', {
+                        {Number(payment.TotalAmount)?.toLocaleString('en-IN', {
                           minimumFractionDigits: 2,
                         })}
                       </div>

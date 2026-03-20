@@ -96,21 +96,21 @@ function StaffPreviousSalaryRecords({ staffId, staff }) {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <SalaryCell
                     label="Basic Salary"
-                    value={`₹ ${Number(record.BasicSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                    value={`₹ ${Number(record.BasicSalary)?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                   />
                   <SalaryCell
                     label="Allowances"
-                    value={`+ ₹ ${Number(record.Allowances ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                    value={`+ ₹ ${Number(record.Allowances ?? 0)?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                     valueClass="text-emerald-600"
                   />
                   <SalaryCell
                     label="Deductions"
-                    value={`− ₹ ${Number(record.Deductions ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                    value={`− ₹ ${Number(record.Deductions ?? 0)?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                     valueClass="text-red-500"
                   />
                   <SalaryCell
                     label="Net Salary"
-                    value={`₹ ${Number(record.NetSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                    value={`₹ ${Number(record.NetSalary)?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                     valueClass="text-primary font-semibold"
                   />
                 </div>

@@ -125,7 +125,7 @@ function StaffAdvancePaymentList({ staffId, staff }) {
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="flex items-center gap-0.5 text-sm font-semibold">
                     <IndianRupee className="size-3.5" />
-                    {Number(payment.TotalAmount).toLocaleString('en-IN', {
+                    {Number(payment.TotalAmount)?.toLocaleString('en-IN', {
                       minimumFractionDigits: 2,
                     })}
                   </div>

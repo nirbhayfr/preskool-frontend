@@ -167,7 +167,7 @@ function StaffSalaryCalculationCard({ staffId, baseSalary }) {
         <div className="space-y-1">
           <CalcRow
             label="Base Salary"
-            value={`₹ ${baseSalary.toLocaleString('en-IN')}`}
+            value={`₹ ${baseSalary?.toLocaleString('en-IN')}`}
           />
           <CalcRow
             label={`Per Day (÷ ${calc.daysInMonth} days)`}
@@ -176,7 +176,7 @@ function StaffSalaryCalculationCard({ staffId, baseSalary }) {
           {allowance > 0 && (
             <CalcRow
               label="Allowance"
-              value={`+ ₹ ${allowance.toLocaleString('en-IN')}`}
+              value={`+ ₹ ${allowance?.toLocaleString('en-IN')}`}
               color="text-emerald-600"
             />
           )}
@@ -209,7 +209,7 @@ function StaffSalaryCalculationCard({ staffId, baseSalary }) {
           {extraDeduction > 0 && (
             <CalcRow
               label="Extra Deduction"
-              value={`− ₹ ${extraDeduction.toLocaleString('en-IN')}`}
+              value={`− ₹ ${extraDeduction?.toLocaleString('en-IN')}`}
               color="text-red-500"
             />
           )}
@@ -218,7 +218,7 @@ function StaffSalaryCalculationCard({ staffId, baseSalary }) {
 
           <CalcRow
             label="Net Payable Salary"
-            value={`₹ ${calc.netSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+            value={`₹ ${calc.netSalary?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
             color="text-primary"
             isTotal
           />

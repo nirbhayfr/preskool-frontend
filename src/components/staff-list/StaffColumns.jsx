@@ -56,12 +56,12 @@ const advancedFilter = (row, columnId, filterValue) => {
 
 const formatValue = (value) => value ?? '-'
 
-export const staffColumns = () => [
+export const staffColumns = (isMobile) => [
   {
     accessorKey: 'StaffID',
     header: ({ column }) => <SearchHeader column={column} title="Staff ID" />,
     filterFn: advancedFilter,
-    // meta: { sticky: true, left: 0 },
+    meta: isMobile ? undefined : { sticky: true, left: 0 },
     cell: ({ row }) => (
       <Link
         to={`/staff-details/${row.original.StaffID}`}
@@ -75,7 +75,7 @@ export const staffColumns = () => [
   {
     accessorKey: 'ProfilePhoto',
     header: 'Profile Photo',
-    // meta: { sticky: true, left: 80 },
+    meta: isMobile ? undefined : { sticky: true, left: 80 },
     cell: ({ row }) => {
       const { ProfilePhoto, FullName } = row.original
 
@@ -116,7 +116,7 @@ export const staffColumns = () => [
   {
     accessorKey: 'FullName',
     header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
-    meta: { sticky: true, left: 0 },
+    meta: isMobile ? undefined : { sticky: true, left: 160 },
     filterFn: advancedFilter,
     cell: ({ row }) => formatValue(row.original.FullName),
   },

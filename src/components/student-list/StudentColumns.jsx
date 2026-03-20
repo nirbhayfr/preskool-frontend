@@ -308,12 +308,12 @@ const advancedFilter = (row, columnId, filterValue) => {
   }
 }
 
-export const studentsColumns = (setSelectedStudent) => [
+export const studentsColumns = (setSelectedStudent, isMobile) => [
   {
     accessorKey: 'StudentID',
     header: ({ column }) => <SearchHeader column={column} title="Student ID" />,
     filterFn: advancedFilter,
-    // meta: { sticky: true, left: 0 },
+    meta: isMobile ? undefined : { sticky: true, left: 0 },
     cell: ({ row }) => (
       <Link
         to={`/student-details/${row.original.StudentID}`}
@@ -327,7 +327,7 @@ export const studentsColumns = (setSelectedStudent) => [
   {
     accessorKey: 'PhotoUrl',
     header: 'Profile',
-    // meta: { sticky: true, left: 80 },
+    meta: isMobile ? undefined : { sticky: true, left: 80 },
     cell: ({ row }) => {
       const { PhotoUrl, FullName } = row.original
 
@@ -369,7 +369,7 @@ export const studentsColumns = (setSelectedStudent) => [
     accessorKey: 'FullName',
     header: ({ column }) => <SearchHeader column={column} title="Full Name" />,
     filterFn: advancedFilter,
-    meta: { sticky: true, left: 0 },
+    meta: isMobile ? undefined : { sticky: true, left: 160 },
     cell: ({ row }) => <span className="capitalize">{row.original.FullName}</span>,
   },
 

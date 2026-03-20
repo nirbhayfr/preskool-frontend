@@ -7,10 +7,12 @@ import { toast } from 'sonner'
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import { handleExportPDF } from '@/utils/export'
 import IssueBookDialog from '@/components/book-issues/IssueBookDialog'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 function StudentList() {
   const [selectedStudent, setSelectedStudent] = useState(null)
   const { data, isLoading, error } = useStudents()
+  const isMobile = useIsMobile()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState({
@@ -139,7 +141,7 @@ function StudentList() {
         onExport={handleExport}
       />
       <TableLayout
-        columns={studentsColumns(setSelectedStudent)}
+        columns={studentsColumns(setSelectedStudent, isMobile)}
         data={displayedStudents}
       />
 

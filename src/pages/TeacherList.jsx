@@ -2,6 +2,7 @@ import { CircleLoader } from '@/components/layout/RouteLoader'
 import TableLayout from '@/components/layout/Table'
 import { teachersColumns } from '@/components/teacher-list/TeachersColumns'
 import TeachersHeader from '@/components/teacher-list/TeachersHeader'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { useTeachers } from '@/hooks/useTeacher'
 import { handleExportPDF } from '@/utils/export'
 import { useMemo, useState } from 'react'
@@ -9,6 +10,7 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 function TeacherList() {
+  const isMobile = useIsMobile()
   const { data, isLoading, error } = useTeachers()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -119,7 +121,7 @@ function TeacherList() {
         onSortChange={setSortOrder}
         onExport={handleExport}
       />
-      <TableLayout columns={teachersColumns()} data={displayedTeachers} />
+      <TableLayout columns={teachersColumns(isMobile)} data={displayedTeachers} />
     </section>
   )
 }

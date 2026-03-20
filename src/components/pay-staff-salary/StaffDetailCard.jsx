@@ -75,7 +75,7 @@ function StaffDetailCard({ staff }) {
           <InfoRow
             icon={IndianRupee}
             label="Base Salary"
-            value={staff.Salary ? `₹${staff.Salary.toLocaleString('en-IN')}` : null}
+            value={staff.Salary ? `₹${staff.Salary?.toLocaleString('en-IN')}` : null}
           />
         </div>
       </div>
