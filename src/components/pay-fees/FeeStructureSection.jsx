@@ -59,6 +59,36 @@ const normalizeFeeKey = (key) => {
     )
 }
 
+const currentDate = new Date()
+const currentYear = currentDate.getFullYear()
+const currentMonth = currentDate.getMonth()
+
+function isMonthPassed(monthAbbr) {
+  const monthIndexMap = {
+    apr: 3,
+    may: 4,
+    jun: 5,
+    jul: 6,
+    aug: 7,
+    sep: 8,
+    oct: 9,
+    nov: 10,
+    dec: 11,
+    jan: 0,
+    feb: 1,
+    mar: 2,
+  }
+  const idx = monthIndexMap[monthAbbr]
+  if (idx === undefined) return false
+
+  const academicStartYear = currentMonth >= 3 ? currentYear : currentYear - 1
+
+  const calYear = idx >= 3 ? academicStartYear : academicStartYear + 1
+  const monthDate = new Date(calYear, idx, 1)
+
+  return monthDate < new Date(currentYear, currentMonth, 1)
+}
+
 export default function FeeStructureSection({
   structure,
   feesData,
@@ -145,19 +175,30 @@ export default function FeeStructureSection({
 
               const isPaid = paidFees.includes(feeKey)
 
+              const isPassed = isMonthPassed(rawMonth)
+
               return (
                 <div
                   key={key}
                   className={`border rounded-md p-3 text-center transition
-                  ${isPaid ? 'bg-green-100 border-green-400' : 'bg-muted/20'}`}
+      ${
+        isPaid
+          ? 'bg-green-100 border-green-400 dark:bg-green-950/20'
+          : isPassed
+            ? 'bg-red-50 border-red-300 dark:bg-red-950/20'
+            : 'bg-muted/20'
+      }`}
                 >
                   <p className="text-xs uppercase text-muted-foreground">{month}</p>
-
-                  <p className={`font-semibold mt-1 ${isPaid ? 'text-green-700' : ''}`}>
+                  <p
+                    className={`font-semibold mt-1 ${isPaid ? 'text-green-700' : isPassed ? 'text-red-500' : ''}`}
+                  >
                     ₹{Number(value).toLocaleString()}
                   </p>
-
                   {isPaid && <p className="text-[10px] text-green-600 mt-1">PAID</p>}
+                  {!isPaid && isPassed && (
+                    <p className="text-[10px] text-red-500 mt-1">PENDING</p>
+                  )}
                 </div>
               )
             })}
@@ -184,19 +225,30 @@ export default function FeeStructureSection({
             {transportMonths.map(({ month, amount, isPaid }) => {
               const label = monthLabelMap[month]
 
+              const isPassed = isMonthPassed(month)
+
               return (
                 <div
                   key={month}
                   className={`border rounded-md p-3 text-center transition
-                  ${isPaid ? 'bg-green-100 border-green-400' : 'bg-muted/20'}`}
+      ${
+        isPaid
+          ? 'bg-green-100 border-green-400 dark:bg-green-950/20'
+          : isPassed && amount > 0
+            ? 'bg-red-50 border-red-300 dark:bg-red-950/20'
+            : 'bg-muted/20'
+      }`}
                 >
                   <p className="text-xs uppercase text-muted-foreground">{label}</p>
-
-                  <p className={`font-semibold mt-1 ${isPaid ? 'text-green-700' : ''}`}>
+                  <p
+                    className={`font-semibold mt-1 ${isPaid ? 'text-green-700' : isPassed && amount > 0 ? 'text-red-500' : ''}`}
+                  >
                     ₹{Number(amount).toLocaleString()}
                   </p>
-
                   {isPaid && <p className="text-[10px] text-green-600 mt-1">PAID</p>}
+                  {!isPaid && isPassed && amount > 0 && (
+                    <p className="text-[10px] text-red-500 mt-1">PENDING</p>
+                  )}
                 </div>
               )
             })}
@@ -222,15 +274,20 @@ export default function FeeStructureSection({
                 <div
                   key={key}
                   className={`border rounded-md p-3 transition
-                  ${isPaid ? 'bg-green-100 border-green-400' : 'bg-muted/20'}`}
+    ${
+      isPaid
+        ? 'bg-green-100 border-green-400 dark:bg-green-950/20'
+        : 'bg-red-50 border-red-300 dark:bg-red-950/20'
+    }`}
                 >
                   <p className="text-xs text-muted-foreground">{formatLabel(key)}</p>
-
-                  <p className={`font-semibold mt-1 ${isPaid ? 'text-green-700' : ''}`}>
+                  <p
+                    className={`font-semibold mt-1 ${isPaid ? 'text-green-700' : 'text-red-500'}`}
+                  >
                     ₹{Number(value).toLocaleString()}
                   </p>
-
                   {isPaid && <p className="text-[10px] text-green-600 mt-1">PAID</p>}
+                  {!isPaid && <p className="text-[10px] text-red-500 mt-1">PENDING</p>}
                 </div>
               )
             })}

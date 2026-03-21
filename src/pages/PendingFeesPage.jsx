@@ -3,6 +3,7 @@ import { usePendingFees } from '@/hooks/usePendingFees'
 import { classes, sections } from '@/data/basicData'
 import TableLayout from '@/components/layout/Table'
 import { CircleLoader } from '@/components/layout/RouteLoader'
+import { Link } from 'react-router-dom'
 
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -14,40 +15,36 @@ import {
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Mail } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { X } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+
+import {
+  Mail,
+  X,
+  Users,
+  TrendingDown,
+  TrendingUp,
+  ArrowRight,
+  IndianRupee,
+} from 'lucide-react'
 
 export default function PendingFeesPage() {
   const [selectedClass, setSelectedClass] = useState(classes[0] || '')
   const [selectedSection, setSelectedSection] = useState('all')
-  const [selectedStudent, setSelectedStudent] = useState(null)
   const [minPending, setMinPending] = useState('')
 
   const filters = useMemo(() => {
     if (!selectedClass) return null
-
-    if (selectedSection === 'all') {
-      return { ClassID: selectedClass }
-    }
-
-    return {
-      ClassID: selectedClass,
-      SectionID: selectedSection,
-    }
+    if (selectedSection === 'all') return { ClassID: selectedClass }
+    return { ClassID: selectedClass, SectionID: selectedSection }
   }, [selectedClass, selectedSection])
 
   const { data, isLoading, isError, error } = usePendingFees(filters)
   const tableData = data?.data || []
 
-  // 🔹 Group by StudentID
   const groupedStudents = useMemo(() => {
     if (!tableData.length) return []
-
     const map = {}
-
     tableData.forEach((row) => {
       if (!map[row.StudentID]) {
         map[row.StudentID] = {
@@ -58,10 +55,8 @@ export default function PendingFeesPage() {
           fees: [],
         }
       }
-
       map[row.StudentID].fees.push(row)
     })
-
     return Object.values(map)
   }, [tableData])
 
@@ -74,24 +69,15 @@ export default function PendingFeesPage() {
     })
   }, [groupedStudents, minPending])
 
-  // 🔹 Summary Stats
   const summary = useMemo(() => {
     if (!tableData.length) return null
-
     const totalPending = tableData.reduce(
       (sum, row) => sum + Number(row.PendingAmount || 0),
       0
     )
-
     const totalPaid = tableData.reduce((sum, row) => sum + Number(row.PaidAmount || 0), 0)
-
     const uniqueStudents = new Set(tableData.map((r) => r.StudentID)).size
-
-    return {
-      totalPending,
-      totalPaid,
-      uniqueStudents,
-    }
+    return { totalPending, totalPaid, uniqueStudents }
   }, [tableData])
 
   const columns = useMemo(
@@ -99,68 +85,103 @@ export default function PendingFeesPage() {
       {
         accessorKey: 'StudentID',
         header: 'Student ID',
-        cell: ({ row }) => <span className="text-primary">{row.original.StudentID}</span>,
+        cell: ({ row }) => (
+          <span className="text-xs font-mono text-muted-foreground">
+            #{row.original.StudentID}
+          </span>
+        ),
       },
       {
         accessorKey: 'FullName',
-        header: 'Student Name',
-        cell: ({ row }) => <span className="font-medium">{row.original.FullName}</span>,
+        header: 'Student',
+        cell: ({ row }) => {
+          const { FullName, ClassID, SectionID } = row.original
+          return (
+            <div>
+              <p className="font-medium text-sm">{FullName}</p>
+              <p className="text-xs text-muted-foreground">
+                Class {ClassID} · {SectionID}
+              </p>
+            </div>
+          )
+        },
       },
-
-      // ✅ NEW COLUMN
+      {
+        id: 'feeTypes',
+        header: 'Fee Types',
+        cell: ({ row }) => {
+          const types = row.original.fees.map((f) => f.FeeType)
+          return (
+            <div className="flex flex-wrap gap-1">
+              {types.slice(0, 3).map((t, i) => (
+                <Badge
+                  key={i}
+                  variant="secondary"
+                  className="text-xs capitalize px-1.5 py-0"
+                >
+                  {t.replaceAll('_', ' ')}
+                </Badge>
+              ))}
+              {types.length > 3 && (
+                <Badge variant="outline" className="text-xs px-1.5 py-0">
+                  +{types.length - 3}
+                </Badge>
+              )}
+            </div>
+          )
+        },
+      },
       {
         id: 'totalPaid',
-        header: 'Total Paid',
+        header: 'Paid',
         cell: ({ row }) => {
-          const totalPaid = row.original.fees.reduce(
+          const total = row.original.fees.reduce(
             (sum, f) => sum + Number(f.PaidAmount || 0),
             0
           )
-
-          return <span className="text-green-600 font-semibold">₹ {totalPaid}</span>
+          return (
+            <span className="text-emerald-600 font-semibold text-sm">
+              ₹{total.toLocaleString('en-IN')}
+            </span>
+          )
         },
       },
-
       {
         id: 'totalPending',
-        header: 'Total Pending',
+        header: 'Pending',
         cell: ({ row }) => {
-          const totalPending = row.original.fees.reduce(
+          const total = row.original.fees.reduce(
             (sum, f) => sum + Number(f.PendingAmount || 0),
             0
           )
-
-          return <span className="text-red-600 font-bold">₹ {totalPending}</span>
+          return (
+            <span
+              className={`font-bold text-sm ${total > 0 ? 'text-red-500' : 'text-muted-foreground'}`}
+            >
+              ₹{total.toLocaleString('en-IN')}
+            </span>
+          )
         },
       },
-
       {
         id: 'actions',
-        header: 'Actions',
+        header: '',
         cell: ({ row }) => {
           const student = row.original
-
-          const handleMail = () => {
-            console.log('Send mail to:', student.StudentID)
-          }
-
           return (
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setSelectedStudent(student)}
-              >
-                View Details
-              </Button>
-
+            <div className="flex items-center gap-2 justify-end">
               <Button
                 size="icon"
-                variant="outline"
-                onClick={handleMail}
-                className="h-8 w-8"
+                variant="ghost"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
               >
-                <Mail className="h-4 w-4" />
+                <Mail className="h-3.5 w-3.5" />
+              </Button>
+              <Button asChild size="sm" variant="outline" className="h-7 gap-1 text-xs">
+                <Link to={`/pay-fees/${student.StudentID}`}>
+                  Pay Fees
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
               </Button>
             </div>
           )
@@ -191,34 +212,40 @@ export default function PendingFeesPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0">
-        <h2 className="text-2xl font-semibold tracking-tight">Pending Fees</h2>
+    <div className="p-6 space-y-5">
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Pending Fees</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {selectedClass ? `Class ${selectedClass}` : 'All classes'}
+            {selectedSection !== 'all' ? ` · Section ${selectedSection}` : ''}
+          </p>
+        </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-2">
           <Select value={selectedClass} onValueChange={setSelectedClass}>
-            <SelectTrigger className="w-35">
+            <SelectTrigger className="w-32">
               <SelectValue placeholder="Class" />
             </SelectTrigger>
             <SelectContent>
               {classes.map((cls) => (
                 <SelectItem key={cls} value={cls}>
-                  {cls}
+                  Class {cls}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           <Select value={selectedSection} onValueChange={setSelectedSection}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-36">
               <SelectValue placeholder="Section" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Sections</SelectItem>
               {sections.map((sec) => (
                 <SelectItem key={sec} value={sec}>
-                  {sec}
+                  Section {sec}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -226,88 +253,94 @@ export default function PendingFeesPage() {
         </div>
       </div>
 
-      {/* Summary */}
+      {/* ── Summary Cards ── */}
       {summary && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Card className="py-3 px-4">
-            <CardContent className="p-0">
-              <p className="text-xs text-muted-foreground">Students</p>
-              <p className="text-lg font-semibold mt-1">{summary.uniqueStudents}</p>
+          <Card className="py-4 px-5">
+            <CardContent className="p-0 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Students</p>
+                <p className="text-2xl font-bold mt-0.5">{summary.uniqueStudents}</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="py-3 px-4">
-            <CardContent className="p-0">
-              <p className="text-xs text-green-600">Total Paid</p>
-              <p className="text-lg font-semibold text-green-600 mt-1">
-                ₹ {summary.totalPaid}
-              </p>
+          <Card className="py-4 px-5">
+            <CardContent className="p-0 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-emerald-600">Total Paid</p>
+                <p className="text-2xl font-bold text-emerald-600 mt-0.5">
+                  ₹{summary.totalPaid.toLocaleString('en-IN')}
+                </p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="py-3 px-4">
-            <CardContent className="p-0">
-              <p className="text-xs text-red-600">Total Pending</p>
-              <p className="text-lg font-semibold text-red-600 mt-1">
-                ₹ {summary.totalPending}
-              </p>
+          <Card className="py-4 px-5">
+            <CardContent className="p-0 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-red-500">Total Pending</p>
+                <p className="text-2xl font-bold text-red-500 mt-0.5">
+                  ₹{summary.totalPending.toLocaleString('en-IN')}
+                </p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center">
+                <TrendingDown className="h-5 w-5 text-red-500" />
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
+      {/* ── Min Filter ── */}
       {groupedStudents.length > 0 && (
-        <div className="flex items-center gap-2 max-w-xs">
-          <Input
-            type="number"
-            placeholder="Min pending fee (₹)"
-            value={minPending}
-            onChange={(e) => setMinPending(e.target.value)}
-            min={0}
-          />
+        <div className="flex items-center gap-2 w-fit">
+          <div className="relative">
+            <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              type="number"
+              placeholder="Min pending amount"
+              value={minPending}
+              onChange={(e) => setMinPending(e.target.value)}
+              min={0}
+              className="pl-8 w-52 h-8 text-sm"
+            />
+          </div>
           {minPending && (
-            <Button variant="ghost" size="icon" onClick={() => setMinPending('')}>
-              <X className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setMinPending('')}
+            >
+              <X className="h-3.5 w-3.5" />
             </Button>
+          )}
+          {minPending && (
+            <span className="text-xs text-muted-foreground">
+              {filteredStudents.length} of {groupedStudents.length} students
+            </span>
           )}
         </div>
       )}
 
-      {/* Table */}
-      <CardContent className="p-0">
+      {/* ── Table ── */}
+      <div>
         {filteredStudents.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            No pending fees found.
+          <div className="text-center py-16 text-muted-foreground">
+            <IndianRupee className="h-8 w-8 mx-auto mb-2 opacity-20" />
+            <p className="text-sm">No pending fees found.</p>
           </div>
         ) : (
           <TableLayout columns={columns} data={filteredStudents} />
         )}
-      </CardContent>
-
-      {/* Details Dialog */}
-      <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Pending Fees - {selectedStudent?.FullName}</DialogTitle>
-          </DialogHeader>
-
-          <div className="mt-4 max-h-[400px] overflow-y-auto pr-2 space-y-3">
-            {selectedStudent?.fees.map((fee, index) => (
-              <div key={index} className="flex justify-between border-b pb-2 text-sm">
-                <span className="capitalize">{fee.FeeType.replaceAll('_', ' ')}</span>
-
-                <div className="space-x-4">
-                  <span className="text-green-600">Paid: ₹ {fee.PaidAmount}</span>
-
-                  <span className="text-red-600 font-semibold">
-                    Pending: ₹ {fee.PendingAmount}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      </div>
     </div>
   )
 }
