@@ -17,11 +17,14 @@ import { Button } from '@/components/ui/button'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Mail } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { X } from 'lucide-react'
 
 export default function PendingFeesPage() {
   const [selectedClass, setSelectedClass] = useState(classes[0] || '')
   const [selectedSection, setSelectedSection] = useState('all')
   const [selectedStudent, setSelectedStudent] = useState(null)
+  const [minPending, setMinPending] = useState('')
 
   const filters = useMemo(() => {
     if (!selectedClass) return null
@@ -61,6 +64,15 @@ export default function PendingFeesPage() {
 
     return Object.values(map)
   }, [tableData])
+
+  const filteredStudents = useMemo(() => {
+    if (!minPending) return groupedStudents
+    const min = Number(minPending)
+    return groupedStudents.filter((s) => {
+      const total = s.fees.reduce((sum, f) => sum + Number(f.PendingAmount || 0), 0)
+      return total >= min
+    })
+  }, [groupedStudents, minPending])
 
   // 🔹 Summary Stats
   const summary = useMemo(() => {
@@ -244,14 +256,31 @@ export default function PendingFeesPage() {
         </div>
       )}
 
+      {groupedStudents.length > 0 && (
+        <div className="flex items-center gap-2 max-w-xs">
+          <Input
+            type="number"
+            placeholder="Min pending fee (₹)"
+            value={minPending}
+            onChange={(e) => setMinPending(e.target.value)}
+            min={0}
+          />
+          {minPending && (
+            <Button variant="ghost" size="icon" onClick={() => setMinPending('')}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Table */}
       <CardContent className="p-0">
-        {groupedStudents.length === 0 ? (
+        {filteredStudents.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             No pending fees found.
           </div>
         ) : (
-          <TableLayout columns={columns} data={groupedStudents} />
+          <TableLayout columns={columns} data={filteredStudents} />
         )}
       </CardContent>
 

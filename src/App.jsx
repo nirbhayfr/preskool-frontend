@@ -66,7 +66,7 @@ import PayStaffSalaryPage from './pages/PayStaffSalaryPage'
 import TeacherSalaryList from './pages/TeacherSalaryList'
 import StaffSalaryList from './pages/StaffSalaryList'
 
-import ExportStudentData from './pages/ExportStudentData'
+import ExportData from './pages/ExportData'
 
 function App() {
   return (
@@ -161,7 +161,7 @@ function App() {
               <Route path="/meeting" element={<JitsiMeetingRoom />} />
               <Route path="/student/meeting" element={<StudentMeetingPage />} />
 
-              <Route path="/export-student-data" element={<ExportStudentData />} />
+              <Route path="/export-data" element={<ExportData />} />
             </Route>
           </Route>
         </Routes>

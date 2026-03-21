@@ -208,8 +208,8 @@ const data = {
       icon: Form,
     },
     {
-      title: 'Export Student Data',
-      url: '/export-student-data',
+      title: 'Export Data',
+      url: '/export-data',
       icon: Form,
     },
   ],
