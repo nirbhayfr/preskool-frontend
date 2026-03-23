@@ -20,6 +20,11 @@ export const createFeeSubmissionHelper = async (payload) => {
   return data
 }
 
+export const updateFeeSubmissionHelper = async ({ id, ...payload }) => {
+  const { data } = await api.put(`/fee-submissions/${id}`, payload)
+  return data
+}
+
 export const deleteFeeSubmission = async (id) => {
   const { data } = await api.delete(`/fee-submissions/${id}`)
   return data

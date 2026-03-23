@@ -91,8 +91,8 @@ const TEACHER_FIELDS = [
   { name: 'postalCode' },
   { name: 'nationality' },
 
-  { name: 'dateOfBirth' },
-  { name: 'dateOfJoining' },
+  { name: 'dateOfBirth', required: true },
+  { name: 'dateOfJoining', required: true },
 
   { name: 'bloodGroup' },
   { name: 'maritalStatus' },
@@ -265,6 +265,17 @@ export default function TeacherFormPage({ defaultValues }) {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
       form.watch('fullName') || 'Teacher'
     )}`
+
+  const currentSalary = form.watch('salary')
+
+  useEffect(() => {
+    if (!isEdit || !teacher) return
+    const existingSalary = teacher.Salary ? Number(teacher.Salary) : 0
+    const newSalary = Number(currentSalary)
+    if (newSalary && newSalary !== existingSalary) {
+      form.setValue('previousSalary', existingSalary)
+    }
+  }, [currentSalary])
 
   const onSubmit = (values) => {
     saveTeacher(

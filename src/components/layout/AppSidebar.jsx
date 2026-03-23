@@ -146,6 +146,11 @@ const data = {
       url: '/budget',
       icon: Wallet,
     },
+    {
+      title: 'Expenses',
+      url: '/expenses',
+      icon: Wallet,
+    },
   ],
   salary: [
     {

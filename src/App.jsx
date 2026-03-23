@@ -67,6 +67,7 @@ import TeacherSalaryList from './pages/TeacherSalaryList'
 import StaffSalaryList from './pages/StaffSalaryList'
 
 import ExportData from './pages/ExportData'
+import ExpensesPage from './pages/ExpensesPage'
 
 function App() {
   return (
@@ -162,6 +163,7 @@ function App() {
               <Route path="/student/meeting" element={<StudentMeetingPage />} />
 
               <Route path="/export-data" element={<ExportData />} />
+              <Route path="/expenses" element={<ExpensesPage />} />
             </Route>
           </Route>
         </Routes>

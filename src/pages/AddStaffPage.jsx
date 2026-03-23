@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -11,10 +12,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-
 import {
   Select,
   SelectContent,
@@ -26,30 +25,33 @@ import {
 import { useUpsertStaff, useStaffById } from '@/hooks/useStaff'
 import { toast } from 'sonner'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useEffect } from 'react'
 
+// ─── Constants ────────────────────────────────────────────────────────────────
 const genders = ['Male', 'Female', 'Other']
-
 const maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed']
 
+// ─── Schema ───────────────────────────────────────────────────────────────────
 const staffSchema = z.object({
   staffId: z.number().optional(),
-  fullName: z.string().min(1),
-  role: z.string().min(1),
-  email: z.string().email(),
-  contactNumber: z.string(),
-  gender: z.string().min(1),
+
+  fullName: z.string().min(1, 'Full name is required'),
+  role: z.string().min(1, 'Role is required'),
+  email: z.string().email('Invalid email'),
+  contactNumber: z.string().min(1, 'Contact number is required'),
+  gender: z.string().min(1, 'Gender is required'),
+
+  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  dateOfJoining: z.string().min(1, 'Date of joining is required'),
+
+  address: z.string().min(1, 'Address is required'),
 
   profilePictureUrl: z.string().optional(),
   profilePhoto: z.string().optional(),
   idProofPhoto: z.string().optional(),
 
-  dateOfBirth: z.string().optional(),
   qualification: z.string().optional(),
   experienceYears: z.coerce.number().optional(),
-  dateOfJoining: z.string().optional(),
 
-  address: z.string().min(1),
   city: z.string().optional(),
   state: z.string().optional(),
   postalCode: z.string().optional(),
@@ -67,18 +69,24 @@ const staffSchema = z.object({
   transportNumber: z.string().optional(),
 })
 
+// ─── Field config (drives REQUIRED_FIELDS + EMPTY_DEFAULTS) ──────────────────
 const STAFF_FIELDS = [
   { name: 'fullName', required: true },
   { name: 'role', required: true },
   { name: 'email', required: true },
   { name: 'contactNumber', required: true },
   { name: 'gender', required: true },
+  { name: 'dateOfBirth', required: true },
+  { name: 'dateOfJoining', required: true },
+  { name: 'address', required: true },
+
+  { name: 'profilePictureUrl' },
+  { name: 'profilePhoto' },
+  { name: 'idProofPhoto' },
 
   { name: 'qualification' },
   { name: 'experienceYears' },
-  { name: 'dateOfJoining' },
 
-  { name: 'address', required: true },
   { name: 'city' },
   { name: 'state' },
   { name: 'postalCode' },
@@ -94,9 +102,6 @@ const STAFF_FIELDS = [
 
   { name: 'vehicleNumber' },
   { name: 'transportNumber' },
-
-  { name: 'profilePhoto' },
-  { name: 'idProofPhoto' },
 ]
 
 const REQUIRED_FIELDS = STAFF_FIELDS.filter((f) => f.required).map((f) => f.name)
@@ -109,6 +114,13 @@ const EMPTY_DEFAULTS = STAFF_FIELDS.reduce(
   { staffId: undefined }
 )
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function formatDateForInput(date) {
+  if (!date) return ''
+  return date.split('T')[0]
+}
+
+// ─── Reusable InputField ──────────────────────────────────────────────────────
 export function InputField({ form, name, type = 'text', colSpan, options }) {
   const label = name.replace(/([A-Z])/g, ' $1').trim()
 
@@ -127,11 +139,14 @@ export function InputField({ form, name, type = 'text', colSpan, options }) {
 
           <FormControl>
             {options ? (
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+              <Select
+                key={field.value ?? 'empty'}
+                value={String(field.value ?? '')}
+                onValueChange={(val) => field.onChange(val)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder={`Select ${label}`} />
                 </SelectTrigger>
-
                 <SelectContent>
                   {options.map((opt) => (
                     <SelectItem key={opt} value={opt}>
@@ -141,7 +156,12 @@ export function InputField({ form, name, type = 'text', colSpan, options }) {
                 </SelectContent>
               </Select>
             ) : (
-              <Input {...field} type={type} value={field.value ?? ''} />
+              <Input
+                {...field}
+                type={type}
+                value={field.value ?? ''}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
             )}
           </FormControl>
 
@@ -152,19 +172,17 @@ export function InputField({ form, name, type = 'text', colSpan, options }) {
   )
 }
 
+// ─── Section wrapper ──────────────────────────────────────────────────────────
 export function Section({ title, icon, children }) {
   const Icon = icon
-
   return (
     <div className="rounded-xl border border-border">
       <div className="flex items-center gap-3 px-6 py-4 rounded-t-xl bg-muted/50 border-b border-border">
         <div className="h-10 w-10 rounded-lg bg-background border border-border flex items-center justify-center">
           <Icon className="h-5 w-5 text-foreground" />
         </div>
-
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       </div>
-
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {children}
       </div>
@@ -172,11 +190,7 @@ export function Section({ title, icon, children }) {
   )
 }
 
-function formatDateForInput(date) {
-  if (!date) return ''
-  return date.split('T')[0]
-}
-
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function StaffFormPage({ defaultValues }) {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -193,56 +207,68 @@ export default function StaffFormPage({ defaultValues }) {
   const { data: staff } = useStaffById(id, { enabled: isEdit })
   const { mutate: saveStaff, isLoading } = useUpsertStaff()
 
+  // ── Populate form when editing ──────────────────────────────────────────
   useEffect(() => {
-    if (staff) {
-      const mappedStaff = {
-        staffId: staff.StaffID ?? undefined,
-        fullName: staff.FullName ?? '',
-        role: staff.Role ?? '',
-        email: staff.Email ?? '',
-        contactNumber: staff.ContactNumber ?? '',
-        gender: staff.Gender ?? '',
+    if (!staff) return
 
-        profilePictureUrl: staff.ProfilePictureUrl ?? '',
-        profilePhoto: staff.ProfilePhoto ?? '',
-        idProofPhoto: staff.IDProofPhoto ?? '',
+    form.reset({
+      ...EMPTY_DEFAULTS,
+      staffId: staff.StaffID ?? undefined,
+      fullName: staff.FullName ?? '',
+      role: staff.Role ?? '',
+      email: staff.Email ?? '',
+      contactNumber: staff.ContactNumber ?? '',
+      gender: (staff.Gender ?? '').trim(),
 
-        dateOfBirth: formatDateForInput(staff.DateOfBirth),
-        qualification: staff.Qualification ?? '',
-        experienceYears: staff.ExperienceYears ?? '',
-        dateOfJoining: formatDateForInput(staff.DateOfJoining),
+      dateOfBirth: formatDateForInput(staff.DateOfBirth),
+      dateOfJoining: formatDateForInput(staff.DateOfJoining),
 
-        address: staff.Address ?? '',
-        city: staff.City ?? '',
-        state: staff.State ?? '',
-        postalCode: staff.PostalCode ?? '',
-        nationality: staff.Nationality ?? '',
-        maritalStatus: staff.MaritalStatus ?? '',
-        caste: staff.Caste ?? '',
+      address: staff.Address ?? '',
+      city: staff.City ?? '',
+      state: staff.State ?? '',
+      postalCode: staff.PostalCode ?? '',
+      nationality: staff.Nationality ?? '',
+      maritalStatus: (staff.MaritalStatus ?? '').trim(),
+      caste: staff.Caste ?? '',
 
-        salary: staff.Salary ?? '',
-        previousSalary: staff.PreviousSalary ?? '',
+      profilePictureUrl: staff.ProfilePictureUrl ?? '',
+      profilePhoto: staff.ProfilePhoto ?? '',
+      idProofPhoto: staff.IDProofPhoto ?? '',
 
-        emergencyContactName: staff.EmergencyContactName ?? '',
-        emergencyContactNumber: staff.EmergencyContactNumber ?? '',
+      qualification: staff.Qualification ?? '',
+      experienceYears: staff.ExperienceYears ?? '',
 
-        vehicleNumber: staff.VehicleNumber ?? '',
-        transportNumber: staff.TransportNumber ?? '',
-      }
+      salary: staff.Salary ?? '',
+      previousSalary: staff.PreviousSalary ?? '',
 
-      form.reset({
-        ...EMPTY_DEFAULTS,
-        ...mappedStaff,
-      })
-    }
+      emergencyContactName: staff.EmergencyContactName ?? '',
+      emergencyContactNumber: staff.EmergencyContactNumber ?? '',
+
+      vehicleNumber: staff.VehicleNumber ?? '',
+      transportNumber: staff.TransportNumber ?? '',
+    })
   }, [staff])
 
+  // ── Auto-fill previousSalary when salary changes ────────────────────────
+  const currentSalary = form.watch('salary')
+
+  useEffect(() => {
+    if (!isEdit || !staff) return
+    const existingSalary = staff.Salary ? Number(staff.Salary) : 0
+    const newSalary = Number(currentSalary)
+    if (newSalary && newSalary !== existingSalary) {
+      form.setValue('previousSalary', existingSalary)
+    }
+  }, [currentSalary])
+
+  // ── Avatar preview ──────────────────────────────────────────────────────
   const avatar =
     form.watch('profilePhoto') ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
       form.watch('fullName') || 'Staff'
     )}`
 
+  // ── Submit ──────────────────────────────────────────────────────────────
   const onSubmit = (values) => {
     saveStaff(
       { ...values, staffId: isEdit ? Number(id) : undefined },
@@ -253,18 +279,21 @@ export default function StaffFormPage({ defaultValues }) {
           )
           navigate('/staff-list')
         },
+        onError: () => {
+          toast.error('Failed to save staff')
+        },
       }
     )
   }
 
   return (
     <section className="w-full p-6 space-y-8 text-foreground">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <UserPlus className="h-6 w-6" />
           {isEdit ? 'Edit Staff' : 'Add Staff'}
         </h1>
-
         <div className="mt-2 flex items-center text-sm text-muted-foreground gap-1">
           <span>Dashboard</span>
           <ChevronRight className="h-4 w-4" />
@@ -285,7 +314,6 @@ export default function StaffFormPage({ defaultValues }) {
               alt="Profile"
               className="h-28 w-28 rounded-xl border border-border object-cover bg-muted"
             />
-
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 md:mt-0">
               <InputField form={form} name="profilePhoto" />
               <InputField form={form} name="idProofPhoto" />
@@ -306,8 +334,8 @@ export default function StaffFormPage({ defaultValues }) {
             <InputField form={form} name="qualification" />
             <InputField form={form} name="experienceYears" />
             <InputField form={form} name="dateOfJoining" type="date" />
-            <InputField form={form} name="salary" />
-            <InputField form={form} name="previousSalary" />
+            <InputField form={form} name="salary" type="number" />
+            <InputField form={form} name="previousSalary" type="number" />
           </Section>
 
           <Section title="Contact Information" icon={Phone}>
@@ -333,8 +361,8 @@ export default function StaffFormPage({ defaultValues }) {
             <Button type="submit" disabled={isLoading}>
               {isLoading
                 ? isEdit
-                  ? 'Updating...'
-                  : 'Saving...'
+                  ? 'Updating…'
+                  : 'Saving…'
                 : isEdit
                   ? 'Update Staff'
                   : 'Save Staff'}

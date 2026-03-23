@@ -7,6 +7,7 @@ import {
   deleteFeeSubmission,
   fetchFeeCollectionByDate,
   deductFeesHelper,
+  updateFeeSubmissionHelper,
 } from '@/api/fee-submissions'
 
 // Fetch all fee submissions
@@ -39,6 +40,17 @@ export const useCreateFeeSubmission = () => {
     mutationFn: (data) => createFeeSubmissionHelper(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feeSubmissions'] })
+    },
+  })
+}
+
+export const useUpdateFeeSubmission = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: updateFeeSubmissionHelper,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee-submissions'] })
+      queryClient.invalidateQueries({ queryKey: ['fees'] })
     },
   })
 }

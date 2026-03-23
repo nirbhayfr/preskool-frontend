@@ -384,7 +384,7 @@ const ReceiptBlock = ({ student, submissions, receiptNo, copyLabel, feeMonth }) 
 
   const excessAmount = Math.max(totalPaid - totalDue, 0)
 
-  const balance = totalDue - totalPaid
+  const balance = totalDue - totalPaid - exempted
 
   const amountToPay = totalDue
   const paymentMode = (submissions[0]?.PaymentMode || 'CASH').toUpperCase()

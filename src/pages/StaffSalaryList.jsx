@@ -11,6 +11,28 @@ import {
 import TableLayout from '@/components/layout/Table'
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import { useStaffSalaries } from '@/hooks/useStaffSalary'
+import { pdf } from '@react-pdf/renderer'
+import SalarySlipPDF from '@/components/pdfs/SalarySlip'
+import { Printer } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+
+const handlePrintSlip = async (record) => {
+  try {
+    const blob = await pdf(
+      <SalarySlipPDF
+        teacher={{ FullName: record.FullName, TeacherID: record.StaffID, ...record }}
+        salary={record}
+      />
+    ).toBlob()
+    const url = URL.createObjectURL(blob)
+    window.open(url)
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  } catch (err) {
+    console.error('Failed to print salary slip', err)
+    toast.error('Failed to generate salary slip')
+  }
+}
 
 const formatCurrency = (val) =>
   val != null ? `₹ ${Number(val).toLocaleString('en-IN')}` : '—'
@@ -131,10 +153,27 @@ export default function TeacherSalaryList() {
           </Badge>
         ),
     },
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          onClick={() => handlePrintSlip(row.original)}
+        >
+          <Printer className="h-3.5 w-3.5" />
+          Print Slip
+        </Button>
+      ),
+    },
   ]
 
   if (isLoading) return <CircleLoader />
   if (isError) return <p className="p-6 text-red-500">Failed to load salary data.</p>
+
+  console.log(data)
 
   return (
     <div className="p-6 space-y-6">
