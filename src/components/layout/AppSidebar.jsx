@@ -21,6 +21,7 @@ import {
   Receipt,
   Wallet,
   Form,
+  FileText,
 } from 'lucide-react'
 
 import {
@@ -150,6 +151,11 @@ const data = {
       title: 'Expenses',
       url: '/expenses',
       icon: Wallet,
+    },
+    {
+      title: 'Reports',
+      url: '/reports',
+      icon: FileText,
     },
   ],
   salary: [

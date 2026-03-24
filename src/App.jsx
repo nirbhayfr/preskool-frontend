@@ -68,6 +68,7 @@ import StaffSalaryList from './pages/StaffSalaryList'
 
 import ExportData from './pages/ExportData'
 import ExpensesPage from './pages/ExpensesPage'
+import Reports from './pages/Reports'
 
 function App() {
   return (
@@ -164,6 +165,8 @@ function App() {
 
               <Route path="/export-data" element={<ExportData />} />
               <Route path="/expenses" element={<ExpensesPage />} />
+
+              <Route path="/reports" element={<Reports />} />
             </Route>
           </Route>
         </Routes>

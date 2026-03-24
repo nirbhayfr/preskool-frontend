@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const monthOrder = [
+  'mar',
   'apr',
   'may',
   'jun',
@@ -14,9 +15,7 @@ const monthOrder = [
   'dec',
   'jan',
   'feb',
-  'mar',
 ]
-
 const monthLabelMap = {
   jan: 'Jan',
   feb: 'Feb',
@@ -92,16 +91,21 @@ function isMonthPassed(monthAbbr) {
   const idx = monthIndexMap[monthAbbr]
   if (idx === undefined) return false
 
-  const academicStartYear = currentMonth >= 3 ? currentYear : currentYear - 1
-  const calYear = idx >= 3 ? academicStartYear : academicStartYear + 1
+  // Academic year starts in March now (not April)
+  const academicStartMonth = 2 // March = 2
+  const academicStartYear =
+    currentMonth >= academicStartMonth ? currentYear : currentYear - 1
+
+  // Months Mar-Dec belong to academicStartYear, Jan-Feb belong to next year
+  const calYear = idx >= academicStartMonth ? academicStartYear : academicStartYear + 1
   const monthDate = new Date(calYear, idx, 1)
 
-  return monthDate < new Date(currentYear, currentMonth, 1)
+  return monthDate <= new Date(currentYear, currentMonth, 1)
 }
 
 // ─── Cell status helpers ──────────────────────────────────────────────────────
 
-function cellClass(isPaid, isPartial, isRed) {
+function cellClass(isPaid, isPartial) {
   // if (isPaid)
   //   return 'bg-green-50 border-green-300 dark:bg-green-950/30 dark:border-green-800'
   if (isPartial)
