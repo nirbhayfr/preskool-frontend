@@ -18,6 +18,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectTrigger,
@@ -27,16 +28,34 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { PDFDownloadLink } from '@react-pdf/renderer'
 import FeeReceiptPDF from '@/components/pdfs/FeeReceiptPDF'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { useUpdateFeeSubmission, useDeleteFeeSubmission } from '@/hooks/useFeeSubmissions'
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
-
-  const d = new Date(dateStr)
-
-  return d.toLocaleDateString('en-IN', {
+  return new Date(dateStr).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -76,7 +95,6 @@ function getReceiptDisplayNo(group) {
 
 function normalizeStatus(statuses) {
   const upper = statuses.map((s) => String(s || '').toUpperCase())
-
   if (upper.includes('PARTIAL')) return 'PARTIAL'
   if (upper.includes('SUCCESS')) return 'SUCCESS'
   if (upper.includes('PAID')) return 'PAID'
@@ -84,15 +102,199 @@ function normalizeStatus(statuses) {
   return statuses[0] || '-'
 }
 
+const PAYMENT_MODES = ['Cash', 'UPI', 'Cheque', 'Bank Transfer', 'Card']
+const PAYMENT_STATUSES = ['SUCCESS', 'PARTIAL', 'PENDING', 'CANCELLED']
+
+function statusBadgeClass(status) {
+  const s = String(status || '').toUpperCase()
+  if (s === 'SUCCESS' || s === 'PAID') return 'bg-green-100 text-green-700'
+  if (s === 'PARTIAL') return 'bg-yellow-100 text-yellow-700'
+  if (s === 'CANCELLED') return 'bg-red-100 text-red-700'
+  return 'bg-slate-100 text-slate-700'
+}
+
+// ─── Update Modal ─────────────────────────────────────────────────────────────
+function UpdateSubmissionModal({ open, onClose, submission, onSave, isSaving }) {
+  const [form, setForm] = React.useState({
+    originalAmount: submission?.OriginalAmount ?? 0,
+    discountAmount: submission?.DiscountAmount ?? 0,
+    paidAmount: submission?.PaidAmount ?? 0,
+    paymentMode: submission?.PaymentMode ?? '',
+    remarks: submission?.Remarks ?? '',
+    paymentStatus: submission?.PaymentStatus ?? '',
+  })
+
+  React.useEffect(() => {
+    if (open && submission) {
+      setForm({
+        originalAmount: submission.OriginalAmount ?? 0,
+        discountAmount: submission.DiscountAmount ?? 0,
+        paidAmount: submission.PaidAmount ?? 0,
+        paymentMode: submission.PaymentMode ?? '',
+        remarks: submission.Remarks ?? '',
+        paymentStatus: submission.PaymentStatus ?? '',
+      })
+    }
+  }, [open, submission])
+
+  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }))
+
+  const handleNumberInput = (key, value) => {
+    const numVal = value === '' ? 0 : Number(value) || 0
+    set(key, Math.max(0, numVal))
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Fee Submission</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Fee Type</Label>
+            <Input value={submission?.FeeType ?? ''} disabled />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Original Amount (₹)</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.originalAmount}
+              onChange={(e) => handleNumberInput('originalAmount', e.target.value)}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Discount Amount (₹)</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.discountAmount}
+              onChange={(e) => handleNumberInput('discountAmount', e.target.value)}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Paid Amount (₹)</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.paidAmount}
+              onChange={(e) => handleNumberInput('paidAmount', e.target.value)}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Payment Mode</Label>
+            <Select value={form.paymentMode} onValueChange={(v) => set('paymentMode', v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select mode" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_MODES.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Payment Status</Label>
+            <Select
+              value={form.paymentStatus}
+              onValueChange={(v) => set('paymentStatus', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Remarks</Label>
+            <Input
+              value={form.remarks}
+              onChange={(e) => set('remarks', e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={() => onSave(form)} disabled={isSaving}>
+            {isSaving ? 'Saving…' : 'Update'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
   const [globalFilter, setGlobalFilter] = React.useState('')
   const [expandedRows, setExpandedRows] = React.useState({})
 
-  const toggleRow = (key) => {
-    setExpandedRows((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }))
+  const [editingSubmission, setEditingSubmission] = React.useState(null)
+  const [deletingSubmission, setDeletingSubmission] = React.useState(null)
+
+  const { mutate: updateSubmission, isPending: isUpdating } = useUpdateFeeSubmission()
+  const { mutate: deleteSubmission } = useDeleteFeeSubmission()
+
+  const toggleRow = (key) => setExpandedRows((prev) => ({ ...prev, [key]: !prev[key] }))
+
+  const handleUpdate = (form) => {
+    if (!editingSubmission) return
+    updateSubmission(
+      {
+        id: editingSubmission.SubmissionID,
+        originalAmount: form.originalAmount,
+        discountAmount: form.discountAmount,
+        paidAmount: form.paidAmount,
+        paymentMode: form.paymentMode,
+        paymentStatus: form.paymentStatus,
+        remarks: form.remarks,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Submission updated')
+          setEditingSubmission(null)
+        },
+        onError: () => toast.error('Failed to update submission'),
+      }
+    )
+  }
+
+  const handleDelete = () => {
+    if (!deletingSubmission) return
+    deleteSubmission(deletingSubmission.SubmissionID, {
+      onSuccess: () => {
+        toast.success('Submission deleted')
+        setDeletingSubmission(null)
+      },
+      onError: () => toast.error('Failed to delete submission'),
+    })
   }
 
   const groupedData = React.useMemo(() => {
@@ -101,7 +303,6 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
 
     rows.forEach((item) => {
       const key = getReceiptGroupKey(item)
-
       if (!map.has(key)) {
         map.set(key, {
           receiptGroupId: key,
@@ -124,39 +325,44 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
       group.paidAmount += Number(item.PaidAmount || 0)
       group.statuses.push(item.PaymentStatus)
 
-      if (item.SubmittedDate && new Date(item.SubmittedDate) > new Date(group.submittedDateRaw)) {
+      if (
+        item.SubmittedDate &&
+        new Date(item.SubmittedDate) > new Date(group.submittedDateRaw)
+      ) {
         group.submittedDateRaw = item.SubmittedDate
         group.datePaid = formatDate(item.SubmittedDate)
       }
 
       if (!group.mode || group.mode === '-') group.mode = item.PaymentMode || '-'
-      if ((!group.remarks || group.remarks === '-') && item.Remarks) group.remarks = item.Remarks
+      if ((!group.remarks || group.remarks === '-') && item.Remarks)
+        group.remarks = item.Remarks
     })
 
     return Array.from(map.values())
-      .map((group) => ({
-        ...group,
-        status: normalizeStatus(group.statuses),
-      }))
-      .sort((a, b) => new Date(b.submittedDateRaw || 0) - new Date(a.submittedDateRaw || 0))
+      .map((group) => ({ ...group, status: normalizeStatus(group.statuses) }))
+      .sort(
+        (a, b) => new Date(b.submittedDateRaw || 0) - new Date(a.submittedDateRaw || 0)
+      )
   }, [feesData])
 
-  const tableData = React.useMemo(() => {
-    return groupedData.map((group) => ({
-      group: `${group.submissions.length} fee row(s)`,
-      code: getReceiptDisplayNo(group),
-      dueDate: group.datePaid,
-      amount: group.originalAmount,
-      discount: group.discountAmount,
-      paidAmount: group.paidAmount,
-      status: group.status,
-      mode: group.mode,
-      refId: getReceiptDisplayNo(group),
-      datePaid: group.datePaid,
-      remarks: group.remarks,
-      original: group,
-    }))
-  }, [groupedData])
+  const tableData = React.useMemo(
+    () =>
+      groupedData.map((group) => ({
+        group: `${group.submissions.length} fee row(s)`,
+        code: getReceiptDisplayNo(group),
+        dueDate: group.datePaid,
+        amount: group.originalAmount,
+        discount: group.discountAmount,
+        paidAmount: group.paidAmount,
+        status: group.status,
+        mode: group.mode,
+        refId: getReceiptDisplayNo(group),
+        datePaid: group.datePaid,
+        remarks: group.remarks,
+        original: group,
+      })),
+    [groupedData]
+  )
 
   const feeColumns = React.useMemo(
     () => [
@@ -164,10 +370,8 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
         id: 'expand',
         header: '',
         cell: ({ row }) => {
-          const receiptGroup = row.original.original
-          const groupKey = receiptGroup.receiptGroupId
+          const groupKey = row.original.original.receiptGroupId
           const expanded = !!expandedRows[groupKey]
-
           return (
             <Button
               type="button"
@@ -188,24 +392,17 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
       { accessorKey: 'group', header: 'Fees Group' },
       { accessorKey: 'code', header: 'Receipt Code' },
       { accessorKey: 'dueDate', header: 'Date' },
-      { accessorKey: 'amount', header: 'Original Amount (₹)' },
+      { accessorKey: 'amount', header: 'Original (₹)' },
       { accessorKey: 'discount', header: 'Discount (₹)' },
-      { accessorKey: 'paidAmount', header: 'Paid Amount (₹)' },
+      { accessorKey: 'paidAmount', header: 'Paid (₹)' },
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => {
-          const status = String(row.original.status || '').toUpperCase()
-
-          const className =
-            status === 'SUCCESS' || status === 'PAID'
-              ? 'bg-green-100 text-green-700'
-              : status === 'PARTIAL'
-                ? 'bg-yellow-100 text-yellow-700'
-                : 'bg-slate-100 text-slate-700'
-
-          return <Badge className={className}>{row.original.status}</Badge>
-        },
+        cell: ({ row }) => (
+          <Badge className={statusBadgeClass(row.original.status)}>
+            {row.original.status}
+          </Badge>
+        ),
       },
       { accessorKey: 'mode', header: 'Mode' },
       { accessorKey: 'refId', header: 'Ref ID' },
@@ -217,7 +414,6 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
         cell: ({ row }) => {
           const receiptGroup = row.original.original
           const receiptNo = getReceiptDisplayNo(receiptGroup)
-
           return (
             <PDFDownloadLink
               document={
@@ -231,7 +427,7 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
             >
               {({ loading }) => (
                 <Button size="sm" variant="outline">
-                  {loading ? 'Generating...' : 'Download'}
+                  {loading ? 'Generating…' : 'Download'}
                 </Button>
               )}
             </PDFDownloadLink>
@@ -322,19 +518,33 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
 
                       {expanded && (
                         <TableRow>
-                          <TableCell colSpan={feeColumns.length} className="bg-muted/30">
-                            <div className="p-3 rounded-lg space-y-2">
+                          <TableCell
+                            colSpan={feeColumns.length}
+                            className="bg-muted/30 p-0"
+                          >
+                            <div className="p-4 space-y-3">
                               <p className="text-sm font-semibold">Included Fee Rows</p>
 
                               <div className="rounded-md border overflow-hidden">
                                 <Table>
                                   <TableHeader>
                                     <TableRow>
-                                      <TableHead className="text-center">Fee Type</TableHead>
-                                      <TableHead className="text-center">Original</TableHead>
-                                      <TableHead className="text-center">Discount</TableHead>
+                                      <TableHead className="text-center">
+                                        Fee Type
+                                      </TableHead>
+                                      <TableHead className="text-center">
+                                        Original
+                                      </TableHead>
+                                      <TableHead className="text-center">
+                                        Discount
+                                      </TableHead>
                                       <TableHead className="text-center">Paid</TableHead>
-                                      <TableHead className="text-center">Status</TableHead>
+                                      <TableHead className="text-center">
+                                        Status
+                                      </TableHead>
+                                      <TableHead className="text-center">
+                                        Actions
+                                      </TableHead>
                                     </TableRow>
                                   </TableHeader>
 
@@ -345,24 +555,47 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
                                           {item.FeeType || '-'}
                                         </TableCell>
                                         <TableCell className="text-center">
-                                          ₹{Number(item.OriginalAmount || 0).toLocaleString('en-IN')}
+                                          ₹
+                                          {Number(
+                                            item.OriginalAmount || 0
+                                          ).toLocaleString('en-IN')}
                                         </TableCell>
                                         <TableCell className="text-center">
-                                          ₹{Number(item.DiscountAmount || 0).toLocaleString('en-IN')}
+                                          ₹
+                                          {Number(
+                                            item.DiscountAmount || 0
+                                          ).toLocaleString('en-IN')}
                                         </TableCell>
                                         <TableCell className="text-center">
-                                          ₹{Number(item.PaidAmount || 0).toLocaleString('en-IN')}
+                                          ₹
+                                          {Number(item.PaidAmount || 0).toLocaleString(
+                                            'en-IN'
+                                          )}
                                         </TableCell>
                                         <TableCell className="text-center">
                                           <Badge
-                                            className={
-                                              String(item.PaymentStatus || '').toUpperCase() === 'PARTIAL'
-                                                ? 'bg-yellow-100 text-yellow-700'
-                                                : 'bg-green-100 text-green-700'
-                                            }
+                                            className={statusBadgeClass(
+                                              item.PaymentStatus
+                                            )}
                                           >
                                             {item.PaymentStatus || '-'}
                                           </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                          <div className="flex items-center justify-center gap-1.5">
+                                            <button
+                                              onClick={() => setEditingSubmission(item)}
+                                              className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                                            >
+                                              <Pencil className="h-3.5 w-3.5" />
+                                            </button>
+                                            <button
+                                              onClick={() => setDeletingSubmission(item)}
+                                              className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-destructive transition-colors"
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+                                          </div>
                                         </TableCell>
                                       </TableRow>
                                     ))}
@@ -399,9 +632,7 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
           >
             Prev
           </Button>
-
           <span className="text-sm">{table.getState().pagination.pageIndex + 1}</span>
-
           <Button
             variant="outline"
             size="sm"
@@ -412,21 +643,57 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
           </Button>
         </div>
       </CardContent>
+
+      {/* Update Modal */}
+      {editingSubmission && (
+        <UpdateSubmissionModal
+          open={!!editingSubmission}
+          onClose={() => setEditingSubmission(null)}
+          submission={editingSubmission}
+          onSave={handleUpdate}
+          isSaving={isUpdating}
+        />
+      )}
+
+      {/* Delete Confirm */}
+      <AlertDialog
+        open={!!deletingSubmission}
+        onOpenChange={() => setDeletingSubmission(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fee Submission</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the "{deletingSubmission?.FeeType}"
+              submission of ₹
+              {Number(deletingSubmission?.PaidAmount || 0).toLocaleString('en-IN')}? This
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }
 
 export default PreviousFeesRecords
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function FeesTableSkeleton() {
   return (
     <Card className="rounded-sm">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-semibold">
-          <Skeleton className="h-5 w-24" />
-        </CardTitle>
+      <CardHeader>
+        <Skeleton className="h-5 w-40" />
       </CardHeader>
-
       <CardContent className="pt-0 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -435,7 +702,6 @@ function FeesTableSkeleton() {
           </div>
           <Skeleton className="h-9 w-48 rounded-md" />
         </div>
-
         <div className="rounded-md border overflow-x-auto">
           <div className="space-y-2 p-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -447,7 +713,6 @@ function FeesTableSkeleton() {
             ))}
           </div>
         </div>
-
         <div className="flex items-center justify-end gap-2">
           <Skeleton className="h-9 w-16" />
           <Skeleton className="h-5 w-6" />

@@ -26,12 +26,14 @@ import {
   TrendingUp,
   ArrowRight,
   IndianRupee,
+  Download,
 } from 'lucide-react'
 
 export default function PendingFeesPage() {
   const [selectedClass, setSelectedClass] = useState(classes[0] || '')
   const [selectedSection, setSelectedSection] = useState('all')
   const [minPending, setMinPending] = useState('')
+  const [selectedFeeType, setSelectedFeeType] = useState('all')
 
   const filters = useMemo(() => {
     if (!selectedClass) return null
@@ -60,14 +62,35 @@ export default function PendingFeesPage() {
     return Object.values(map)
   }, [tableData])
 
-  const filteredStudents = useMemo(() => {
-    if (!minPending) return groupedStudents
-    const min = Number(minPending)
-    return groupedStudents.filter((s) => {
-      const total = s.fees.reduce((sum, f) => sum + Number(f.PendingAmount || 0), 0)
-      return total >= min
+  const availableFeeTypes = useMemo(() => {
+    const types = new Set()
+    tableData.forEach((row) => {
+      if (row.FeeType) {
+        types.add(row.FeeType)
+      }
     })
-  }, [groupedStudents, minPending])
+    return Array.from(types).sort()
+  }, [tableData])
+
+  const filteredStudents = useMemo(() => {
+    let students = groupedStudents
+
+    // Filter by min pending amount
+    if (minPending) {
+      const min = Number(minPending)
+      students = students.filter((s) => {
+        const total = s.fees.reduce((sum, f) => sum + Number(f.PendingAmount || 0), 0)
+        return total >= min
+      })
+    }
+
+    // Filter by fee type
+    if (selectedFeeType !== 'all') {
+      students = students.filter((s) => s.fees.some((f) => f.FeeType === selectedFeeType))
+    }
+
+    return students
+  }, [groupedStudents, minPending, selectedFeeType])
 
   const summary = useMemo(() => {
     if (!tableData.length) return null
@@ -79,6 +102,50 @@ export default function PendingFeesPage() {
     const uniqueStudents = new Set(tableData.map((r) => r.StudentID)).size
     return { totalPending, totalPaid, uniqueStudents }
   }, [tableData])
+
+  const handleExport = () => {
+    const headers = [
+      'Student ID',
+      'Full Name',
+      'Class',
+      'Section',
+      'Fee Type',
+      'Paid Amount',
+      'Pending Amount',
+    ]
+
+    const rows = filteredStudents.flatMap((student) =>
+      student.fees.map((fee) => [
+        student.StudentID,
+        student.FullName,
+        student.ClassID,
+        student.SectionID,
+        fee.FeeType.replaceAll('_', ' '),
+        fee.PaidAmount || 0,
+        fee.PendingAmount || 0,
+      ])
+    )
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute(
+      'download',
+      `pending-fees-${new Date().toISOString().split('T')[0]}.csv`
+    )
+    link.style.visibility = 'hidden'
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const columns = useMemo(
     () => [
@@ -213,7 +280,7 @@ export default function PendingFeesPage() {
 
   return (
     <div className="p-6 space-y-5">
-      {/* ── Header ── */}
+      {/* ── Header ─��� */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Pending Fees</h2>
@@ -223,7 +290,7 @@ export default function PendingFeesPage() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap items-center">
           <Select value={selectedClass} onValueChange={setSelectedClass}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Class" />
@@ -250,6 +317,29 @@ export default function PendingFeesPage() {
               ))}
             </SelectContent>
           </Select>
+
+          <Select value={selectedFeeType} onValueChange={setSelectedFeeType}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Fee Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Fee Types</SelectItem>
+              {availableFeeTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type.replaceAll('_', ' ')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            onClick={handleExport}
+            disabled={filteredStudents.length === 0}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
         </div>
       </div>
 
@@ -300,7 +390,7 @@ export default function PendingFeesPage() {
 
       {/* ── Min Filter ── */}
       {groupedStudents.length > 0 && (
-        <div className="flex items-center gap-2 w-fit">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input

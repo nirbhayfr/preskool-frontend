@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Calendar,
+  Download,
 } from 'lucide-react'
 import { useFeeSubmissions } from '@/hooks/useFeeSubmissions'
 
@@ -354,6 +355,67 @@ export default function FeeReportsPage() {
   const collectionsPercentage =
     summary.total > 0 ? (summary.paid / summary.total) * 100 : 0
 
+  // ✅ EXPORT FUNCTION
+  const handleExport = () => {
+    const headers = [
+      // 'Student Name',
+      'Student ID',
+      'Fee Type',
+      'Original Amount',
+      'Discount',
+      'Collected',
+      'Pending',
+      'Payment Mode',
+      'Status',
+      'Date',
+    ]
+
+    const rows = filteredData.map((row) => {
+      const pending = Math.max(
+        Number(row.OriginalAmount || 0) -
+          Number(row.DiscountAmount || 0) -
+          Number(row.PaidAmount || 0),
+        0
+      )
+      return [
+        // row.FullName,
+        row.StudentID,
+        row.FeeType,
+        Number(row.OriginalAmount || 0),
+        Number(row.DiscountAmount || 0),
+        Number(row.PaidAmount || 0),
+        pending,
+        row.PaymentMode || 'N/A',
+        row.PaymentStatus || '-',
+        new Date(row.SubmittedDate).toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
+      ]
+    })
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute(
+      'download',
+      `fee-reports-${new Date().toISOString().split('T')[0]}.csv`
+    )
+    link.style.visibility = 'hidden'
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="space-y-6 p-6">
       {/* 📊 STATS CARDS */}
@@ -558,24 +620,34 @@ export default function FeeReportsPage() {
       {/* 📋 TABLE CARD */}
       <Card className="rounded-2xl border-0 shadow-sm overflow-hidden">
         <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-4">
             <div>
               <CardTitle className="text-lg">Fee Records</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
                 {filteredData.length} record{filteredData.length !== 1 ? 's' : ''} found
               </p>
             </div>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date-desc">Latest First</SelectItem>
-                <SelectItem value="date-asc">Oldest First</SelectItem>
-                <SelectItem value="amount-desc">Highest Amount</SelectItem>
-                <SelectItem value="amount-asc">Lowest Amount</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleExport}
+                disabled={filteredData.length === 0}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date-desc">Latest First</SelectItem>
+                  <SelectItem value="date-asc">Oldest First</SelectItem>
+                  <SelectItem value="amount-desc">Highest Amount</SelectItem>
+                  <SelectItem value="amount-asc">Lowest Amount</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
 

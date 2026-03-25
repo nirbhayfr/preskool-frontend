@@ -61,7 +61,7 @@ function StatusBadge({ status }) {
 }
 
 function PaySalarySection({ teacherId, teacher }) {
-  const [selectedAdvanceIds, setSelectedAdvanceIds] = useState([])
+  const [selectedAdvanceIds, setSelectedAdvanceIds] = useState({})
 
   const { data, isLoading, isError } = useTeacherSalaryByTeacherId(teacherId)
   const { mutate: bulkPay, isPending: isPaying } = useBulkMarkTeacherSalaryPaid()
@@ -75,6 +75,8 @@ function PaySalarySection({ teacherId, teacher }) {
 
   const records = data?.data ?? []
   const pendingRecords = records.filter((r) => !r.IsPaid)
+
+  const activeSalary = pendingRecords[0] || null
   const hasPendingSalary = pendingRecords.length > 0
 
   const advances = (paymentsData?.data ?? paymentsData ?? []).filter(
@@ -82,27 +84,39 @@ function PaySalarySection({ teacherId, teacher }) {
   )
   const pendingAdvances = advances.filter((p) => p.PaymentStatus === 'Pending')
 
-  const toggleAdvance = (id) => {
-    setSelectedAdvanceIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    )
+  const toggleAdvance = (salaryId, paymentId) => {
+    setSelectedAdvanceIds((prev) => {
+      const current = prev[salaryId] || []
+
+      return {
+        ...prev,
+        [salaryId]: current.includes(paymentId)
+          ? current.filter((id) => id !== paymentId)
+          : [...current, paymentId],
+      }
+    })
+  }
+  const getSelectedAdvanceTotal = (salaryId) => {
+    const ids = selectedAdvanceIds[salaryId] || []
+
+    return pendingAdvances
+      .filter((p) => ids.includes(p.PaymentID))
+      .reduce((sum, p) => sum + Number(p.TotalAmount ?? 0), 0)
   }
 
-  const selectedAdvanceTotal = useMemo(() => {
-    return pendingAdvances
-      .filter((p) => selectedAdvanceIds.includes(p.PaymentID))
-      .reduce((sum, p) => sum + Number(p.TotalAmount ?? 0), 0)
-  }, [pendingAdvances, selectedAdvanceIds])
-
   const { mutate: updateSalary } = useUpdateTeacherSalary()
-
   const handlePay = useCallback(
     (salary, teacher) => {
-      const updatedDeductions = Number(salary.Deductions ?? 0) + selectedAdvanceTotal
+      const salaryId = salary.SalaryID
+
+      const ids = selectedAdvanceIds[salaryId] || []
+      const selectedTotal = getSelectedAdvanceTotal(salaryId)
+
+      const updatedDeductions = Number(salary.Deductions ?? 0) + selectedTotal
 
       updateSalary(
         {
-          id: salary.SalaryID,
+          id: salaryId,
           payload: {
             basicSalary: Number(salary.BasicSalary),
             allowances: Number(salary.Allowances ?? 0),
@@ -112,7 +126,7 @@ function PaySalarySection({ teacherId, teacher }) {
           },
         },
         {
-          onSuccess: (updatedData) => {
+          onSuccess: () => {
             bulkPay([salary.TeacherID], {
               onSuccess: async () => {
                 toast.success('Salary marked as paid')
@@ -129,24 +143,33 @@ function PaySalarySection({ teacherId, teacher }) {
                     IsPaid: true,
                     PaymentDate: new Date().toISOString().slice(0, 10),
                   }
+
                   const blob = await pdf(
                     <SalarySlipPDF teacher={teacher} salary={updatedSalary} />
                   ).toBlob()
+
                   const url = URL.createObjectURL(blob)
                   window.open(url)
                 } catch (err) {
                   console.error('Failed to print salary slip', err)
                 }
 
-                // Settle selected advances
-                if (selectedAdvanceIds.length > 0) {
-                  selectedAdvanceIds.forEach((id) => {
-                    updatePayment({ id, data: { paymentStatus: 'Settled' } })
+                // ✅ Settle ONLY selected advances for this salary
+                if (ids.length > 0) {
+                  ids.forEach((id) => {
+                    updatePayment({
+                      id,
+                      data: { paymentStatus: 'Settled' },
+                    })
                   })
-                  toast.success(
-                    `${selectedAdvanceIds.length} advance(s) marked as settled`
-                  )
-                  setSelectedAdvanceIds([])
+
+                  toast.success(`${ids.length} advance(s) marked as settled`)
+
+                  // ✅ Clear only this salary's selection
+                  setSelectedAdvanceIds((prev) => ({
+                    ...prev,
+                    [salaryId]: [],
+                  }))
                 }
               },
               onError: () => toast.error('Failed to mark salary as paid'),
@@ -156,9 +179,8 @@ function PaySalarySection({ teacherId, teacher }) {
         }
       )
     },
-    [bulkPay, updatePayment, updateSalary, selectedAdvanceIds, selectedAdvanceTotal]
+    [bulkPay, updatePayment, updateSalary, selectedAdvanceIds, getSelectedAdvanceTotal]
   )
-
   const handleDelete = useCallback(
     (salary) => {
       deleteSalary(salary.SalaryID, {
@@ -193,166 +215,176 @@ function PaySalarySection({ teacherId, teacher }) {
 
       <CardContent className="space-y-6">
         {/* Salary records */}
-        {pendingRecords.length === 0 ? (
+        {!activeSalary ? (
           <p className="text-sm text-muted-foreground text-center py-4">
             No pending salary records. Create a salary first.
           </p>
         ) : (
           <div className="divide-y divide-border">
-            {pendingRecords.map((record) => {
-              const netAfterAdvance = Math.max(
-                Number(record.NetSalary) - selectedAdvanceTotal,
-                0
-              )
+            {activeSalary &&
+              (() => {
+                const record = activeSalary
+                const selectedAdvanceTotal = getSelectedAdvanceTotal(record.SalaryID)
 
-              return (
-                <div key={record.SalaryID} className="py-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <p className="text-sm font-semibold">
-                        {format(new Date(`${record.SalaryMonth}-01`), 'MMMM yyyy')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        ID: #{record.SalaryID} · Created{' '}
-                        {format(new Date(record.CreatedAt), 'dd MMM yyyy')}
-                      </p>
-                    </div>
-                    <Badge
-                      variant="secondary"
-                      className="bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40"
-                    >
-                      Pending
-                    </Badge>
-                  </div>
+                const netAfterAdvance = Math.max(
+                  Number(record.NetSalary) - selectedAdvanceTotal,
+                  0
+                )
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <SalaryCell
-                      label="Basic Salary"
-                      value={`₹ ${Number(record.BasicSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-                    />
-                    <SalaryCell
-                      label="Allowances"
-                      value={`+ ₹ ${Number(record.Allowances ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-                      valueClass="text-emerald-600"
-                    />
-                    <SalaryCell
-                      label="Deductions"
-                      value={`− ₹ ${Number(record.Deductions ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-                      valueClass="text-red-500"
-                    />
-                    <SalaryCell
-                      label="Net Salary"
-                      value={`₹ ${Number(record.NetSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-                      valueClass="text-primary font-semibold"
-                    />
-                  </div>
-
-                  {/* Advance selection — only shown if pending salary exists */}
-                  {pendingAdvances.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                          Deduct Advances
+                return (
+                  <div key={record.SalaryID} className="py-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-semibold">
+                          {format(new Date(`${record.SalaryMonth}-01`), 'MMMM yyyy')}
                         </p>
-                        {selectedAdvanceTotal > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-orange-600 bg-orange-50 dark:bg-orange-950/40"
-                          >
-                            − ₹{' '}
-                            {selectedAdvanceTotal.toLocaleString('en-IN', {
-                              minimumFractionDigits: 2,
-                            })}
-                          </Badge>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          ID: #{record.SalaryID} · Created{' '}
+                          {format(new Date(record.CreatedAt), 'dd MMM yyyy')}
+                        </p>
                       </div>
-
-                      {advances.map((payment) => {
-                        const isPending = payment.PaymentStatus === 'Pending'
-                        return (
-                          <div
-                            key={payment.PaymentID}
-                            className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
-                              isPending
-                                ? 'cursor-pointer hover:bg-muted/40'
-                                : 'opacity-60 cursor-not-allowed'
-                            }`}
-                            onClick={() => isPending && toggleAdvance(payment.PaymentID)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Checkbox
-                                checked={selectedAdvanceIds.includes(payment.PaymentID)}
-                                disabled={!isPending}
-                                onCheckedChange={() =>
-                                  isPending && toggleAdvance(payment.PaymentID)
-                                }
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <div className="space-y-0.5">
-                                <p className="text-sm font-medium">
-                                  {format(new Date(payment.PaymentDate), 'dd MMM yyyy')}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {payment.ReferenceNo ?? '—'} · {payment.PaymentMethod}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 shrink-0">
-                              <div className="flex items-center gap-0.5 text-sm font-semibold text-orange-600">
-                                <IndianRupee className="size-3.5" />
-                                {Number(payment.TotalAmount).toLocaleString('en-IN', {
-                                  minimumFractionDigits: 2,
-                                })}
-                              </div>
-                              <StatusBadge status={payment.PaymentStatus} />
-                            </div>
-                          </div>
-                        )
-                      })}
+                      <Badge
+                        variant="secondary"
+                        className="bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40"
+                      >
+                        Pending
+                      </Badge>
                     </div>
-                  )}
 
-                  {/* Net after advance */}
-                  {selectedAdvanceTotal > 0 && (
-                    <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-2.5">
-                      <p className="text-sm text-muted-foreground">
-                        Net Payable After Advance
-                      </p>
-                      <p className="text-sm font-semibold text-primary">
-                        ₹{' '}
-                        {netAfterAdvance.toLocaleString('en-IN', {
-                          minimumFractionDigits: 2,
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <SalaryCell
+                        label="Basic Salary"
+                        value={`₹ ${Number(record.BasicSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                      />
+                      <SalaryCell
+                        label="Allowances"
+                        value={`+ ₹ ${Number(record.Allowances ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                        valueClass="text-emerald-600"
+                      />
+                      <SalaryCell
+                        label="Deductions"
+                        value={`− ₹ ${Number(record.Deductions ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                        valueClass="text-red-500"
+                      />
+                      <SalaryCell
+                        label="Net Salary"
+                        value={`₹ ${Number(record.NetSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                        valueClass="text-primary font-semibold"
+                      />
+                    </div>
+
+                    {/* Advance selection — only shown if pending salary exists */}
+                    {pendingAdvances.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Deduct Advances
+                          </p>
+                          {selectedAdvanceTotal > 0 && (
+                            <Badge
+                              variant="secondary"
+                              className="text-orange-600 bg-orange-50 dark:bg-orange-950/40"
+                            >
+                              − ₹{' '}
+                              {selectedAdvanceTotal.toLocaleString('en-IN', {
+                                minimumFractionDigits: 2,
+                              })}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {advances.map((payment) => {
+                          const isPending = payment.PaymentStatus === 'Pending'
+                          return (
+                            <div
+                              key={payment.PaymentID}
+                              className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
+                                isPending
+                                  ? 'cursor-pointer hover:bg-muted/40'
+                                  : 'opacity-60 cursor-not-allowed'
+                              }`}
+                              onClick={() =>
+                                isPending &&
+                                toggleAdvance(record.SalaryID, payment.PaymentID)
+                              }
+                            >
+                              <div className="flex items-center gap-3">
+                                <Checkbox
+                                  checked={(
+                                    selectedAdvanceIds[record.SalaryID] || []
+                                  ).includes(payment.PaymentID)}
+                                  disabled={!isPending}
+                                  onCheckedChange={() =>
+                                    isPending &&
+                                    toggleAdvance(record.SalaryID, payment.PaymentID)
+                                  }
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <div className="space-y-0.5">
+                                  <p className="text-sm font-medium">
+                                    {format(new Date(payment.PaymentDate), 'dd MMM yyyy')}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {payment.ReferenceNo ?? '—'} · {payment.PaymentMethod}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <div className="flex items-center gap-0.5 text-sm font-semibold text-orange-600">
+                                  <IndianRupee className="size-3.5" />
+                                  {Number(payment.TotalAmount).toLocaleString('en-IN', {
+                                    minimumFractionDigits: 2,
+                                  })}
+                                </div>
+                                <StatusBadge status={payment.PaymentStatus} />
+                              </div>
+                            </div>
+                          )
                         })}
-                      </p>
+                      </div>
+                    )}
+
+                    {/* Net after advance */}
+                    {selectedAdvanceTotal > 0 && (
+                      <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-2.5">
+                        <p className="text-sm text-muted-foreground">
+                          Net Payable After Advance
+                        </p>
+                        <p className="text-sm font-semibold text-primary">
+                          ₹{' '}
+                          {netAfterAdvance.toLocaleString('en-IN', {
+                            minimumFractionDigits: 2,
+                          })}
+                        </p>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-muted-foreground">
+                      Payment date will be set to today
+                    </p>
+
+                    <Separator />
+
+                    <div className="flex items-center gap-3">
+                      <Button
+                        size="sm"
+                        disabled={isPaying}
+                        onClick={() => handlePay(record, teacher)}
+                      >
+                        {isPaying ? <Spinner /> : 'Mark as Paid'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={isDeleting}
+                        onClick={() => handleDelete(record)}
+                      >
+                        {isDeleting ? <Spinner /> : 'Delete'}
+                      </Button>
                     </div>
-                  )}
-
-                  <p className="text-xs text-muted-foreground">
-                    Payment date will be set to today
-                  </p>
-
-                  <Separator />
-
-                  <div className="flex items-center gap-3">
-                    <Button
-                      size="sm"
-                      disabled={isPaying}
-                      onClick={() => handlePay(record, teacher)}
-                    >
-                      {isPaying ? <Spinner /> : 'Mark as Paid'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={isDeleting}
-                      onClick={() => handleDelete(record)}
-                    >
-                      {isDeleting ? <Spinner /> : 'Delete'}
-                    </Button>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })()}
           </div>
         )}
 
