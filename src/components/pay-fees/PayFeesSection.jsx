@@ -37,6 +37,7 @@ import {
   CreditCard,
   Info,
 } from 'lucide-react'
+import { useAllFeeInventory } from '@/hooks/useFeeInventory'
 
 const makeBlankRow = (student) => ({
   id: Date.now() + Math.random(),
@@ -540,6 +541,9 @@ export default function PayFeesSection({ student, feesData }) {
     enabled: !!student?.StudentID,
   })
   const { data: transport } = useTransport()
+  const { data: inventory } = useAllFeeInventory()
+  console.log(inventory)
+
   const { mutate: createFeeSubmission, isLoading } = useCreateFeeSubmission()
   const { mutate: deductFees } = useDeductFees()
   const { mutate: updateFeeSubmission } = useUpdateFeeSubmission()
@@ -584,22 +588,45 @@ export default function PayFeesSection({ student, feesData }) {
   }, [feesData])
 
   const feeGroups = useMemo(() => {
-    if (!structure) return []
+    if (!structure && !inventory?.length) return []
+
     const groups = [
       ...new Set(
-        Object.keys(structure)
+        Object.keys(structure || {})
           .filter((k) => k.includes('_fee'))
           .map((k) => (k.includes('tuition') || k.includes('tution') ? 'tuition_fee' : k))
       ),
     ]
+
     const base = ['pending_fee', ...groups]
+
     if (transportHistory?.months?.length) {
       const tuitionIdx = base.indexOf('tuition_fee')
       base.splice(tuitionIdx !== -1 ? tuitionIdx + 1 : 1, 0, 'transport_fee')
     }
+
     if (partialFees.length > 0) base.push('partial_fee')
+
+    // ✅ FIXED
+    if (Array.isArray(inventory) && inventory.length > 0) {
+      base.push('inventory_fee')
+    }
+
     return [...new Set(base)]
-  }, [structure, partialFees, transportHistory])
+  }, [structure, partialFees, transportHistory, inventory])
+
+  const applicableInventory = useMemo(() => {
+    if (!Array.isArray(inventory)) return []
+
+    return inventory.filter((item) => {
+      return (
+        // ⚠️ TEMP: comment this if mismatch
+        // item.academic_year === academicYear &&
+
+        item.class === '' || String(item.class).trim() === String(student.ClassID).trim()
+      )
+    })
+  }, [inventory, student, academicYear])
 
   const quarterTotal = useMemo(() => {
     if (!quarter || !structure) return 0
@@ -629,6 +656,16 @@ export default function PayFeesSection({ student, feesData }) {
 
   const getFeesForGroup = (group) => {
     if (!group || !structure) return []
+
+    if (group === 'inventory_fee') {
+      return applicableInventory.map((item) => ({
+        key: `inventory_${item.fee_type}`,
+        label: `${item.fee_type} ${
+          item.class === '' ? '(All Classes)' : `(Class ${item.class})`
+        }`,
+        value: Number(item.price || 0),
+      }))
+    }
 
     if (group === 'pending_fee') {
       return [{ key: 'pending_fee', label: 'PENDING FEES', value: pendingAmount }]
@@ -950,7 +987,38 @@ export default function PayFeesSection({ student, feesData }) {
       const isTransportGroup = row.group === 'transport_fee'
       const isPending = row.type === 'pending_fee'
       const isPartialGroup = row.group === 'partial_fee'
+      const isInventory = row.group === 'inventory_fee'
       const month = row.type.split('_')[0]
+
+      if (isInventory) {
+        const amount = Number(row.amount)
+        if (!amount) continue
+
+        const feeLabel = row.type.replace('inventory_', '').toUpperCase()
+
+        collectedSubmissions.push({
+          FeeType: feeLabel,
+          OriginalAmount: amount,
+          DiscountAmount: 0,
+          PaidAmount: amount,
+          PaymentMethod: commonPaymentMode,
+          PaymentDate: collectionDate,
+          SubmittedDate: collectionDate,
+        })
+
+        createFeeSubmission({
+          ...basePayload,
+          paymentMode: commonPaymentMode,
+          remarks: commonRemarks,
+          feeType: feeLabel,
+          transactionId: `${baseTxn}_${row.id}`,
+          originalAmount: amount,
+          discountAmount: 0,
+          paidAmount: amount,
+        })
+
+        continue
+      }
 
       if (isPartialGroup) {
         const remainingAmount = Number(row.amount)
@@ -1144,6 +1212,8 @@ export default function PayFeesSection({ student, feesData }) {
 
     if (collectedSubmissions.length > 0) await handleDownloadSlip(collectedSubmissions)
   }
+
+  console.log('feeGroups →', feeGroups)
 
   return (
     <>

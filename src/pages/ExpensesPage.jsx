@@ -51,6 +51,7 @@ import {
   IndianRupee,
   Filter,
   X,
+  Download,
 } from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -470,6 +471,60 @@ export default function ExpensesPage() {
     })
   }
 
+  const handleExportCSV = () => {
+    try {
+      if (!filtered.length) {
+        toast.error('No data to export')
+        return
+      }
+
+      const headers = [
+        'Date',
+        'Title',
+        'Category',
+        'Amount',
+        'Payment Mode',
+        'Status',
+        'Paid To',
+        'Reference',
+        'Description',
+      ]
+
+      const rows = filtered.map((e) => [
+        formatDate(e.ExpenseDate),
+        e.ExpenseTitle,
+        e.ExpenseCategory,
+        e.Amount,
+        e.PaymentMode,
+        e.PaymentStatus,
+        e.PaidTo || '',
+        e.ReferenceNumber || '',
+        e.ExpenseDescription || '',
+      ])
+
+      const csvContent = [headers, ...rows]
+        .map((row) => row.map((v) => `"${v ?? ''}"`).join(','))
+        .join('\n')
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `expenses_${new Date().toISOString()}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      URL.revokeObjectURL(url)
+
+      toast.success('CSV exported')
+    } catch (err) {
+      console.error(err)
+      toast.error('Export failed')
+    }
+  }
+
   if (isLoading) return <CircleLoader />
   if (isError) return <p className="p-8 text-destructive">Failed to load expenses.</p>
 
@@ -486,16 +541,23 @@ export default function ExpensesPage() {
             Track and manage all school expenditures
           </p>
         </div>
-        <Button
-          className="gap-2 self-start sm:self-auto"
-          onClick={() => {
-            setEditingExpense(null)
-            setModalOpen(true)
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Add Expense
-        </Button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button variant="outline" className="gap-2" onClick={handleExportCSV}>
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+
+          <Button
+            className="gap-2"
+            onClick={() => {
+              setEditingExpense(null)
+              setModalOpen(true)
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Add Expense
+          </Button>
+        </div>
       </div>
 
       {/* ── Summary ── */}

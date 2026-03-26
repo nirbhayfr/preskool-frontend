@@ -24,6 +24,8 @@ import {
   Download,
 } from 'lucide-react'
 import { useFeeSubmissions } from '@/hooks/useFeeSubmissions'
+import { useStudents } from '@/hooks/useStudents'
+import { classes, sections } from '@/data/basicData'
 
 const getFeeGroup = (feeType = '') => {
   const type = feeType.toUpperCase()
@@ -180,8 +182,10 @@ function TableRow({ row, feeGroup, statusConfig }) {
     <tr className="border-b hover:bg-muted/40 transition-colors">
       <td className="px-6 py-4">
         <div>
-          <p className="font-medium text-foreground">{row.FullName}</p>
-          <p className="text-xs text-muted-foreground">ID: {row.StudentID}</p>
+          <p className="font-medium text-foreground">{row.FullName || '—'}</p>
+          <p className="text-xs text-muted-foreground">
+            ID: {row.StudentID} • Class {row.ClassID} - {row.SectionID}
+          </p>
         </div>
       </td>
       <td className="px-6 py-4">
@@ -257,6 +261,7 @@ function TableRow({ row, feeGroup, statusConfig }) {
 
 export default function FeeReportsPage() {
   const { data } = useFeeSubmissions()
+  console.log(data)
 
   const [filters, setFilters] = useState({
     feeGroup: null,
@@ -264,21 +269,28 @@ export default function FeeReportsPage() {
     paymentStatus: null,
     fromDate: '',
     toDate: '',
+    classID: null,
+    sectionID: null,
   })
-
   const [sortBy, setSortBy] = useState('date-desc')
 
   // ✅ FILTER LOGIC
   const filteredData = useMemo(() => {
     if (!data?.data) return []
 
-    let result = data.data.filter((row) => {
+    let result = [...data.data]
+
+    result = result.filter((row) => {
       const feeGroup = getFeeGroup(row.FeeType)
 
       if (filters.feeGroup && feeGroup !== filters.feeGroup) return false
       if (filters.feeType && row.FeeType !== filters.feeType) return false
       if (filters.paymentStatus && row.PaymentStatus !== filters.paymentStatus)
         return false
+
+      // ✅ NEW FILTERS
+      if (filters.classID && row.ClassID !== filters.classID) return false
+      if (filters.sectionID && row.SectionID !== filters.sectionID) return false
 
       const date = new Date(row.SubmittedDate)
       if (filters.fromDate && date < new Date(filters.fromDate)) return false
@@ -287,7 +299,7 @@ export default function FeeReportsPage() {
       return true
     })
 
-    // SORTING
+    // sorting stays same
     result.sort((a, b) => {
       switch (sortBy) {
         case 'date-desc':
@@ -327,6 +339,10 @@ export default function FeeReportsPage() {
   // ✅ UNIQUE DROPDOWNS
   const uniqueFeeTypes = [...new Set(data?.data?.map((d) => d.FeeType))].sort()
 
+  const uniqueClasses = classes
+
+  const uniqueSections = sections
+
   // ✅ ACTIVE FILTERS
   const activeFilters = Object.entries(filters)
     .filter(([key, value]) => value)
@@ -339,6 +355,8 @@ export default function FeeReportsPage() {
           paymentStatus: `Status: ${PAYMENT_STATUS_CONFIG[value]?.label}`,
           fromDate: `From: ${new Date(value).toLocaleDateString('en-IN')}`,
           toDate: `To: ${new Date(value).toLocaleDateString('en-IN')}`,
+          classID: `Class: ${value}`,
+          sectionID: `Section: ${value}`,
         }[key] || value,
     }))
 
@@ -485,6 +503,64 @@ export default function FeeReportsPage() {
         <CardContent className="space-y-4">
           {/* Filter Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Class */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Class
+                </label>
+                <Select
+                  value={filters.classID || 'all-classes'}
+                  onValueChange={(v) =>
+                    setFilters((p) => ({
+                      ...p,
+                      classID: v === 'all-classes' ? null : v,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Select Class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-classes">All Classes</SelectItem>
+                    {uniqueClasses.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        Class {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Section */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Section
+                </label>
+                <Select
+                  value={filters.sectionID || 'all-sections'}
+                  onValueChange={(v) =>
+                    setFilters((p) => ({
+                      ...p,
+                      sectionID: v === 'all-sections' ? null : v,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Select Section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-sections">All Sections</SelectItem>
+                    {uniqueSections.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        Section {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                 Fee Group

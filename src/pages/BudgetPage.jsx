@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useClasswiseBudget } from '@/hooks/useBudget'
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import { classes } from '@/data/basicData'
+import { Button } from '@/components/ui/button'
 
 export default function BudgetPage() {
   const { data, isLoading, isError } = useClasswiseBudget()
@@ -34,6 +35,51 @@ export default function BudgetPage() {
       }
     )
   }, [budgetData])
+
+  const handleExportCSV = () => {
+    if (!budgetData.length) return
+
+    const headers = [
+      'Class',
+      'Students',
+      'Transport Students',
+      'Monthly Tuition',
+      'Annual Tuition',
+      'Monthly Transport',
+      'Annual Transport',
+    ]
+
+    const rows = budgetData.map((row) => [
+      row.ClassID,
+      row.ClassStrength ?? 0,
+      row.TransportStudents ?? 0,
+      row.MonthlyTuitionBudget ?? 0,
+      row.AnnualTuitionBudget ?? 0,
+      row.MonthlyTransportBudget ?? 0,
+      row.AnnualTransportBudget ?? 0,
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r) => r.map((c) => `"${c}"`).join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;',
+    })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = `budget-${new Date().toISOString().split('T')[0]}.csv`
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    URL.revokeObjectURL(url)
+  }
 
   /* TABLE COLUMNS */
 
@@ -105,7 +151,13 @@ export default function BudgetPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-2xl font-semibold tracking-tight">Budget Overview</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold tracking-tight">Budget Overview</h2>
+
+        <Button onClick={handleExportCSV} disabled={!budgetData.length} className="gap-2">
+          Export CSV
+        </Button>
+      </div>
 
       {/* SUMMARY CARDS */}
 

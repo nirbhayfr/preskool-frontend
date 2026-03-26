@@ -5,6 +5,8 @@ import {
   createTransport,
   updateTransport,
   deleteTransport,
+  updateTransportRoute,
+  getTransportRoutes,
 } from '@/api/transport'
 
 // Get all transport
@@ -54,6 +56,27 @@ export const useDeleteTransport = () => {
     mutationFn: deleteTransport,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transport'] })
+    },
+  })
+}
+
+export const useTransportRoutes = (filters) => {
+  return useQuery({
+    queryKey: ['transportRoutes', filters],
+    queryFn: () => getTransportRoutes(filters),
+    enabled: !!filters,
+  })
+}
+
+// 🔹 UPDATE HOOK
+export const useUpdateTransportRoute = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, payload }) => updateTransportRoute(id, payload),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transportRoutes'] })
     },
   })
 }

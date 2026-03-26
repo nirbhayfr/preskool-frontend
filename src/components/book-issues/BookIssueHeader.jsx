@@ -2,9 +2,9 @@
 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search } from 'lucide-react'
+import { Download, Search } from 'lucide-react'
 
-export default function BookIssuesHeader({ onSearch, onMonthChange, month }) {
+export default function BookIssuesHeader({ onSearch, onMonthChange, month, onExport }) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <h1 className="text-xl font-semibold">Book Issues</h1>
@@ -28,6 +28,10 @@ export default function BookIssuesHeader({ onSearch, onMonthChange, month }) {
           className="w-[160px]"
           onChange={(e) => onMonthChange(e.target.value)}
         />
+        <Button variant="outline" size="sm" onClick={onExport}>
+          <Download className="h-4 w-4 mr-1" />
+          Export CSV
+        </Button>
       </div>
     </div>
   )

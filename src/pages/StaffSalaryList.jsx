@@ -90,6 +90,57 @@ export default function TeacherSalaryList() {
     )
   }, [filtered])
 
+  const handleExportCSV = () => {
+    if (!filtered.length) return
+
+    const headers = [
+      'Staff ID',
+      'Name',
+      'Month',
+      'Basic Salary',
+      'Allowances',
+      'Deductions',
+      'Net Salary',
+      'Payment Date',
+      'Status',
+    ]
+
+    const rows = filtered.map((row) => [
+      row.StaffID,
+      row.FullName,
+      formatMonth(row.SalaryMonth),
+      row.BasicSalary ?? 0,
+      row.Allowances ?? 0,
+      row.Deductions ?? 0,
+      row.NetSalary ?? 0,
+      formatDate(row.PaymentDate),
+      row.IsPaid ? 'Paid' : 'Pending',
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r) => r.map((c) => `"${c}"`).join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;',
+    })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = `staff-salaries-${
+      selectedMonth !== 'all' ? selectedMonth : 'all'
+    }.csv`
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    URL.revokeObjectURL(url)
+  }
+
   /* TABLE COLUMNS */
   const columns = [
     {
@@ -182,19 +233,25 @@ export default function TeacherSalaryList() {
         <h2 className="text-2xl font-semibold tracking-tight">Teacher Salaries</h2>
 
         {/* MONTH FILTER */}
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by month" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Months</SelectItem>
-            {months.map((m) => (
-              <SelectItem key={m} value={m}>
-                {formatMonth(m)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button onClick={handleExportCSV} disabled={!filtered.length} className="gap-2">
+            Export CSV
+          </Button>
+
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filter by month" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Months</SelectItem>
+              {months.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {formatMonth(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* SUMMARY CARDS */}

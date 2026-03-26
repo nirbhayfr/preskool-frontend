@@ -22,6 +22,7 @@ import {
   Wallet,
   Form,
   FileText,
+  Bus,
 } from 'lucide-react'
 
 import {
@@ -128,7 +129,7 @@ const data = {
 
   fees: [
     {
-      title: 'Fee Structure & Transport',
+      title: 'Fee Structure & Inventory',
       url: '/fee-structure',
       icon: CircleDollarSign,
     },
@@ -224,6 +225,13 @@ const data = {
       icon: Form,
     },
   ],
+  transport: [
+    {
+      title: 'Manage Transport',
+      url: '/manage-transport',
+      icon: Bus,
+    },
+  ],
 }
 
 function getSidebarDataByRole(role) {
@@ -242,6 +250,7 @@ function getSidebarDataByRole(role) {
       salary: [],
       library: [],
       documents: [],
+      transport: [],
     }
   }
 
@@ -262,6 +271,7 @@ function getSidebarDataByRole(role) {
           icon: Form,
         },
       ],
+      transport: [],
     }
   }
 
@@ -275,6 +285,7 @@ function getSidebarDataByRole(role) {
       salary: [],
       additional: [],
       documents: [],
+      transport: [],
     }
   }
 
@@ -337,6 +348,10 @@ export function AppSidebar({ ...props }) {
 
         {sidebarData.fees?.length > 0 && (
           <NavSecondary items={sidebarData.fees} name="fees & revenue" />
+        )}
+
+        {sidebarData.transport?.length > 0 && (
+          <NavSecondary items={sidebarData.transport} name="transport" />
         )}
 
         {sidebarData.library?.length > 0 && (
