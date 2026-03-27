@@ -83,6 +83,54 @@ function BookIssues() {
     )
   }
 
+  const handleExportCSV = () => {
+    try {
+      if (!displayedIssues.length) {
+        toast.error('No data to export')
+        return
+      }
+
+      const headers = [
+        'Book Title',
+        'Issued To',
+        'Issued To Type',
+        'Issue Date',
+        'Return Date',
+        'Created By',
+      ]
+
+      const rows = displayedIssues.map((i) => [
+        i.BookTitle || '',
+        i.IssuedTo || '',
+        i.IssuedToType || '',
+        i.IssueDate ? new Date(i.IssueDate).toLocaleDateString('en-IN') : '',
+        i.ReturnDate ? new Date(i.ReturnDate).toLocaleDateString('en-IN') : '',
+        i.CreatedBy || '',
+      ])
+
+      const csvContent = [headers, ...rows]
+        .map((row) => row.map((v) => `"${v}"`).join(','))
+        .join('\n')
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `book_issues_${monthFilter}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      URL.revokeObjectURL(url)
+
+      toast.success('CSV exported')
+    } catch (err) {
+      console.error(err)
+      toast.error('Export failed')
+    }
+  }
+
   if (isLoading) return <CircleLoader />
   if (error) return <div>Error loading issues</div>
 
@@ -94,6 +142,7 @@ function BookIssues() {
         onSearch={setSearchQuery}
         onMonthChange={setMonthFilter}
         month={monthFilter}
+        onExport={handleExportCSV}
       />
 
       <TableLayout

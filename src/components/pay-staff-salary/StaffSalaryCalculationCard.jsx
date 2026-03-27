@@ -38,6 +38,11 @@ function StaffSalaryCalculationCard({ staffId, baseSalary }) {
     useStaffSalaryByStaffId(staffId)
   const { mutate: createSalary, isPending: isCreating } = useCreateStaffSalary()
 
+  const hasPendingSalary = useMemo(() => {
+    const records = salaryData?.data ?? []
+    return records.some((r) => !r.IsPaid)
+  }, [salaryData])
+
   const salaryExists = useMemo(() => {
     const records = salaryData?.data ?? []
     return records.some((r) => r.SalaryMonth === month)
@@ -87,6 +92,16 @@ function StaffSalaryCalculationCard({ staffId, baseSalary }) {
   ])
 
   const handleCreateSalary = () => {
+    if (hasPendingSalary) {
+      toast.error('Please pay existing pending salary first')
+      return
+    }
+
+    if (salaryExists) {
+      toast.error('Salary already exists for this month')
+      return
+    }
+
     createSalary(
       [
         {
@@ -237,6 +252,10 @@ function StaffSalaryCalculationCard({ staffId, baseSalary }) {
             <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
               <CircleCheck className="size-4" />
               Salary already created for {format(new Date(`${month}-01`), 'MMMM yyyy')}
+            </div>
+          ) : hasPendingSalary ? (
+            <div className="text-sm text-yellow-600 font-medium">
+              Pending salary exists. Please pay it before creating a new one.
             </div>
           ) : (
             <Button onClick={handleCreateSalary} disabled={isCreating}>

@@ -1,14 +1,13 @@
 import AddFeeInventoryModal from '@/components/fee-structure-and-inventory/AddFeeInventoryModal'
-import AddTransportModal from '@/components/fee-structure-and-inventory/AddTransportModal'
 import { feeInventoryColumns } from '@/components/fee-structure-and-inventory/FeeInventoryColumns'
 import { feeStructureColumns } from '@/components/fee-structure-and-inventory/FeeStructureColumns'
-import { transportColumns } from '@/components/fee-structure-and-inventory/TransportColumns'
+
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import TableLayout from '@/components/layout/Table'
 import { Button } from '@/components/ui/button'
 import { useAllFeeInventory, useDeleteFeeInventory } from '@/hooks/useFeeInventory'
 import { useAllFeeStructures, useDeleteFeeStructure } from '@/hooks/useFeeStructure'
-import { useDeleteTransport, useTransport } from '@/hooks/useTransport'
+
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -17,14 +16,10 @@ function FeeStructureAndInventory() {
   const [openFeeInventory, setOpenFeeInventory] = useState(false)
   const [editingInventory, setEditingInventory] = useState(null)
 
-  const [openTransport, setOpenTransport] = useState(false)
-  const [editingTransport, setEditingTransport] = useState(null)
-
   const navigate = useNavigate()
 
   const { mutate: deleteInventory } = useDeleteFeeInventory()
   const { mutate: deleteStructure } = useDeleteFeeStructure()
-  const { mutate: deleteTransport } = useDeleteTransport()
 
   const { data: feeStructures, isLoading, isError } = useAllFeeStructures()
   const {
@@ -33,14 +28,8 @@ function FeeStructureAndInventory() {
     isError: isErrorFee,
   } = useAllFeeInventory()
 
-  const {
-    data: transport,
-    isLoading: isLoadingTransport,
-    isError: isErrorTransport,
-  } = useTransport()
-
-  if (isLoading || isLoadingFee || isLoadingTransport) return <CircleLoader />
-  if (isError || isErrorFee || isErrorTransport) return 'Error loading data'
+  if (isLoading || isLoadingFee) return <CircleLoader />
+  if (isError || isErrorFee) return 'Error loading data'
 
   const onEdit = (data) => {
     setEditingInventory(data)
@@ -76,31 +65,63 @@ function FeeStructureAndInventory() {
     })
   }
 
-  const onDeleteTransport = (id) => {
-    deleteTransport(id, {
-      onSuccess: () => {
-        toast.success('Transport deleted successfully')
-      },
-      onError: () => {
-        toast.error('Failed to delete transport')
-      },
+  const downloadCSV = (rows, headers, fileName) => {
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r) => r.map((c) => `"${c}"`).join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;',
     })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = `${fileName}-${new Date().toISOString().split('T')[0]}.csv`
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    URL.revokeObjectURL(url)
   }
 
-  const onEditTransport = (data) => {
-    setEditingTransport(data)
-    setOpenTransport(true)
+  const exportFeeStructure = () => {
+    if (!feeStructures?.length) return
+
+    const headers = ['Class', 'Academic Year', 'Total Fees']
+
+    const rows = feeStructures.map((row) => [
+      row.class,
+      row.academic_year,
+      row.total_fees ?? 0,
+    ])
+
+    downloadCSV(rows, headers, 'fee-structure')
   }
 
-  console.log(transport)
+  const exportFeeInventory = () => {
+    if (!feeInventory?.length) return
+
+    const headers = ['Fee Type', 'Amount', 'Category', 'Description']
+
+    const rows = feeInventory.map((row) => [
+      row.FeeType,
+      row.Amount ?? 0,
+      row.Category,
+      row.Description,
+    ])
+
+    downloadCSV(rows, headers, 'fee-inventory')
+  }
 
   return (
     <section className="p-6 space-y-8 capitalize">
       {/* Header with actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl sm:text-2xl font-semibold">
-          Fee Structure, Inventory & Transport
-        </h1>
+        <h1 className="text-xl sm:text-2xl font-semibold">Fee Structure & Inventory</h1>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-2 w-full sm:w-auto">
           <Button className="w-full sm:w-auto" onClick={() => navigate('add')}>
@@ -117,22 +138,15 @@ function FeeStructureAndInventory() {
           >
             Add Fee Inventory
           </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => {
-              setEditingTransport(null)
-              setOpenTransport(true)
-            }}
-          >
-            Add Transport
-          </Button>
         </div>
       </div>
 
       {/* Fee Structure */}
       <div className="-space-y-10">
-        <h2 className="text-xl font-semibold">Fee Structure</h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Fee Structure</h2>
+          <Button onClick={exportFeeStructure}>Export</Button>
+        </div>
         <TableLayout
           columns={feeStructureColumns({
             onDelete: onDeleteStructure,
@@ -144,7 +158,10 @@ function FeeStructureAndInventory() {
 
       {/* Fee Inventory */}
       <div className="-space-y-10">
-        <h2 className="text-xl font-semibold">Fee Inventory</h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Fee Inventory</h2>
+          <Button onClick={exportFeeInventory}>Export</Button>
+        </div>
         <TableLayout
           columns={feeInventoryColumns({ onEdit, onDelete })}
           data={feeInventory ?? []}
@@ -157,28 +174,6 @@ function FeeStructureAndInventory() {
         onClose={() => {
           setOpenFeeInventory(false)
           setEditingInventory(null)
-        }}
-      />
-
-      {/* Transport */}
-      <div className="-space-y-10">
-        <h2 className="text-xl font-semibold">Transport</h2>
-
-        <TableLayout
-          columns={transportColumns({
-            onEdit: onEditTransport,
-            onDelete: onDeleteTransport,
-          })}
-          data={transport ?? []}
-        />
-      </div>
-
-      <AddTransportModal
-        open={openTransport}
-        editingData={editingTransport}
-        onClose={() => {
-          setOpenTransport(false)
-          setEditingTransport(null)
         }}
       />
     </section>

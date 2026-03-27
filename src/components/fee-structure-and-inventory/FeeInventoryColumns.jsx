@@ -23,7 +23,10 @@ export const feeInventoryColumns = ({ onEdit, onDelete }) => [
 
   columnHelper.accessor('class', {
     header: 'Class',
-    cell: (info) => `Class ${info.getValue()}`,
+    cell: (info) => {
+      const value = info.getValue()
+      return value ? `Class ${value}` : 'All Classes'
+    },
   }),
 
   columnHelper.accessor('fee_type', {

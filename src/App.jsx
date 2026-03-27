@@ -68,6 +68,8 @@ import StaffSalaryList from './pages/StaffSalaryList'
 
 import ExportData from './pages/ExportData'
 import ExpensesPage from './pages/ExpensesPage'
+import Reports from './pages/Reports'
+import ManageTransport from './pages/ManageTransport'
 
 function App() {
   return (
@@ -147,6 +149,7 @@ function App() {
               <Route path="/pending-fees" element={<PendingFeesPage />} />
               <Route path="/revenue" element={<RevenuePage />} />
               <Route path="/budget" element={<BudgetPage />} />
+              <Route path="/reports" element={<Reports />} />
 
               <Route path="/exam-result" element={<ExamResultPage />} />
               <Route path="inventory" element={<InventoryPage />} />
@@ -164,6 +167,8 @@ function App() {
 
               <Route path="/export-data" element={<ExportData />} />
               <Route path="/expenses" element={<ExpensesPage />} />
+
+              <Route path="/manage-transport" element={<ManageTransport />} />
             </Route>
           </Route>
         </Routes>

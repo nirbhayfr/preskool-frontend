@@ -124,14 +124,21 @@ function AddFeeInventoryModal({ open, onClose, editingData }) {
             <Label>Class</Label>
 
             <Select
-              value={form.class}
-              onValueChange={(value) => setForm({ ...form, class: value })}
+              value={form.class || 'all'}
+              onValueChange={(value) =>
+                setForm({
+                  ...form,
+                  class: value === 'all' ? '' : value,
+                })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
 
               <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+
                 {classes.map((cls) => (
                   <SelectItem key={cls} value={cls}>
                     Class {cls}

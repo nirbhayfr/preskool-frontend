@@ -7,6 +7,7 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select'
+import { Download } from 'lucide-react'
 
 export function InventoryHeader({
   total,
@@ -17,6 +18,7 @@ export function InventoryHeader({
   category,
   onCategoryChange,
   onAddClick,
+  onExport,
 }) {
   return (
     <div className="space-y-4 mb-6">
@@ -61,6 +63,11 @@ export function InventoryHeader({
             <SelectItem value="Lab Equipment">Lab Equipment</SelectItem>
           </SelectContent>
         </Select>
+
+        <Button onClick={onExport} className="gap-2">
+          <Download className="h-4 w-4" />
+          Export
+        </Button>
       </div>
     </div>
   )

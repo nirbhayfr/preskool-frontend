@@ -35,6 +35,53 @@ export default function InventoryPage() {
     })
   }, [inventories, search, status, category])
 
+  const handleExportCSV = () => {
+    if (!filteredData.length) return
+
+    const headers = [
+      'Item Name',
+      'Category',
+      'Vendor',
+      'Quantity',
+      'Price',
+      'Total Value',
+      'Status',
+      'Location',
+    ]
+
+    const rows = filteredData.map((item) => [
+      item.ItemName,
+      item.Category,
+      item.VendorName,
+      item.Quantity ?? 0,
+      item.Price ?? 0,
+      (item.Quantity ?? 0) * (item.Price ?? 0),
+      item.Status,
+      item.Location,
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r) => r.map((c) => `"${c}"`).join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;',
+    })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = `inventory-${new Date().toISOString().split('T')[0]}.csv`
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    URL.revokeObjectURL(url)
+  }
+
   const handleDelete = useCallback(
     (item) => {
       deleteInventory(item.InventoryId, {
@@ -66,6 +113,7 @@ export default function InventoryPage() {
         category={category}
         onCategoryChange={setCategory}
         onAddClick={() => setSelectedItem({})}
+        onExport={handleExportCSV}
       />
 
       <TableLayout columns={columns} data={filteredData} />
