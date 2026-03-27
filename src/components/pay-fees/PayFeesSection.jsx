@@ -1557,6 +1557,9 @@ export default function PayFeesSection({ student, feesData }) {
         feesData={feesData}
         transportHistory={transportHistory}
         transportFee={transportRoutePrice}
+        inventory={inventory}
+        studentClass={student.ClassID}
+        academicYear={student.academicYear || '2025-2026'}
       />
     </>
   )

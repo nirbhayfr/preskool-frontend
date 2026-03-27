@@ -231,6 +231,11 @@ const data = {
       url: '/manage-transport',
       icon: Bus,
     },
+    {
+      title: 'Transfer Transport',
+      url: '/transfer-transport',
+      icon: Bus,
+    },
   ],
 }
 

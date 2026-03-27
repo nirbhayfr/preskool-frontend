@@ -411,6 +411,7 @@ const ReceiptBlock = ({ student, submissions, receiptNo, copyLabel, feeMonth }) 
         <Text style={styles.infoText}>Receipt No. : {receiptNo}</Text>
         <Text style={styles.infoText}>Date : {today}</Text>
       </View>
+
       <View style={styles.infoRow}>
         <Text style={styles.infoText}>SR No. : {student?.AdmissionNo || ''}</Text>
         <Text style={styles.infoText}>
@@ -419,10 +420,11 @@ const ReceiptBlock = ({ student, submissions, receiptNo, copyLabel, feeMonth }) 
       </View>
       <View style={[styles.infoRow, styles.studentRow]}>
         <Text style={styles.infoText}>Student's Name : {student?.FullName || ''}</Text>
-        <Text style={styles.copyLabel}>{copyLabel}</Text>
+        <Text style={styles.infoText}>ID: {student?.StudentID || ''}</Text>
       </View>
-      <View style={styles.studentRow}>
+      <View style={[styles.infoRow, styles.studentRow]}>
         <Text style={styles.infoText}>Father's Name : {student?.GuardianName || ''}</Text>
+        <Text style={styles.copyLabel}>{copyLabel}</Text>
       </View>
 
       {/* ── FEE MONTH ── */}

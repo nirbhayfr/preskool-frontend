@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Package } from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -91,12 +92,10 @@ function isMonthPassed(monthAbbr) {
   const idx = monthIndexMap[monthAbbr]
   if (idx === undefined) return false
 
-  // Academic year starts in March now (not April)
-  const academicStartMonth = 2 // March = 2
+  const academicStartMonth = 2
   const academicStartYear =
     currentMonth >= academicStartMonth ? currentYear : currentYear - 1
 
-  // Months Mar-Dec belong to academicStartYear, Jan-Feb belong to next year
   const calYear = idx >= academicStartMonth ? academicStartYear : academicStartYear + 1
   const monthDate = new Date(calYear, idx, 1)
 
@@ -106,11 +105,8 @@ function isMonthPassed(monthAbbr) {
 // ─── Cell status helpers ──────────────────────────────────────────────────────
 
 function cellClass(isPaid, isPartial) {
-  // if (isPaid)
-  //   return 'bg-green-50 border-green-300 dark:bg-green-950/30 dark:border-green-800'
   if (isPartial)
     return 'bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-800'
-  // if (isRed) return 'bg-red-50 border-red-300 dark:bg-red-950/30 dark:border-red-800'
   return ''
 }
 
@@ -137,6 +133,9 @@ export default function FeeStructureSection({
   feesData,
   transportFee,
   transportHistory,
+  inventory = [],
+  studentClass = '',
+  academicYear = '',
 }) {
   if (!structure) {
     return (
@@ -189,13 +188,31 @@ export default function FeeStructureSection({
     const isPaid = paidFees.includes(feeKey)
     const isPartial = !isPaid && partialFees.includes(feeKey)
 
-    return {
-      month,
-      amount: hasTransport ? transportFee : 0,
-      isPaid,
-      isPartial,
-    }
+    return { month, amount: hasTransport ? transportFee : 0, isPaid, isPartial }
   })
+
+  // ── Inventory fees (filtered by class + academic year) ───────────────────
+  const normalizedStudentClass = String(studentClass).trim().toLowerCase()
+
+  const applicableInventory = inventory.filter((item) => {
+    console.log(inventory)
+    const itemClass = String(item.class ?? '')
+      .trim()
+      .toLowerCase()
+
+    // empty class => visible to all
+    const classMatch = !itemClass || itemClass === normalizedStudentClass
+
+    // const yearMatch =
+    //   !academicYear || !item.academic_year || item.academic_year === academicYear
+
+    return classMatch
+  })
+
+  const inventoryTotal = applicableInventory.reduce(
+    (sum, item) => sum + Number(item.price || 0),
+    0
+  )
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
@@ -273,12 +290,12 @@ export default function FeeStructureSection({
       </Card>
 
       {/* ── Other Fees Card ── */}
-      <Card className="rounded-sm lg:col-span-2">
+      <Card className="rounded-sm">
         <CardHeader>
           <CardTitle>Other Fees</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {otherFees.map(([key, value]) => {
               const feeKey = key.replace('_fee', '')
               const isPaid = paidFees.some((f) => f.includes(feeKey))
@@ -301,6 +318,95 @@ export default function FeeStructureSection({
               )
             })}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Inventory Fees Card ── */}
+      <Card className="rounded-sm">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5 text-muted-foreground" />
+            Inventory Fees
+          </CardTitle>
+          {applicableInventory.length > 0 && (
+            <span className="text-xs text-muted-foreground font-medium">
+              {applicableInventory.length} item{applicableInventory.length > 1 ? 's' : ''}
+            </span>
+          )}
+        </CardHeader>
+        <CardContent>
+          {applicableInventory.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No inventory fees applicable for Class {studentClass}.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {applicableInventory.map((item) => {
+                  const normalizedType = normalizeFeeKey(item.fee_type)
+                  const isPaid = paidFees.some(
+                    (f) =>
+                      f.includes(normalizedType) ||
+                      f.includes(`inventory_${normalizedType}`)
+                  )
+                  const isPartial =
+                    !isPaid &&
+                    partialFees.some(
+                      (f) =>
+                        f.includes(normalizedType) ||
+                        f.includes(`inventory_${normalizedType}`)
+                    )
+                  const isRed = !isPaid && !isPartial
+
+                  return (
+                    <div
+                      key={item.fee_id}
+                      className={`border rounded-md p-3 transition ${cellClass(isPaid, isPartial, isRed)}`}
+                    >
+                      <div className="flex items-start justify-between gap-1">
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {item.fee_type}
+                        </p>
+                        {item.class ? (
+                          <span className="text-[10px] font-medium bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded shrink-0">
+                            Class {item.class}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
+                            All
+                          </span>
+                        )}
+                      </div>
+                      <p
+                        className={`font-semibold mt-1 text-sm ${amountClass(isPaid, isPartial, isRed)}`}
+                      >
+                        ₹{Number(item.price).toLocaleString()}
+                      </p>
+                      {item.academic_year && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {item.academic_year}
+                        </p>
+                      )}
+                      <StatusLabel
+                        isPaid={isPaid}
+                        isPartial={isPartial}
+                        isPending={isRed}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="flex justify-end border-t pt-3">
+                <p className="text-sm">
+                  Total Inventory:
+                  <span className="ml-2 font-semibold">
+                    ₹{inventoryTotal.toLocaleString()}
+                  </span>
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

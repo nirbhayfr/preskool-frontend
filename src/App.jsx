@@ -70,6 +70,7 @@ import ExportData from './pages/ExportData'
 import ExpensesPage from './pages/ExpensesPage'
 import Reports from './pages/Reports'
 import ManageTransport from './pages/ManageTransport'
+import TransferTransport from './pages/TransferTransport'
 
 function App() {
   return (
@@ -169,6 +170,7 @@ function App() {
               <Route path="/expenses" element={<ExpensesPage />} />
 
               <Route path="/manage-transport" element={<ManageTransport />} />
+              <Route path="/transfer-transport" element={<TransferTransport />} />
             </Route>
           </Route>
         </Routes>
