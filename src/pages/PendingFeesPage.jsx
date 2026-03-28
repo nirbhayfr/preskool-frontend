@@ -812,11 +812,97 @@ function InventoryTab({ studentId, studentName }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FEE_TABS = [
+  { id: 'all', label: 'All', icon: Wallet },
   { id: 'tuition', label: 'Tuition', icon: BookOpen },
   { id: 'transport', label: 'Transport', icon: Bus },
   { id: 'onetime', label: 'One-Time', icon: Receipt },
   { id: 'inventory', label: 'Inventory', icon: Package },
 ]
+
+function AllTab({ fees, studentName, studentId }) {
+  const { data, isLoading } = useStudentInventoryFees(studentId)
+
+  // Normalize main fees
+  const normalFees = fees.map((f) => ({
+    label: f.FeeType,
+    total: Number(f.TotalFee || 0),
+    discount: Number(f.DiscountAmount || 0),
+    afterDisc: Number(f.FeeAfterDiscount || 0),
+    paid: Number(f.PaidAmount || 0),
+    pending: Number(f.PendingAmount || 0),
+    status: f.PaymentStatus || 'Unpaid',
+    type: 'Academic',
+  }))
+
+  // Normalize inventory fees
+  const inventoryFees =
+    data?.fees?.map((item) => ({
+      label: item.feeType,
+      total: Number(item.originalAmount || 0),
+      discount: Number(item.discountAmount || 0),
+      afterDisc: Number(item.originalAmount || 0) - Number(item.discountAmount || 0),
+      paid: Number(item.paidAmount || 0),
+      pending: Number(item.remainingAmount || 0),
+      status: item.paymentStatus || 'Unpaid',
+      type: 'Inventory',
+    })) || []
+
+  const allFees = [...normalFees, ...inventoryFees]
+
+  const exportRows = allFees.map((f) => ({
+    label: `[${f.type}] ${f.label}`,
+    total: f.total,
+    discount: f.discount,
+    paid: f.paid,
+    pending: f.pending,
+    status: f.status,
+  }))
+
+  if (!fees.length && !inventoryFees.length)
+    return (
+      <p className="text-xs text-muted-foreground py-4 text-center">
+        No fee records found.
+      </p>
+    )
+
+  return (
+    <>
+      <TabExportBar
+        studentName={studentName}
+        studentId={studentId}
+        tabLabel="All"
+        rows={exportRows}
+      />
+
+      {isLoading && (
+        <div className="flex justify-center py-4">
+          <CircleLoader />
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+        {allFees.map((fee, idx) => (
+          <div key={idx} className="relative">
+            {/* Type badge
+            <span className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+              {fee.type}
+            </span> */}
+
+            <FeeCard
+              label={fee.label?.replaceAll('_', ' ')}
+              status={fee.status}
+              total={fee.total}
+              discount={fee.discount}
+              afterDisc={fee.afterDisc}
+              paid={fee.paid}
+              pending={fee.pending}
+            />
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
 
 function FeeDetailPanel({ fees, studentId, studentName }) {
   const [activeTab, setActiveTab] = useState('tuition')
@@ -845,6 +931,10 @@ function FeeDetailPanel({ fees, studentId, studentName }) {
               )
             })}
           </div>
+
+          {activeTab === 'all' && (
+            <AllTab fees={fees} studentName={studentName} studentId={studentId} />
+          )}
 
           {activeTab === 'tuition' && (
             <TuitionTab fees={fees} studentName={studentName} studentId={studentId} />
