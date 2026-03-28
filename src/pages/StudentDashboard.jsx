@@ -5,8 +5,11 @@ import { NoticeBoard } from '@/components/student-dashboard/NoticeBoard'
 import { StatisticsCard } from '@/components/student-dashboard/StatisticsCard'
 import { StudentActions } from '@/components/student-dashboard/StudentActions'
 import StudentProfileCard from '@/components/student-dashboard/StudentProfileCard'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { X } from 'lucide-react'
+import { decryptData } from '@/utils/crypto'
+import StudentDashboardCalendar from '@/components/student-dashboard/StudentDashboardCalendar'
+import StudentDashboardResult from '@/components/student-dashboard/StudentDashboardResults'
 function StudentDashboard() {
   const [activeModal, setActiveModal] = useState(null)
   useEffect(() => {
@@ -20,6 +23,17 @@ function StudentDashboard() {
       document.body.style.overflow = 'auto'
     }
   }, [activeModal])
+
+  const user = useMemo(() => {
+    try {
+      const encrypted = localStorage.getItem('user')
+      return encrypted ? decryptData(encrypted) : null
+    } catch {
+      return null
+    }
+  }, [])
+
+  console.log(user)
   return (
     <section>
       <div>
@@ -81,6 +95,12 @@ function StudentDashboard() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-5">
+              {activeModal === 'attendance' && (
+                <StudentDashboardCalendar id={user.LinkedID} />
+              )}
+
+              {activeModal === 'marks' && <StudentDashboardResult id={user.LinkedID} />}
+
               {activeModal === 'events' && <EventsList />}
 
               {activeModal === 'fees' && <FeesReminder />}
@@ -89,9 +109,7 @@ function StudentDashboard() {
 
               {activeModal === 'leave' && <LeaveStatus />}
 
-              {['attendance', 'marks', 'transport', 'lms', 'timetable'].includes(
-                activeModal
-              ) && (
+              {['transport', 'lms', 'timetable'].includes(activeModal) && (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                     🚀
