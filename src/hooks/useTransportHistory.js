@@ -4,6 +4,9 @@ import {
   getAllTransportHistory,
   getStudentTransportHistory,
   getTransportHistorySummary,
+  getOwnerTransportReport,
+  getStudentsTransportReport,
+  getStudentTransportReport,
 } from '@/api/transportHistory'
 
 export const useRecordTransportHistory = () => {
@@ -36,4 +39,23 @@ export const useTransportHistorySummary = (academicYear) =>
     queryKey: ['transport-history-summary', academicYear],
     queryFn: () => getTransportHistorySummary(academicYear),
     enabled: !!academicYear,
+  })
+
+export const useOwnerTransportReport = () =>
+  useQuery({
+    queryKey: ['transport-report-owner'],
+    queryFn: getOwnerTransportReport,
+  })
+
+export const useStudentsTransportReport = () =>
+  useQuery({
+    queryKey: ['transport-report-students'],
+    queryFn: getStudentsTransportReport,
+  })
+
+export const useStudentTransportReport = (params) =>
+  useQuery({
+    queryKey: ['transport-report-student', params],
+    queryFn: () => getStudentTransportReport(params),
+    enabled: !!params?.studentId,
   })

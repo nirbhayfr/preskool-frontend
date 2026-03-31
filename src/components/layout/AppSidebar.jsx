@@ -236,6 +236,21 @@ const data = {
       url: '/transfer-transport',
       icon: Bus,
     },
+    {
+      title: 'Owner Transport Report',
+      url: '/owner-transport-report',
+      icon: Bus,
+    },
+    {
+      title: 'Student Transport Report',
+      url: '/student-transport-report',
+      icon: Bus,
+    },
+    {
+      title: 'Transport History',
+      url: '/transport-history',
+      icon: Bus,
+    },
   ],
 }
 

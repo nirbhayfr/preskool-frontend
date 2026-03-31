@@ -71,6 +71,9 @@ import ExpensesPage from './pages/ExpensesPage'
 import Reports from './pages/Reports'
 import ManageTransport from './pages/ManageTransport'
 import TransferTransport from './pages/TransferTransport'
+import OwnerTransportReport from './pages/OwnerTransportReport'
+import StudentTransportReport from './pages/StudentTransportReport'
+import TransportHistoryPage from './pages/TransportHistory'
 
 function App() {
   return (
@@ -171,6 +174,12 @@ function App() {
 
               <Route path="/manage-transport" element={<ManageTransport />} />
               <Route path="/transfer-transport" element={<TransferTransport />} />
+              <Route path="/owner-transport-report" element={<OwnerTransportReport />} />
+              <Route
+                path="/student-transport-report"
+                element={<StudentTransportReport />}
+              />
+              <Route path="/transport-history" element={<TransportHistoryPage />} />
             </Route>
           </Route>
         </Routes>

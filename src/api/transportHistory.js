@@ -25,3 +25,18 @@ export const getTransportHistorySummary = async (academicYear) => {
   })
   return response.data
 }
+
+export const getOwnerTransportReport = async () => {
+  const response = await api.get('/transport-report')
+  return response.data
+}
+
+export const getStudentsTransportReport = async () => {
+  const response = await api.get('/transport-report/students')
+  return response.data
+}
+
+export const getStudentTransportReport = async ({ studentId }) => {
+  const response = await api.get(`/transport-report/students/${studentId}`)
+  return response.data
+}
