@@ -1007,6 +1007,8 @@ export default function PendingFeesPage() {
   }, [selectedClass, selectedSection])
 
   const { data, isLoading, isError, error } = usePendingFees(filters)
+
+  console.log(data)
   const tableData = data?.data || []
 
   const groupedStudents = useMemo(() => {

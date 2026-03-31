@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 
 function StaffList() {
   const isMobile = useIsMobile()
-  const { data, isLoading, error } = useStaffs()
+  const { data, isLoading, error, refetch, isFetching } = useStaffs()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [sortOrder, setSortOrder] = useState('asc')
@@ -115,6 +115,8 @@ function StaffList() {
         onSearch={setSearchQuery}
         onSortChange={setSortOrder}
         onExport={handleExport}
+        refetch={refetch}
+        isFetching={isFetching}
       />
       <TableLayout columns={staffColumns(isMobile)} data={displayedStaff} />
     </section>

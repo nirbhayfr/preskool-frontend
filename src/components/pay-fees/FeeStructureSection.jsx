@@ -195,7 +195,6 @@ export default function FeeStructureSection({
   const normalizedStudentClass = String(studentClass).trim().toLowerCase()
 
   const applicableInventory = inventory.filter((item) => {
-    console.log(inventory)
     const itemClass = String(item.class ?? '')
       .trim()
       .toLowerCase()

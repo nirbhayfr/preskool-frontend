@@ -11,7 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 
 function StudentList() {
   const [selectedStudent, setSelectedStudent] = useState(null)
-  const { data, isLoading, error } = useStudents()
+  const { data, isLoading, error, refetch, isFetching } = useStudents()
   const isMobile = useIsMobile()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -139,6 +139,8 @@ function StudentList() {
         onFilterChange={setFilters}
         onSortChange={setSortOrder}
         onExport={handleExport}
+        refetch={refetch}
+        isFetching={isFetching}
       />
       <TableLayout
         columns={studentsColumns(setSelectedStudent, isMobile)}

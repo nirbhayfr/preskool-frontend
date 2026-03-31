@@ -347,20 +347,54 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
 
   const tableData = React.useMemo(
     () =>
-      groupedData.map((group) => ({
-        group: `${group.submissions.length} fee row(s)`,
-        code: getReceiptDisplayNo(group),
-        dueDate: group.datePaid,
-        amount: group.originalAmount,
-        discount: group.discountAmount,
-        paidAmount: group.paidAmount,
-        status: group.status,
-        mode: group.mode,
-        refId: getReceiptDisplayNo(group),
-        datePaid: group.datePaid,
-        remarks: group.remarks,
-        original: group,
-      })),
+      groupedData.map((group) => {
+        const submissionsText = group.submissions
+          .map((s) =>
+            [
+              s.FeeType,
+              s.PaymentStatus,
+              s.PaymentMode,
+              s.Remarks,
+              s.TransactionID,
+              s.ReceiptNo,
+            ]
+              .join(' ')
+              .toLowerCase()
+          )
+          .join(' ')
+
+        return {
+          group: `${group.submissions.length} fee row(s)`,
+          code: getReceiptDisplayNo(group),
+          dueDate: group.datePaid,
+          amount: group.originalAmount,
+          discount: group.discountAmount,
+          paidAmount: group.paidAmount,
+          status: group.status,
+          mode: group.mode,
+          refId: getReceiptDisplayNo(group),
+          datePaid: group.datePaid,
+          remarks: group.remarks,
+          original: group,
+
+          // 🔥 Add this
+          searchText: `
+          ${group.receiptGroupId}
+          ${group.status}
+          ${group.mode}
+          ${group.remarks}
+          ${group.datePaid}
+          ${submissionsText}
+        `.toLowerCase(),
+
+          // 🔥 numeric fields
+          numericValues: [
+            Number(group.originalAmount || 0),
+            Number(group.discountAmount || 0),
+            Number(group.paidAmount || 0),
+          ],
+        }
+      }),
     [groupedData]
   )
 
@@ -446,6 +480,65 @@ function PreviousFeesRecords({ feesData, isLoading, isError, student }) {
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+
+    globalFilterFn: (row, columnId, filterValue) => {
+      const search = String(filterValue).toLowerCase().trim()
+      if (!search) return true
+
+      const group = row.original.original
+
+      // ✅ Parent level fields
+      const parentMatch =
+        String(row.original.code).toLowerCase().includes(search) ||
+        String(row.original.status).toLowerCase().includes(search) ||
+        String(row.original.mode).toLowerCase().includes(search) ||
+        String(row.original.remarks).toLowerCase().includes(search) ||
+        String(row.original.datePaid).toLowerCase().includes(search)
+
+      if (parentMatch) return true
+
+      // ✅ Numeric match (parent totals)
+      const searchNumber = Number(search)
+      if (!isNaN(searchNumber)) {
+        if (
+          String(row.original.amount).includes(search) ||
+          String(row.original.discount).includes(search) ||
+          String(row.original.paidAmount).includes(search)
+        ) {
+          return true
+        }
+      }
+
+      // ✅ 🔥 Sub-row match (THIS is the key fix)
+      const subMatch = group.submissions.some((s) => {
+        return (
+          String(s.FeeType || '')
+            .toLowerCase()
+            .includes(search) ||
+          String(s.PaymentStatus || '')
+            .toLowerCase()
+            .includes(search) ||
+          String(s.PaymentMode || '')
+            .toLowerCase()
+            .includes(search) ||
+          String(s.Remarks || '')
+            .toLowerCase()
+            .includes(search) ||
+          String(s.TransactionID || '')
+            .toLowerCase()
+            .includes(search) ||
+          String(s.ReceiptNo || '')
+            .toLowerCase()
+            .includes(search) ||
+          // ✅ numeric fields inside sub rows
+          String(s.OriginalAmount || '').includes(search) ||
+          String(s.DiscountAmount || '').includes(search) ||
+          String(s.PaidAmount || '').includes(search)
+        )
+      })
+
+      return subMatch
+    },
   })
 
   if (isLoading) return <FeesTableSkeleton />

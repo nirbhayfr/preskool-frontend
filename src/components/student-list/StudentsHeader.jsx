@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
+import { Search, Filter, ArrowUpDown, Download, RefreshCw } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,6 +24,8 @@ export default function StudentsHeader({
   onFilterChange,
   onSortChange,
   onExport,
+  refetch,
+  isFetching: isRefreshing,
 }) {
   const encryptedUser = localStorage.getItem('user')
   const user = encryptedUser ? decryptData(encryptedUser) : null
@@ -83,6 +85,22 @@ export default function StudentsHeader({
       <h1 className="text-xl font-semibold">Students List</h1>
 
       <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={refetch}
+          disabled={isRefreshing}
+          className="rounded-xl gap-2 transition-all"
+        >
+          <RefreshCw
+            className={`h-4 w-4 transition-transform duration-300 ${
+              isRefreshing ? 'animate-spin' : ''
+            }`}
+          />
+          <span className={isRefreshing ? 'opacity-70' : ''}>
+            {isRefreshing ? 'Refreshing' : 'Refresh'}
+          </span>
+        </Button>
+
         {/* Search */}
         <div className="relative w-full md:w-64">
           <Input

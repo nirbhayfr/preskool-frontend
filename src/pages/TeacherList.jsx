@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 
 function TeacherList() {
   const isMobile = useIsMobile()
-  const { data, isLoading, error } = useTeachers()
+  const { data, isLoading, error, refetch, isFetching } = useTeachers()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [sortOrder, setSortOrder] = useState('asc')
@@ -120,6 +120,8 @@ function TeacherList() {
         onSearch={setSearchQuery}
         onSortChange={setSortOrder}
         onExport={handleExport}
+        refetch={refetch}
+        isFetching={isFetching}
       />
       <TableLayout columns={teachersColumns(isMobile)} data={displayedTeachers} />
     </section>

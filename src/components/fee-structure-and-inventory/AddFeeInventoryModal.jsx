@@ -150,7 +150,13 @@ function AddFeeInventoryModal({ open, onClose, editingData }) {
 
           <div className="space-y-1">
             <Label>Fee Type</Label>
-            <Input name="fee_type" value={form.fee_type} onChange={onChange} required />
+            <Input
+              name="fee_type"
+              value={form.fee_type}
+              onChange={onChange}
+              required
+              placeholder="Should not match with fee structure keys"
+            />
           </div>
 
           <div className="space-y-1">
