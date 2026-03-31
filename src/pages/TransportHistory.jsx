@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   useTransportHistoryList,
   useCreateTransportHistory,
@@ -44,14 +44,24 @@ import {
   Trash2,
   Calendar,
   MapPin,
-  Hash,
   CheckCircle2,
   XCircle,
   ChevronDown,
-  Filter,
-  LayoutGrid,
+  ChevronRight,
   List,
   Users,
+  IndianRupee,
+  Filter,
+  Download,
+  RefreshCw,
+  BadgeCheck,
+  Layers3,
+  Car,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Clock3,
+  ShieldCheck,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,18 +71,18 @@ import {
 const ACADEMIC_YEARS = ['2025-2026', '2024-2025', '2023-2024']
 
 const MONTHS = [
-  { number: 1, name: 'January' },
-  { number: 2, name: 'February' },
-  { number: 3, name: 'March' },
-  { number: 4, name: 'April' },
-  { number: 5, name: 'May' },
-  { number: 6, name: 'June' },
-  { number: 7, name: 'July' },
-  { number: 8, name: 'August' },
-  { number: 9, name: 'September' },
-  { number: 10, name: 'October' },
-  { number: 11, name: 'November' },
-  { number: 12, name: 'December' },
+  { number: 1, name: 'January', short: 'Jan' },
+  { number: 2, name: 'February', short: 'Feb' },
+  { number: 3, name: 'March', short: 'Mar' },
+  { number: 4, name: 'April', short: 'Apr' },
+  { number: 5, name: 'May', short: 'May' },
+  { number: 6, name: 'June', short: 'Jun' },
+  { number: 7, name: 'July', short: 'Jul' },
+  { number: 8, name: 'August', short: 'Aug' },
+  { number: 9, name: 'September', short: 'Sep' },
+  { number: 10, name: 'October', short: 'Oct' },
+  { number: 11, name: 'November', short: 'Nov' },
+  { number: 12, name: 'December', short: 'Dec' },
 ]
 
 const TRANSPORT_STATUS_OPTIONS = ['Yes', 'No', 'Not A']
@@ -92,6 +102,8 @@ const EMPTY_FORM = {
   monthName: '',
 }
 
+const PAGE_SIZE = 12
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -105,47 +117,278 @@ function fmtDate(d) {
   })
 }
 
+function normalizeText(v) {
+  return String(v || '').trim().toLowerCase()
+}
+
+function getMonthMeta(monthNumber) {
+  return MONTHS.find((m) => Number(m.number) === Number(monthNumber))
+}
+
 function statusConfig(status) {
-  if (status === 'Yes')
+  if (status === 'Yes') {
     return {
+      key: 'Yes',
       label: 'Active',
       dot: 'bg-emerald-500',
       chip: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+      soft: 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300',
       icon: CheckCircle2,
     }
+  }
+
+  if (status === 'Not A') {
+    return {
+      key: 'Not A',
+      label: 'Not Assigned',
+      dot: 'bg-amber-500',
+      chip: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+      soft: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300',
+      icon: Clock3,
+    }
+  }
+
   return {
-    label: status === 'Not A' ? 'Not Assigned' : 'Inactive',
+    key: 'No',
+    label: 'Inactive',
     dot: 'bg-slate-400',
     chip: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+    soft: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
     icon: XCircle,
   }
 }
 
-// Group flat list by MonthName + AcademicYear
-function groupByMonth(records) {
+function groupByStudent(records) {
   const map = {}
+
   records.forEach((r) => {
-    const key = `${r.AcademicYear}__${r.MonthNumber}__${r.MonthName}`
-    if (!map[key])
+    const key = r.StudentID
+    if (!map[key]) {
       map[key] = {
-        academicYear: r.AcademicYear,
-        monthNumber: r.MonthNumber,
-        monthName: r.MonthName,
+        studentId: r.StudentID,
+        fullName: r.FullName,
+        rollNo: r.RollNo,
+        admissionNo: r.AdmissionNo,
+        classId: r.ClassID,
+        sectionId: r.SectionID,
         records: [],
       }
+    }
     map[key].records.push(r)
   })
-  // Sort descending by month number
-  return Object.values(map).sort((a, b) => b.monthNumber - a.monthNumber)
+
+  return Object.values(map)
+    .map((s) => ({
+      ...s,
+      records: [...s.records].sort((a, b) => Number(a.MonthNumber) - Number(b.MonthNumber)),
+    }))
+    .sort((a, b) => {
+      const cls = String(a.classId).localeCompare(String(b.classId), undefined, {
+        numeric: true,
+      })
+      if (cls !== 0) return cls
+
+      const sec = String(a.sectionId).localeCompare(String(b.sectionId))
+      if (sec !== 0) return sec
+
+      return String(a.fullName || '').localeCompare(String(b.fullName || ''))
+    })
+}
+
+function exportCSV(rows, fileName = 'transport-history.csv') {
+  if (!rows?.length) return
+
+  const headers = Object.keys(rows[0])
+
+  const csv = [
+    headers.join(','),
+    ...rows.map((row) =>
+      headers
+        .map((header) => {
+          const cell = row[header] ?? ''
+          const escaped = String(cell).replace(/"/g, '""')
+          return `"${escaped}"`
+        })
+        .join(',')
+    ),
+  ].join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.setAttribute('download', fileName)
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function activeRecordForStudent(student) {
+  return [...student.records].reverse().find((r) => r.TransportStatus === 'Yes') || null
+}
+
+function getStudentTransportSummary(student) {
+  const totalMonths = student.records.length
+  const activeMonths = student.records.filter((r) => r.TransportStatus === 'Yes').length
+  const inactiveMonths = student.records.filter((r) => r.TransportStatus === 'No').length
+  const notAssignedMonths = student.records.filter((r) => r.TransportStatus === 'Not A').length
+
+  return {
+    totalMonths,
+    activeMonths,
+    inactiveMonths,
+    notAssignedMonths,
+  }
+}
+
+function sortStudents(list, sortKey, sortDir) {
+  const rows = [...list]
+
+  rows.sort((a, b) => {
+    const activeA = activeRecordForStudent(a)
+    const activeB = activeRecordForStudent(b)
+
+    let av
+    let bv
+
+    switch (sortKey) {
+      case 'name':
+        av = String(a.fullName || '')
+        bv = String(b.fullName || '')
+        break
+      case 'class':
+        av = String(a.classId || '')
+        bv = String(b.classId || '')
+        break
+      case 'section':
+        av = String(a.sectionId || '')
+        bv = String(b.sectionId || '')
+        break
+      case 'months':
+        av = Number(a.records.length || 0)
+        bv = Number(b.records.length || 0)
+        break
+      case 'activeMonths':
+        av = Number(getStudentTransportSummary(a).activeMonths || 0)
+        bv = Number(getStudentTransportSummary(b).activeMonths || 0)
+        break
+      case 'vehicle':
+        av = String(activeA?.VehicleNo || '')
+        bv = String(activeB?.VehicleNo || '')
+        break
+      case 'route':
+        av = String(activeA?.Route || '')
+        bv = String(activeB?.Route || '')
+        break
+      default:
+        av = String(a.fullName || '')
+        bv = String(b.fullName || '')
+    }
+
+    if (typeof av === 'number' && typeof bv === 'number') {
+      return sortDir === 'asc' ? av - bv : bv - av
+    }
+
+    const result = String(av).localeCompare(String(bv), undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    })
+
+    return sortDir === 'asc' ? result : -result
+  })
+
+  return rows
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TransportStatusBadge
+// Small UI Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SummaryCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  iconClass = '',
+  valueClass = '',
+}) {
+  return (
+    <div className="rounded-2xl border bg-card px-4 py-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">{title}</p>
+          <p className={`text-2xl font-bold mt-1 tracking-tight ${valueClass}`}>{value}</p>
+          {subtitle ? <p className="text-xs text-muted-foreground mt-1">{subtitle}</p> : null}
+        </div>
+        <div
+          className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${iconClass}`}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StatusTab({ id, current, label, onClick, activeClass }) {
+  const active = current === id
+
+  return (
+    <button
+      onClick={() => onClick(id)}
+      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+        active
+          ? activeClass
+          : 'bg-background text-muted-foreground border-border hover:border-foreground/30'
+      }`}
+    >
+      {label}
+    </button>
+  )
+}
+
+function FilterChip({ label, onClear }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs bg-background">
+      {label}
+      <button onClick={onClear} className="text-muted-foreground hover:text-foreground">
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  )
+}
+
+function SortButton({ label, column, sortKey, sortDir, onSort, align = 'left' }) {
+  const active = sortKey === column
+  const icon = !active ? (
+    <ArrowUpDown className="h-3.5 w-3.5" />
+  ) : sortDir === 'asc' ? (
+    <ArrowUp className="h-3.5 w-3.5" />
+  ) : (
+    <ArrowDown className="h-3.5 w-3.5" />
+  )
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(column)}
+      className={`inline-flex items-center gap-1 font-semibold hover:text-foreground ${
+        align === 'center' ? 'justify-center w-full' : ''
+      }`}
+    >
+      <span>{label}</span>
+      <span className={active ? 'text-foreground' : 'text-muted-foreground'}>{icon}</span>
+    </button>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Badges / Pills
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TransportStatusBadge({ status }) {
   const cfg = statusConfig(status)
-  const Icon = cfg.icon
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full text-[10px] font-semibold px-2 py-0.5 border ${cfg.chip}`}
@@ -156,63 +399,569 @@ function TransportStatusBadge({ status }) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Summary stat cards
-// ─────────────────────────────────────────────────────────────────────────────
-
-function SummaryCards({ records }) {
-  const total = records.length
-  const active = records.filter((r) => r.TransportStatus === 'Yes').length
-  const inactive = total - active
-  const vehicles = new Set(
-    records.map((r) => r.VehicleNo).filter((v) => v && v !== 'N/A')
-  ).size
-  const months = new Set(records.map((r) => r.MonthName)).size
+function MonthPill({ record, onEdit, onDelete }) {
+  const cfg = statusConfig(record.TransportStatus)
+  const [hover, setHover] = useState(false)
+  const month = getMonthMeta(record.MonthNumber)
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {[
-        { label: 'Total Records', value: total, icon: List, color: 'text-foreground' },
-        {
-          label: 'Active',
-          value: active,
-          icon: CheckCircle2,
-          color: 'text-emerald-600 dark:text-emerald-400',
-        },
-        {
-          label: 'Not Assigned',
-          value: inactive,
-          icon: XCircle,
-          color: 'text-slate-500',
-        },
-        {
-          label: 'Months',
-          value: months,
-          icon: Calendar,
-          color: 'text-sky-600 dark:text-sky-400',
-        },
-      ].map(({ label, value, icon: Icon, color }) => (
-        <div
-          key={label}
-          className="rounded-xl border border-border bg-card px-4 py-3.5 flex items-center gap-3"
-        >
-          <Icon className={`h-5 w-5 shrink-0 ${color}`} />
-          <div>
-            <p className={`text-xl font-bold tabular-nums ${color}`}>{value}</p>
-            <p className="text-[11px] text-muted-foreground font-medium">{label}</p>
-          </div>
+    <div
+      className="relative group/pill"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <div
+        className={`rounded-xl border px-2.5 py-2 min-w-[84px] text-center cursor-default transition-shadow hover:shadow-sm ${cfg.chip}`}
+      >
+        <p className="text-[10px] font-bold uppercase tracking-wide leading-none">
+          {month?.short || record.MonthName?.slice(0, 3) || 'Mon'}
+        </p>
+        <p className="text-[9px] mt-1 opacity-70">{record.AcademicYear?.slice(-4) || ''}</p>
+        <div className="mt-1.5">
+          <TransportStatusBadge status={record.TransportStatus} />
         </div>
-      ))}
+
+        {record.VehicleNo && record.VehicleNo !== 'N/A' ? (
+          <p className="text-[9px] mt-1.5 opacity-70 flex items-center justify-center gap-0.5">
+            <Bus className="h-2.5 w-2.5" />
+            {record.VehicleNo}
+          </p>
+        ) : null}
+      </div>
+
+      {hover ? (
+        <div className="absolute -top-2 -right-2 flex gap-1 z-10">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(record)
+            }}
+            className="h-6 w-6 rounded-full bg-background border border-border shadow flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(record)
+            }}
+            className="h-6 w-6 rounded-full bg-background border border-border shadow flex items-center justify-center text-muted-foreground hover:text-red-500 hover:border-red-300 transition-colors"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Record Form Dialog (Create & Edit)
+// Summary cards
 // ─────────────────────────────────────────────────────────────────────────────
 
-const Field = ({ label, children }) => (
-  <div className="space-y-1.5">
+function SummaryCards({ records, studentGroups }) {
+  const totalStudents = studentGroups.length
+  const activeStudents = studentGroups.filter((s) =>
+    s.records.some((r) => r.TransportStatus === 'Yes')
+  ).length
+  const inactiveStudents = studentGroups.filter((s) =>
+    s.records.every((r) => r.TransportStatus !== 'Yes')
+  ).length
+  const totalRecords = records.length
+  const monthsCovered = new Set(records.map((r) => `${r.AcademicYear}-${r.MonthNumber}`)).size
+  const vehicles = new Set(
+    records.filter((r) => r.VehicleNo && r.VehicleNo !== 'N/A').map((r) => r.VehicleNo)
+  ).size
+  const routes = new Set(
+    records.filter((r) => r.Route && r.Route !== 'N/A').map((r) => r.Route)
+  ).size
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-4">
+      <SummaryCard
+        title="Students"
+        value={totalStudents}
+        subtitle="Unique students"
+        icon={Users}
+        iconClass="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
+      />
+
+      <SummaryCard
+        title="Active Students"
+        value={activeStudents}
+        subtitle="At least one active month"
+        icon={BadgeCheck}
+        valueClass="text-emerald-600"
+        iconClass="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+      />
+
+      <SummaryCard
+        title="Inactive Students"
+        value={inactiveStudents}
+        subtitle="No active month"
+        icon={XCircle}
+        valueClass="text-slate-600"
+        iconClass="bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300"
+      />
+
+      <SummaryCard
+        title="Records"
+        value={totalRecords}
+        subtitle="Total monthly entries"
+        icon={List}
+        valueClass="text-sky-600"
+        iconClass="bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+      />
+
+      <SummaryCard
+        title="Months Covered"
+        value={monthsCovered}
+        subtitle="Academic month snapshots"
+        icon={Calendar}
+        valueClass="text-indigo-600"
+        iconClass="bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300"
+      />
+
+      <SummaryCard
+        title="Vehicles"
+        value={vehicles}
+        subtitle="Unique vehicles used"
+        icon={Car}
+        valueClass="text-amber-600"
+        iconClass="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+      />
+
+      <SummaryCard
+        title="Routes"
+        value={routes}
+        subtitle="Unique route names"
+        icon={MapPin}
+        valueClass="text-rose-600"
+        iconClass="bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+      />
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Insights
+// ─────────────────────────────────────────────────────────────────────────────
+
+function InsightPanel({ records, studentGroups }) {
+  const monthStats = useMemo(() => {
+    const map = {}
+
+    records.forEach((r) => {
+      const key = `${r.AcademicYear}-${r.MonthNumber}`
+      if (!map[key]) {
+        map[key] = {
+          key,
+          label: `${r.MonthName} ${r.AcademicYear}`,
+          total: 0,
+          active: 0,
+          inactive: 0,
+          notAssigned: 0,
+        }
+      }
+
+      map[key].total += 1
+      if (r.TransportStatus === 'Yes') map[key].active += 1
+      else if (r.TransportStatus === 'Not A') map[key].notAssigned += 1
+      else map[key].inactive += 1
+    })
+
+    return Object.values(map).sort((a, b) => {
+      const [aYear, aMonth] = a.key.split('-')
+      const [bYear, bMonth] = b.key.split('-')
+      const aa = `${aYear}-${String(aMonth).padStart(2, '0')}`
+      const bb = `${bYear}-${String(bMonth).padStart(2, '0')}`
+      return bb.localeCompare(aa)
+    })
+  }, [records])
+
+  const topVehicles = useMemo(() => {
+    const map = {}
+    records.forEach((r) => {
+      const key = r.VehicleNo && r.VehicleNo !== 'N/A' ? r.VehicleNo : null
+      if (!key) return
+      map[key] = (map[key] || 0) + 1
+    })
+
+    return Object.entries(map)
+      .map(([vehicle, count]) => ({ vehicle, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+  }, [records])
+
+  const topRoutes = useMemo(() => {
+    const map = {}
+    records.forEach((r) => {
+      const key = r.Route && r.Route !== 'N/A' ? r.Route : null
+      if (!key) return
+      map[key] = (map[key] || 0) + 1
+    })
+
+    return Object.entries(map)
+      .map(([route, count]) => ({ route, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+  }, [records])
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="rounded-2xl border bg-card shadow-sm">
+        <div className="px-4 py-3 border-b">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-violet-500" />
+            Month Activity
+          </h3>
+        </div>
+        <div className="p-4 space-y-3 max-h-[320px] overflow-auto">
+          {monthStats.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No month data</p>
+          ) : (
+            monthStats.map((m) => (
+              <div key={m.key} className="rounded-xl border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{m.label}</p>
+                  <span className="text-xs text-muted-foreground">{m.total} records</span>
+                </div>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  <span className="text-[11px] rounded-full px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Active {m.active}
+                  </span>
+                  <span className="text-[11px] rounded-full px-2 py-0.5 bg-slate-50 text-slate-700 border border-slate-200">
+                    Inactive {m.inactive}
+                  </span>
+                  <span className="text-[11px] rounded-full px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">
+                    Not Assigned {m.notAssigned}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border bg-card shadow-sm">
+        <div className="px-4 py-3 border-b">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Bus className="h-4 w-4 text-sky-500" />
+            Top Vehicles
+          </h3>
+        </div>
+        <div className="p-4 space-y-3">
+          {topVehicles.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No vehicle data</p>
+          ) : (
+            topVehicles.map((item, idx) => (
+              <div
+                key={item.vehicle}
+                className="flex items-center justify-between rounded-xl border px-3 py-2.5"
+              >
+                <div>
+                  <p className="text-sm font-medium">{item.vehicle}</p>
+                  <p className="text-xs text-muted-foreground">Vehicle #{idx + 1}</p>
+                </div>
+                <span className="text-sm font-bold text-sky-600">{item.count}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border bg-card shadow-sm">
+        <div className="px-4 py-3 border-b">
+          <h3 className="font-semibold flex items-center gap-2">
+            <RouteIcon className="h-4 w-4 text-rose-500" />
+            Top Routes
+          </h3>
+        </div>
+        <div className="p-4 space-y-3">
+          {topRoutes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No route data</p>
+          ) : (
+            topRoutes.map((item, idx) => (
+              <div
+                key={item.route}
+                className="flex items-center justify-between rounded-xl border px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{item.route}</p>
+                  <p className="text-xs text-muted-foreground">Route #{idx + 1}</p>
+                </div>
+                <span className="text-sm font-bold text-rose-600">{item.count}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RouteIcon(props) {
+  return <MapPin {...props} />
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Expanded row
+// ─────────────────────────────────────────────────────────────────────────────
+
+function StudentExpandedContent({ student, onEdit, onDelete }) {
+  const active = activeRecordForStudent(student)
+  const summary = getStudentTransportSummary(student)
+
+  return (
+    <div className="bg-muted/20 px-4 py-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="rounded-xl border bg-background p-4">
+          <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+            <Users className="h-4 w-4 text-violet-500" />
+            Student Overview
+          </h4>
+
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-muted-foreground">Student ID</span>
+              <span className="font-medium">{student.studentId}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-muted-foreground">Roll No</span>
+              <span className="font-medium">{student.rollNo || '—'}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-muted-foreground">Admission No</span>
+              <span className="font-medium">{student.admissionNo || '—'}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-muted-foreground">Class / Section</span>
+              <span className="font-medium">
+                {student.classId}
+                {student.sectionId}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-background p-4">
+          <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-500" />
+            Transport Summary
+          </h4>
+
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Total Months</p>
+              <p className="text-xl font-bold mt-1">{summary.totalMonths}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Active Months</p>
+              <p className="text-xl font-bold mt-1 text-emerald-600">{summary.activeMonths}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Inactive</p>
+              <p className="text-xl font-bold mt-1 text-slate-600">{summary.inactiveMonths}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Not Assigned</p>
+              <p className="text-xl font-bold mt-1 text-amber-600">
+                {summary.notAssignedMonths}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-background p-4">
+          <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+            <Car className="h-4 w-4 text-sky-500" />
+            Latest Active Assignment
+          </h4>
+
+          {active ? (
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+                <span className="text-muted-foreground">Month</span>
+                <span className="font-medium">
+                  {active.MonthName} {active.AcademicYear}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+                <span className="text-muted-foreground">Vehicle</span>
+                <span className="font-medium">{active.VehicleNo || '—'}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+                <span className="text-muted-foreground">Route</span>
+                <span className="font-medium text-right">{active.Route || '—'}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+                <span className="text-muted-foreground">Status</span>
+                <TransportStatusBadge status={active.TransportStatus} />
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No active transport record found.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border bg-background p-4">
+        <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <Layers3 className="h-4 w-4 text-indigo-500" />
+          Month Timeline
+        </h4>
+
+        <div className="flex flex-wrap gap-2">
+          {student.records.map((record) => (
+            <MonthPill
+              key={record.Id}
+              record={record}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Table row
+// ─────────────────────────────────────────────────────────────────────────────
+
+function StudentRow({
+  student,
+  expanded,
+  onToggle,
+  onEdit,
+  onDelete,
+  sortKey,
+  sortDir,
+}) {
+  const active = activeRecordForStudent(student)
+  const summary = getStudentTransportSummary(student)
+
+  return (
+    <>
+      <tr className="group align-top border-b border-border/60 hover:bg-muted/20 transition-colors">
+        <td className="px-4 py-3 align-middle w-[56px]">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="h-8 w-8 rounded-lg border bg-background hover:bg-muted inline-flex items-center justify-center"
+          >
+            {expanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+        </td>
+
+        <td className="px-4 py-3 align-top min-w-[240px]">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 text-sm font-bold text-muted-foreground">
+              {student.fullName?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-sm font-semibold capitalize leading-tight">
+                {student.fullName}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                ID {student.studentId}
+                {student.rollNo ? ` · Roll ${student.rollNo}` : ''}
+              </p>
+              {student.admissionNo ? (
+                <p className="text-[11px] text-muted-foreground">{student.admissionNo}</p>
+              ) : null}
+            </div>
+          </div>
+        </td>
+
+        <td className="px-4 py-3 align-top hidden sm:table-cell">
+          <span className="inline-flex items-center text-xs font-medium bg-muted px-2 py-0.5 rounded">
+            {student.classId}
+            {student.sectionId}
+          </span>
+        </td>
+
+        <td className="px-4 py-3 align-top hidden md:table-cell min-w-[180px]">
+          {active ? (
+            <div>
+              <div className="flex items-center gap-1 text-xs font-medium">
+                <Bus className="h-3.5 w-3.5 text-muted-foreground" />
+                {active.VehicleNo || '—'}
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-1">
+                <MapPin className="h-3 w-3" />
+                <span className="line-clamp-1">{active.Route || '—'}</span>
+              </div>
+            </div>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          )}
+        </td>
+
+        <td className="px-4 py-3 align-top text-center hidden lg:table-cell">
+          <span className="font-semibold">{student.records.length}</span>
+        </td>
+
+        <td className="px-4 py-3 align-top text-center hidden lg:table-cell">
+          <span className="font-semibold text-emerald-600">{summary.activeMonths}</span>
+        </td>
+
+        <td className="px-4 py-3 align-top min-w-[360px]">
+          <div className="flex flex-wrap gap-2">
+            {student.records.slice(0, 6).map((record) => (
+              <MonthPill
+                key={record.Id}
+                record={record}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))}
+
+            {student.records.length > 6 ? (
+              <div className="rounded-xl border px-3 py-2 bg-muted/30 text-xs text-muted-foreground flex items-center">
+                +{student.records.length - 6} more
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+            <span className="rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5">
+              Active {summary.activeMonths}
+            </span>
+            <span className="rounded-full bg-slate-50 text-slate-700 border border-slate-200 px-2 py-0.5">
+              Inactive {summary.inactiveMonths}
+            </span>
+            <span className="rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5">
+              Not Assigned {summary.notAssignedMonths}
+            </span>
+          </div>
+        </td>
+      </tr>
+
+      {expanded ? (
+        <tr className="border-b border-border/60">
+          <td colSpan={7} className="p-0">
+            <StudentExpandedContent student={student} onEdit={onEdit} onDelete={onDelete} />
+          </td>
+        </tr>
+      ) : null}
+    </>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dialogs
+// ─────────────────────────────────────────────────────────────────────────────
+
+const Field = ({ label, children, className = '' }) => (
+  <div className={`space-y-1.5 ${className}`}>
     <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
       {label}
     </Label>
@@ -231,11 +980,12 @@ function RecordFormDialog({ open, onClose, initial, mode }) {
   function set(key, val) {
     setForm((prev) => {
       const next = { ...prev, [key]: val }
-      // Auto-fill monthName when monthNumber changes
+
       if (key === 'monthNumber') {
-        const m = MONTHS.find((m) => String(m.number) === String(val))
+        const m = MONTHS.find((item) => String(item.number) === String(val))
         next.monthName = m ? m.name : ''
       }
+
       return next
     })
   }
@@ -257,13 +1007,19 @@ function RecordFormDialog({ open, onClose, initial, mode }) {
     }
 
     if (isEdit) {
-      updateMutation.mutate({ id: initial.Id, data: payload }, { onSuccess: onClose })
+      updateMutation.mutate(
+        { id: initial.Id, data: payload },
+        {
+          onSuccess: onClose,
+        }
+      )
     } else {
-      createMutation.mutate(payload, { onSuccess: onClose })
+      createMutation.mutate(payload, {
+        onSuccess: onClose,
+      })
     }
   }
 
-  // Reset form when dialog opens
   function handleOpenChange(v) {
     if (!v) onClose()
     else setForm(initial || EMPTY_FORM)
@@ -271,7 +1027,7 @@ function RecordFormDialog({ open, onClose, initial, mode }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
             {isEdit ? 'Edit Transport Record' : 'Add Transport Record'}
@@ -329,10 +1085,7 @@ function RecordFormDialog({ open, onClose, initial, mode }) {
           </Field>
 
           <Field label="Academic Year">
-            <Select
-              value={form.academicYear}
-              onValueChange={(v) => set('academicYear', v)}
-            >
+            <Select value={form.academicYear} onValueChange={(v) => set('academicYear', v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -394,12 +1147,11 @@ function RecordFormDialog({ open, onClose, initial, mode }) {
             />
           </Field>
 
-          <Field label="Route">
+          <Field label="Route" className="sm:col-span-2">
             <Input
               placeholder="e.g. Route 3 - Shalimar Bagh"
               value={form.route}
               onChange={(e) => set('route', e.target.value)}
-              className="sm:col-span-2"
             />
           </Field>
         </div>
@@ -410,10 +1162,13 @@ function RecordFormDialog({ open, onClose, initial, mode }) {
               Cancel
             </Button>
           </DialogClose>
+
           <Button
             size="sm"
             onClick={handleSubmit}
-            disabled={isPending || !form.studentId || !form.fullName || !form.monthNumber}
+            disabled={
+              isPending || !form.studentId || !form.fullName || !form.monthNumber
+            }
           >
             {isPending ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Record'}
           </Button>
@@ -423,15 +1178,13 @@ function RecordFormDialog({ open, onClose, initial, mode }) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Delete Confirm Dialog
-// ─────────────────────────────────────────────────────────────────────────────
-
 function DeleteDialog({ open, onClose, record }) {
   const deleteMutation = useDeleteTransportHistory()
 
   function handleDelete() {
-    deleteMutation.mutate(record.Id, { onSuccess: onClose })
+    deleteMutation.mutate(record.Id, {
+      onSuccess: onClose,
+    })
   }
 
   return (
@@ -442,16 +1195,17 @@ function DeleteDialog({ open, onClose, record }) {
           <AlertDialogDescription>
             Are you sure you want to delete the{' '}
             <span className="font-semibold">{record?.MonthName}</span> record for{' '}
-            <span className="font-semibold">{record?.FullName}</span>? This cannot be
+            <span className="font-semibold">{record?.FullName}</span>? This action cannot be
             undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
+
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
-            className="bg-red-500 hover:bg-red-600 text-white"
             disabled={deleteMutation.isPending}
+            className="bg-red-500 hover:bg-red-600 text-white"
           >
             {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
           </AlertDialogAction>
@@ -462,255 +1216,179 @@ function DeleteDialog({ open, onClose, record }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Record Row (inside table)
-// ─────────────────────────────────────────────────────────────────────────────
-
-function RecordRow({ record, isLast, onEdit, onDelete }) {
-  const cfg = statusConfig(record.TransportStatus)
-
-  return (
-    <tr
-      className={`group transition-colors hover:bg-muted/30 ${!isLast ? 'border-b border-border/60' : ''}`}
-    >
-      {/* Student */}
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
-            <span className="text-[11px] font-semibold text-muted-foreground">
-              {record.FullName?.charAt(0)?.toUpperCase() || '?'}
-            </span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold capitalize leading-tight">
-              {record.FullName}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              ID {record.StudentID}
-              {record.RollNo && ` · Roll ${record.RollNo}`}
-              {record.AdmissionNo && ` · ${record.AdmissionNo}`}
-            </p>
-          </div>
-        </div>
-      </td>
-
-      {/* Class / Section */}
-      <td className="px-4 py-3 hidden sm:table-cell">
-        <span className="inline-flex items-center text-xs font-medium bg-muted px-2 py-0.5 rounded">
-          {record.ClassID}
-          {record.SectionID}
-        </span>
-      </td>
-
-      {/* Status */}
-      <td className="px-4 py-3">
-        <TransportStatusBadge status={record.TransportStatus} />
-      </td>
-
-      {/* Vehicle / Route */}
-      <td className="px-4 py-3 hidden md:table-cell">
-        {record.VehicleNo && record.VehicleNo !== 'N/A' ? (
-          <div>
-            <div className="flex items-center gap-1 text-xs font-medium">
-              <Bus className="h-3 w-3 text-muted-foreground" />
-              {record.VehicleNo}
-            </div>
-            {record.Route && record.Route !== 'N/A' && (
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                <MapPin className="h-2.5 w-2.5" />
-                <span className="line-clamp-1">{record.Route}</span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        )}
-      </td>
-
-      {/* Academic Year */}
-      <td className="px-4 py-3 hidden lg:table-cell">
-        <span className="text-xs text-muted-foreground">{record.AcademicYear}</span>
-      </td>
-
-      {/* Created */}
-      <td className="px-4 py-3 hidden xl:table-cell">
-        <span className="text-[11px] text-muted-foreground">
-          {fmtDate(record.CreatedAt)}
-        </span>
-      </td>
-
-      {/* Actions */}
-      <td className="px-4 py-3 text-right">
-        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={(e) => {
-              e.stopPropagation()
-              onEdit(record)
-            }}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-red-500"
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(record)
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </td>
-    </tr>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Month Group Section
-// ─────────────────────────────────────────────────────────────────────────────
-
-function MonthGroup({ group, onEdit, onDelete }) {
-  const [open, setOpen] = useState(true)
-  const activeCount = group.records.filter((r) => r.TransportStatus === 'Yes').length
-
-  return (
-    <div className="rounded-xl border border-border overflow-hidden">
-      {/* Month header */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors border-b border-border"
-      >
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-slate-800 dark:bg-slate-200 flex flex-col items-center justify-center shrink-0">
-            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase leading-none">
-              {group.academicYear.split('-')[0].slice(-2)}-
-              {group.academicYear.split('-')[1].slice(-2)}
-            </span>
-            <span className="text-white dark:text-slate-800 text-[11px] font-extrabold leading-tight">
-              {group.monthName.slice(0, 3).toUpperCase()}
-            </span>
-          </div>
-          <div className="text-left">
-            <p className="text-sm font-bold">
-              {group.monthName} {group.academicYear}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {group.records.length} records ·{' '}
-              <span className="text-emerald-600 font-medium">{activeCount} active</span>
-              {group.records.length - activeCount > 0 && (
-                <span className="text-slate-500">
-                  {' '}
-                  · {group.records.length - activeCount} not assigned
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-        <ChevronDown
-          className={`h-4 w-4 text-muted-foreground transition-transform ${open ? '' : '-rotate-90'}`}
-        />
-      </button>
-
-      {/* Records table */}
-      {open && (
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-muted/10 border-b border-border">
-              <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Student
-              </th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
-                Class
-              </th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">
-                Vehicle / Route
-              </th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
-                Year
-              </th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden xl:table-cell">
-                Created
-              </th>
-              <th className="px-4 py-2.5 w-20" />
-            </tr>
-          </thead>
-          <tbody>
-            {group.records.map((record, idx) => (
-              <RecordRow
-                key={record.Id}
-                record={record}
-                isLast={idx === group.records.length - 1}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Page
+// Main page
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function TransportHistoryPage() {
-  const { data: raw, isLoading, isError, error } = useTransportHistoryList()
+  const { data: raw, isLoading, isError, error, refetch, isFetching } =
+    useTransportHistoryList()
 
-  // UI state
+  // filters
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [classFilter, setClassFilter] = useState('all')
+  const [sectionFilter, setSectionFilter] = useState('all')
+  const [monthFilter, setMonthFilter] = useState('all')
   const [yearFilter, setYearFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [vehicleFilter, setVehicleFilter] = useState('all')
+  const [routeFilter, setRouteFilter] = useState('all')
+  const [showOnlyLatestActive, setShowOnlyLatestActive] = useState(false)
 
-  // Dialog state
+  // sort & pagination
+  const [sortKey, setSortKey] = useState('name')
+  const [sortDir, setSortDir] = useState('asc')
+  const [page, setPage] = useState(1)
+
+  // row expand
+  const [expandedRows, setExpandedRows] = useState({})
+
+  // dialogs
   const [createOpen, setCreateOpen] = useState(false)
-  const [editRecord, setEditRecord] = useState(null) // record being edited
-  const [deleteRecord, setDeleteRecord] = useState(null) // record to delete
+  const [editRecord, setEditRecord] = useState(null)
+  const [deleteRecord, setDeleteRecord] = useState(null)
 
   const allRecords = raw?.data || []
 
-  // ── Filters ──
-  const filtered = useMemo(() => {
-    let list = allRecords
-    if (yearFilter !== 'all') list = list.filter((r) => r.AcademicYear === yearFilter)
-    if (statusFilter !== 'all')
+  const classes = useMemo(() => {
+    return [...new Set(allRecords.map((r) => String(r.ClassID)))]
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+  }, [allRecords])
+
+  const sections = useMemo(() => {
+    const base = allRecords.filter(
+      (r) => classFilter === 'all' || String(r.ClassID) === classFilter
+    )
+    return [...new Set(base.map((r) => String(r.SectionID)))].sort()
+  }, [allRecords, classFilter])
+
+  const academicYears = useMemo(() => {
+    return [...new Set(allRecords.map((r) => r.AcademicYear))].sort().reverse()
+  }, [allRecords])
+
+  const vehicles = useMemo(() => {
+    return [
+      ...new Set(
+        allRecords
+          .map((r) => r.VehicleNo)
+          .filter((v) => v && v !== 'N/A')
+      ),
+    ].sort((a, b) => a.localeCompare(b))
+  }, [allRecords])
+
+  const routes = useMemo(() => {
+    return [
+      ...new Set(
+        allRecords
+          .map((r) => r.Route)
+          .filter((v) => v && v !== 'N/A')
+      ),
+    ].sort((a, b) => a.localeCompare(b))
+  }, [allRecords])
+
+  const filteredRecords = useMemo(() => {
+    let list = [...allRecords]
+
+    if (yearFilter !== 'all') {
+      list = list.filter((r) => r.AcademicYear === yearFilter)
+    }
+
+    if (monthFilter !== 'all') {
+      list = list.filter((r) => String(r.MonthNumber) === monthFilter)
+    }
+
+    if (classFilter !== 'all') {
+      list = list.filter((r) => String(r.ClassID) === classFilter)
+    }
+
+    if (sectionFilter !== 'all') {
+      list = list.filter((r) => String(r.SectionID) === sectionFilter)
+    }
+
+    if (statusFilter !== 'all') {
       list = list.filter((r) => {
         if (statusFilter === 'Yes') return r.TransportStatus === 'Yes'
+        if (statusFilter === 'No') return r.TransportStatus === 'No'
         if (statusFilter === 'NotA') return r.TransportStatus === 'Not A'
         return true
       })
-    if (search.trim()) {
-      const q = search.trim().toLowerCase()
-      list = list.filter(
-        (r) =>
-          r.FullName?.toLowerCase().includes(q) ||
-          String(r.StudentID).includes(q) ||
-          r.Route?.toLowerCase().includes(q) ||
-          r.VehicleNo?.toLowerCase().includes(q) ||
-          r.AdmissionNo?.toLowerCase().includes(q)
-      )
     }
+
+    if (vehicleFilter !== 'all') {
+      list = list.filter((r) => String(r.VehicleNo) === vehicleFilter)
+    }
+
+    if (routeFilter !== 'all') {
+      list = list.filter((r) => String(r.Route) === routeFilter)
+    }
+
+    if (search.trim()) {
+      const q = normalizeText(search)
+      list = list.filter((r) => {
+        return (
+          normalizeText(r.FullName).includes(q) ||
+          String(r.StudentID).includes(q) ||
+          normalizeText(r.Route).includes(q) ||
+          normalizeText(r.VehicleNo).includes(q) ||
+          normalizeText(r.AdmissionNo).includes(q) ||
+          normalizeText(r.RollNo).includes(q)
+        )
+      })
+    }
+
     return list
-  }, [allRecords, search, statusFilter, yearFilter])
+  }, [
+    allRecords,
+    search,
+    classFilter,
+    sectionFilter,
+    monthFilter,
+    yearFilter,
+    statusFilter,
+    vehicleFilter,
+    routeFilter,
+  ])
 
-  const grouped = useMemo(() => groupByMonth(filtered), [filtered])
+  const groupedStudents = useMemo(() => {
+    let groups = groupByStudent(filteredRecords)
 
-  const academicYears = useMemo(
-    () => [...new Set(allRecords.map((r) => r.AcademicYear))].sort().reverse(),
-    [allRecords]
-  )
+    if (showOnlyLatestActive) {
+      groups = groups.filter((student) => !!activeRecordForStudent(student))
+    }
 
-  const hasFilters = search.trim() || statusFilter !== 'all' || yearFilter !== 'all'
+    return sortStudents(groups, sortKey, sortDir)
+  }, [filteredRecords, showOnlyLatestActive, sortKey, sortDir])
 
-  // Map record fields to form-friendly shape for editing
+  const pagedStudents = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return groupedStudents.slice(start, start + PAGE_SIZE)
+  }, [groupedStudents, page])
+
+  const totalPages = Math.max(1, Math.ceil(groupedStudents.length / PAGE_SIZE))
+
+  const hasFilters =
+    !!search ||
+    classFilter !== 'all' ||
+    sectionFilter !== 'all' ||
+    monthFilter !== 'all' ||
+    yearFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    vehicleFilter !== 'all' ||
+    routeFilter !== 'all' ||
+    showOnlyLatestActive
+
+  function clearFilters() {
+    setSearch('')
+    setClassFilter('all')
+    setSectionFilter('all')
+    setMonthFilter('all')
+    setYearFilter('all')
+    setStatusFilter('all')
+    setVehicleFilter('all')
+    setRouteFilter('all')
+    setShowOnlyLatestActive(false)
+    setPage(1)
+  }
+
   function toFormShape(record) {
     return {
       studentId: record.StudentID,
@@ -729,14 +1407,58 @@ export default function TransportHistoryPage() {
     }
   }
 
-  if (isLoading)
+  function handleSort(column) {
+    setPage(1)
+    if (sortKey === column) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(column)
+      setSortDir('asc')
+    }
+  }
+
+  function toggleExpanded(studentId) {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [studentId]: !prev[studentId],
+    }))
+  }
+
+  function exportFilteredData() {
+    const rows = filteredRecords.map((r) => ({
+      id: r.Id,
+      student_id: r.StudentID,
+      full_name: r.FullName,
+      roll_no: r.RollNo || '',
+      admission_no: r.AdmissionNo || '',
+      class_id: r.ClassID,
+      section_id: r.SectionID,
+      transport_status: r.TransportStatus,
+      route: r.Route || '',
+      vehicle_no: r.VehicleNo || '',
+      academic_year: r.AcademicYear,
+      month_number: r.MonthNumber,
+      month_name: r.MonthName,
+      created_at: r.CreatedAt ? fmtDate(r.CreatedAt) : '',
+      updated_at: r.UpdatedAt ? fmtDate(r.UpdatedAt) : '',
+    }))
+
+    exportCSV(rows, 'transport-history.csv')
+  }
+
+  if (page > totalPages) {
+    setPage(totalPages)
+  }
+
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
         <CircleLoader />
       </div>
     )
+  }
 
-  if (isError)
+  if (isError) {
     return (
       <div className="p-6">
         <Alert variant="destructive">
@@ -746,149 +1468,523 @@ export default function TransportHistoryPage() {
         </Alert>
       </div>
     )
+  }
 
   return (
-    <div className="p-6 space-y-5 w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="p-6 space-y-6 w-full">
+      {/* Header */}
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Transport History</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Monthly transport assignment records · {raw?.total ?? allRecords.length} total
-            entries
-          </p>
+          <div className="flex items-center gap-3 mb-1.5">
+            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center shadow">
+              <Bus className="h-5 w-5 text-white" />
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Transport History</h2>
+              <p className="text-sm text-muted-foreground">
+                Student-wise transport timeline, CRUD controls and monthly history tracking
+              </p>
+            </div>
+          </div>
         </div>
-        <Button
-          size="sm"
-          className="gap-1.5 h-9 self-start sm:self-auto"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="h-4 w-4" /> Add Record
-        </Button>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => refetch?.()}
+            disabled={isFetching}
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+
+          <Button variant="outline" size="sm" className="gap-2" onClick={exportFilteredData}>
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Add Record
+          </Button>
+        </div>
       </div>
 
-      {/* ── Summary ── */}
-      {allRecords.length > 0 && <SummaryCards records={allRecords} />}
+      {/* Summary */}
+      {allRecords.length > 0 ? (
+        <SummaryCards records={allRecords} studentGroups={groupByStudent(allRecords)} />
+      ) : null}
 
-      {/* ── Filter Bar ── */}
-      {allRecords.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Search name, ID, vehicle, route…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 w-64 h-8 text-sm"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
+      {/* Insights */}
+      {allRecords.length > 0 ? (
+        <InsightPanel records={allRecords} studentGroups={groupByStudent(allRecords)} />
+      ) : null}
+
+      {/* Filters */}
+      {allRecords.length > 0 ? (
+        <div className="rounded-2xl border bg-card shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-violet-500" />
+              <h3 className="font-semibold">Filters & Search</h3>
+            </div>
+
+            {hasFilters ? (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                Clear All
+              </Button>
+            ) : null}
           </div>
 
-          {/* Academic year filter */}
-          <Select value={yearFilter} onValueChange={setYearFilter}>
-            <SelectTrigger className="h-8 w-36 text-xs">
-              <SelectValue placeholder="Year" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Years</SelectItem>
-              {academicYears.map((y) => (
-                <SelectItem key={y} value={y}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="p-4 space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 2xl:grid-cols-5 gap-3">
+              <div className="relative lg:col-span-3 2xl:col-span-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search student, ID, admission, vehicle, route..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value)
+                    setPage(1)
+                  }}
+                  className="pl-9"
+                />
+              </div>
 
-          {/* Status pills */}
-          <div className="flex gap-1">
-            {[
-              { id: 'all', label: 'All' },
-              { id: 'Yes', label: 'Active' },
-              { id: 'NotA', label: 'Not Assigned' },
-            ].map(({ id, label }) => (
+              <Select
+                value={classFilter}
+                onValueChange={(v) => {
+                  setClassFilter(v)
+                  setSectionFilter('all')
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Class" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {classes.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      Class {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={sectionFilter}
+                onValueChange={(v) => {
+                  setSectionFilter(v)
+                  setPage(1)
+                }}
+                disabled={classFilter === 'all'}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Section" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sections</SelectItem>
+                  {sections.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      Section {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={monthFilter}
+                onValueChange={(v) => {
+                  setMonthFilter(v)
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Months</SelectItem>
+                  {MONTHS.map((m) => (
+                    <SelectItem key={m.number} value={String(m.number)}>
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 2xl:grid-cols-5 gap-3">
+              <Select
+                value={yearFilter}
+                onValueChange={(v) => {
+                  setYearFilter(v)
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Academic Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Years</SelectItem>
+                  {academicYears.map((y) => (
+                    <SelectItem key={y} value={y}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={vehicleFilter}
+                onValueChange={(v) => {
+                  setVehicleFilter(v)
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Vehicle" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Vehicles</SelectItem>
+                  {vehicles.map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={routeFilter}
+                onValueChange={(v) => {
+                  setRouteFilter(v)
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Route" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Routes</SelectItem>
+                  {routes.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <button
-                key={id}
-                onClick={() => setStatusFilter(id)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${
-                  statusFilter === id
-                    ? id === 'Yes'
-                      ? 'bg-emerald-500 text-white border-emerald-500'
-                      : id === 'NotA'
-                        ? 'bg-slate-600 text-white border-slate-600'
-                        : 'bg-foreground text-background border-foreground'
-                    : 'bg-background text-muted-foreground border-border hover:border-foreground/40'
+                type="button"
+                onClick={() => {
+                  setShowOnlyLatestActive((prev) => !prev)
+                  setPage(1)
+                }}
+                className={`rounded-md border px-3 text-sm font-medium transition ${
+                  showOnlyLatestActive
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900'
+                    : 'bg-background hover:bg-muted'
                 }`}
               >
-                {label}
+                Latest active only
               </button>
-            ))}
+
+              <div className="flex flex-wrap gap-1">
+                <StatusTab
+                  id="all"
+                  current={statusFilter}
+                  label="All"
+                  onClick={(v) => {
+                    setStatusFilter(v)
+                    setPage(1)
+                  }}
+                  activeClass="bg-foreground text-background border-foreground"
+                />
+                <StatusTab
+                  id="Yes"
+                  current={statusFilter}
+                  label="Active"
+                  onClick={(v) => {
+                    setStatusFilter(v)
+                    setPage(1)
+                  }}
+                  activeClass="bg-emerald-500 text-white border-emerald-500"
+                />
+                <StatusTab
+                  id="No"
+                  current={statusFilter}
+                  label="Inactive"
+                  onClick={(v) => {
+                    setStatusFilter(v)
+                    setPage(1)
+                  }}
+                  activeClass="bg-slate-600 text-white border-slate-600"
+                />
+                <StatusTab
+                  id="NotA"
+                  current={statusFilter}
+                  label="Not Assigned"
+                  onClick={(v) => {
+                    setStatusFilter(v)
+                    setPage(1)
+                  }}
+                  activeClass="bg-amber-500 text-white border-amber-500"
+                />
+              </div>
+            </div>
+
+            {hasFilters ? (
+              <div className="flex flex-wrap gap-2">
+                {search ? (
+                  <FilterChip label={`Search: ${search}`} onClear={() => setSearch('')} />
+                ) : null}
+                {classFilter !== 'all' ? (
+                  <FilterChip
+                    label={`Class: ${classFilter}`}
+                    onClear={() => setClassFilter('all')}
+                  />
+                ) : null}
+                {sectionFilter !== 'all' ? (
+                  <FilterChip
+                    label={`Section: ${sectionFilter}`}
+                    onClear={() => setSectionFilter('all')}
+                  />
+                ) : null}
+                {monthFilter !== 'all' ? (
+                  <FilterChip
+                    label={`Month: ${getMonthMeta(monthFilter)?.name || monthFilter}`}
+                    onClear={() => setMonthFilter('all')}
+                  />
+                ) : null}
+                {yearFilter !== 'all' ? (
+                  <FilterChip
+                    label={`Year: ${yearFilter}`}
+                    onClear={() => setYearFilter('all')}
+                  />
+                ) : null}
+                {vehicleFilter !== 'all' ? (
+                  <FilterChip
+                    label={`Vehicle: ${vehicleFilter}`}
+                    onClear={() => setVehicleFilter('all')}
+                  />
+                ) : null}
+                {routeFilter !== 'all' ? (
+                  <FilterChip
+                    label={`Route: ${routeFilter}`}
+                    onClear={() => setRouteFilter('all')}
+                  />
+                ) : null}
+                {statusFilter !== 'all' ? (
+                  <FilterChip
+                    label={`Status: ${statusFilter}`}
+                    onClear={() => setStatusFilter('all')}
+                  />
+                ) : null}
+                {showOnlyLatestActive ? (
+                  <FilterChip
+                    label="Latest active only"
+                    onClear={() => setShowOnlyLatestActive(false)}
+                  />
+                ) : null}
+              </div>
+            ) : null}
           </div>
-
-          {hasFilters && (
-            <span className="text-xs text-muted-foreground">
-              {filtered.length} of {allRecords.length} records
-            </span>
-          )}
-          {hasFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs text-muted-foreground"
-              onClick={() => {
-                setSearch('')
-                setStatusFilter('all')
-                setYearFilter('all')
-              }}
-            >
-              <X className="h-3 w-3 mr-1" /> Clear
-            </Button>
-          )}
-
-          <p className="text-xs text-muted-foreground ml-auto hidden lg:block select-none">
-            💡 Hover a row to edit or delete
-          </p>
         </div>
-      )}
+      ) : null}
 
-      {/* ── Month Groups ── */}
-      {grouped.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground border border-dashed border-border rounded-xl">
-          <Bus className="h-8 w-8 mx-auto mb-2 opacity-20" />
-          <p className="text-sm font-medium">No records found.</p>
+      {/* Toolbar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="text-sm text-muted-foreground">
+          Showing <span className="font-semibold text-foreground">{groupedStudents.length}</span>{' '}
+          students · page <span className="font-semibold text-foreground">{page}</span> of{' '}
+          <span className="font-semibold text-foreground">{totalPages}</span>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+          <span className="inline-flex items-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            Active
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <XCircle className="h-3.5 w-3.5 text-slate-500" />
+            Inactive
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Clock3 className="h-3.5 w-3.5 text-amber-500" />
+            Not Assigned
+          </span>
+        </div>
+      </div>
+
+      {/* Empty / Table */}
+      {groupedStudents.length === 0 ? (
+        <div className="text-center py-20 text-muted-foreground border border-dashed border-border rounded-2xl bg-card">
+          <Bus className="h-10 w-10 mx-auto mb-3 opacity-20" />
+          <p className="text-sm font-medium">No transport records found.</p>
           {hasFilters ? (
-            <p className="text-xs mt-1 opacity-60">Try adjusting your filters.</p>
+            <p className="text-xs mt-1 opacity-60">Try changing or clearing filters.</p>
           ) : (
-            <Button
-              size="sm"
-              className="mt-4 gap-1.5"
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="h-3.5 w-3.5" /> Add first record
+            <Button size="sm" className="mt-4 gap-2" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Add first record
             </Button>
           )}
         </div>
       ) : (
-        <div className="space-y-4">
-          {grouped.map((group) => (
-            <MonthGroup
-              key={`${group.academicYear}-${group.monthNumber}`}
-              group={group}
-              onEdit={(record) => setEditRecord(record)}
-              onDelete={(record) => setDeleteRecord(record)}
-            />
-          ))}
+        <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1200px] text-sm border-collapse">
+              <thead className="bg-muted/30 border-b border-border">
+                <tr>
+                  <th className="px-4 py-3 w-[56px]"></th>
+
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <SortButton
+                      label="Student"
+                      column="name"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
+                    <SortButton
+                      label="Class"
+                      column="class"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">
+                    <SortButton
+                      label="Latest Vehicle / Route"
+                      column="vehicle"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+
+                  <th className="px-4 py-3 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
+                    <SortButton
+                      label="Months"
+                      column="months"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      align="center"
+                    />
+                  </th>
+
+                  <th className="px-4 py-3 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
+                    <SortButton
+                      label="Active"
+                      column="activeMonths"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      align="center"
+                    />
+                  </th>
+
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Timeline
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {pagedStudents.map((student) => (
+                  <StudentRow
+                    key={student.studentId}
+                    student={student}
+                    expanded={!!expandedRows[student.studentId]}
+                    onToggle={() => toggleExpanded(student.studentId)}
+                    onEdit={(record) => setEditRecord(record)}
+                    onDelete={(record) => setDeleteRecord(record)}
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* ── Create Dialog ── */}
+      {/* Pagination */}
+      {groupedStudents.length > 0 ? (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Showing{' '}
+            <span className="font-semibold text-foreground">
+              {(page - 1) * PAGE_SIZE + 1}
+            </span>{' '}
+            to{' '}
+            <span className="font-semibold text-foreground">
+              {Math.min(page * PAGE_SIZE, groupedStudents.length)}
+            </span>{' '}
+            of{' '}
+            <span className="font-semibold text-foreground">{groupedStudents.length}</span>{' '}
+            students
+          </p>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(1)}
+              disabled={page === 1}
+            >
+              First
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Prev
+            </Button>
+
+            <div className="px-3 py-1.5 text-sm rounded-md border bg-background">
+              {page} / {totalPages}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              Next
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(totalPages)}
+              disabled={page === totalPages}
+            >
+              Last
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Dialogs */}
       <RecordFormDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
@@ -896,24 +1992,22 @@ export default function TransportHistoryPage() {
         mode="create"
       />
 
-      {/* ── Edit Dialog ── */}
-      {editRecord && (
+      {editRecord ? (
         <RecordFormDialog
           open={!!editRecord}
           onClose={() => setEditRecord(null)}
           initial={toFormShape(editRecord)}
           mode="edit"
         />
-      )}
+      ) : null}
 
-      {/* ── Delete Dialog ── */}
-      {deleteRecord && (
+      {deleteRecord ? (
         <DeleteDialog
           open={!!deleteRecord}
           onClose={() => setDeleteRecord(null)}
           record={deleteRecord}
         />
-      )}
+      ) : null}
     </div>
   )
 }

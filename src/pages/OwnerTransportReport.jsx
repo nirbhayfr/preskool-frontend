@@ -1,540 +1,753 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useOwnerTransportReport } from '@/hooks/useTransportHistory'
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Bus,
-  ChevronDown,
-  ChevronRight,
+  Search,
+  Filter,
   Users,
   IndianRupee,
   TrendingUp,
   TrendingDown,
-  AlertTriangle,
   CheckCircle2,
-  Search,
-  X,
-  MapPin,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  RefreshCw,
+  Route,
   Car,
   Wallet,
+  X,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   BarChart3,
-  Tag,
+  Layers3,
+  MapPin,
+  ShieldCheck,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function fmt(n) {
-  return Math.abs(Number(n || 0)).toLocaleString('en-IN')
+function n(value) {
+  const num = Number(value)
+  return Number.isNaN(num) ? 0 : num
 }
 
-function pct(a, b) {
-  if (!b || b <= 0) return 0
-  return Math.min(100, Math.round((a / b) * 100))
+function fmt(value) {
+  return n(value).toLocaleString('en-IN')
 }
 
-// Assign a vivid accent color per owner index
-const OWNER_PALETTES = [
-  {
-    light: 'bg-violet-50 dark:bg-violet-950/30',
-    border: 'border-violet-200 dark:border-violet-800',
-    text: 'text-violet-600 dark:text-violet-400',
-    bar: 'bg-violet-400',
-    badge: 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400',
-    gradient: 'bg-violet-500',
-  },
-  {
-    light: 'bg-sky-50 dark:bg-sky-950/30',
-    border: 'border-sky-200 dark:border-sky-800',
-    text: 'text-sky-600 dark:text-sky-400',
-    bar: 'bg-sky-400',
-    badge: 'bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400',
-    gradient: 'bg-sky-500',
-  },
-  {
-    light: 'bg-rose-50 dark:bg-rose-950/30',
-    border: 'border-rose-200 dark:border-rose-800',
-    text: 'text-rose-600 dark:text-rose-400',
-    bar: 'bg-rose-400',
-    badge: 'bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400',
-    gradient: 'bg-rose-500',
-  },
-  {
-    light: 'bg-amber-50 dark:bg-amber-950/30',
-    border: 'border-amber-200 dark:border-amber-800',
-    text: 'text-amber-600 dark:text-amber-400',
-    bar: 'bg-amber-400',
-    badge: 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400',
-    gradient: 'bg-amber-500',
-  },
-  {
-    light: 'bg-emerald-50 dark:bg-emerald-950/30',
-    border: 'border-emerald-200 dark:border-emerald-800',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    bar: 'bg-emerald-400',
-    badge: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400',
-    gradient: 'bg-emerald-500',
-  },
-]
+function money(value) {
+  return `₹${fmt(value)}`
+}
 
-function palette(idx) {
-  return OWNER_PALETTES[idx % OWNER_PALETTES.length]
+function clampPct(a, b) {
+  if (!b || n(b) <= 0) return 0
+  const p = Math.round((n(a) / n(b)) * 100)
+  if (p < 0) return 0
+  if (p > 100) return 100
+  return p
+}
+
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function downloadCsv(filename, rows) {
+  if (!rows?.length) return
+
+  const headers = Object.keys(rows[0])
+
+  const csv = [
+    headers.join(','),
+    ...rows.map((row) =>
+      headers
+        .map((header) => {
+          const cell = row[header] ?? ''
+          const escaped = String(cell).replace(/"/g, '""')
+          return `"${escaped}"`
+        })
+        .join(',')
+    ),
+  ].join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function getPendingStatus(pendingAmount) {
+  const pending = n(pendingAmount)
+
+  if (pending < 0) return 'excess'
+  if (pending === 0) return 'cleared'
+  return 'pending'
+}
+
+function getCollectionBand(collected, estimated) {
+  const pct = clampPct(collected, estimated)
+  if (pct >= 90) return 'excellent'
+  if (pct >= 70) return 'good'
+  if (pct >= 40) return 'average'
+  return 'low'
+}
+
+function getBandClasses(band) {
+  switch (band) {
+    case 'excellent':
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900'
+    case 'good':
+      return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-300 dark:border-sky-900'
+    case 'average':
+      return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900'
+    default:
+      return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900'
+  }
+}
+
+function getStatusClasses(status) {
+  switch (status) {
+    case 'cleared':
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900'
+    case 'excess':
+      return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900'
+    default:
+      return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900'
+  }
+}
+
+function getStatusLabel(status) {
+  if (status === 'cleared') return 'Cleared'
+  if (status === 'excess') return 'Excess'
+  return 'Pending'
+}
+
+function sortValue(row, key) {
+  switch (key) {
+    case 'driverName':
+      return row.driverName
+    case 'vehicleNo':
+      return row.vehicleNo
+    case 'route':
+      return row.route
+    case 'totalStudents':
+      return n(row.totalStudents)
+    case 'paidStudents':
+      return n(row.paidStudents)
+    case 'unpaidStudents':
+      return n(row.unpaidStudents)
+    case 'estimatedAmount':
+      return n(row.estimatedAmount)
+    case 'discountAmount':
+      return n(row.discountAmount)
+    case 'collectedAmount':
+      return n(row.collectedAmount)
+    case 'pendingAmount':
+      return n(row.pendingAmount)
+    case 'collectionPct':
+      return n(row.collectionPct)
+    case 'classSummary':
+      return row.classSummary
+    default:
+      return row[key]
+  }
+}
+
+function buildGroupedClassSummary(routes) {
+  const grouped = {}
+
+  routes.forEach((route) => {
+    const className = route?.class ?? 'N/A'
+    const sectionName = route?.section ?? ''
+    const key = sectionName ? `${className}-${sectionName}` : `${className}`
+
+    if (!grouped[key]) {
+      grouped[key] = {
+        students: 0,
+        paidStudents: 0,
+        unpaidStudents: 0,
+      }
+    }
+
+    grouped[key].students += n(route?.totalStudents)
+    grouped[key].paidStudents += n(route?.studentsPaid)
+    grouped[key].unpaidStudents += n(route?.studentsNotPaid)
+  })
+
+  return grouped
+}
+
+function buildClassSummaryText(grouped) {
+  return Object.entries(grouped)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([cls, obj]) => `${cls}: ${obj.students}`)
+    .join(', ')
+}
+
+function progressColorClass(pct) {
+  if (pct >= 90) return 'bg-emerald-500'
+  if (pct >= 70) return 'bg-sky-500'
+  if (pct >= 40) return 'bg-amber-500'
+  return 'bg-red-500'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Global Summary Bar
+// UI bits
 // ─────────────────────────────────────────────────────────────────────────────
 
-function GlobalSummary({ data }) {
-  const totalStudents = data.reduce((s, o) => s + o.ownerTotalStudents, 0)
-  const totalEstimated = data.reduce((s, o) => s + o.ownerTotalEstimated, 0)
-  const totalPaid = data.reduce((s, o) => s + o.ownerTotalPaid, 0)
-  const totalPending = data.reduce((s, o) => s + Math.max(0, o.ownerTotalPending), 0)
-  const totalOverpaid = data.reduce(
-    (s, o) => s + Math.abs(Math.min(0, o.ownerTotalPending)),
-    0
-  )
-  const collectionPct = pct(totalPaid, totalEstimated)
-
-  const stats = [
-    {
-      label: 'Total Owners',
-      value: data.length,
-      icon: Car,
-      iconBg: 'bg-violet-100 dark:bg-violet-900',
-      iconColor: 'text-violet-600 dark:text-violet-400',
-      valueColor: 'text-violet-700 dark:text-violet-300',
-    },
-    {
-      label: 'Students on Transport',
-      value: totalStudents,
-      icon: Users,
-      iconBg: 'bg-sky-100 dark:bg-sky-900',
-      iconColor: 'text-sky-600 dark:text-sky-400',
-      valueColor: 'text-sky-700 dark:text-sky-300',
-    },
-    {
-      label: 'Total Estimated',
-      value: `₹${fmt(totalEstimated)}`,
-      icon: Wallet,
-      iconBg: 'bg-slate-100 dark:bg-slate-800',
-      iconColor: 'text-slate-500',
-      valueColor: 'text-slate-700 dark:text-slate-300',
-    },
-    {
-      label: 'Total Collected',
-      value: `₹${fmt(totalPaid)}`,
-      sub: `${collectionPct}% collection rate`,
-      icon: TrendingUp,
-      iconBg: 'bg-emerald-100 dark:bg-emerald-900',
-      iconColor: 'text-emerald-600',
-      valueColor: 'text-emerald-700 dark:text-emerald-400',
-    },
-    {
-      label: 'Outstanding Pending',
-      value: `₹${fmt(totalPending)}`,
-      icon: TrendingDown,
-      iconBg: 'bg-red-100 dark:bg-red-900',
-      iconColor: 'text-red-500',
-      valueColor: 'text-red-600 dark:text-red-400',
-    },
-    {
-      label: 'Excess Collected',
-      value: `₹${fmt(totalOverpaid)}`,
-      icon: TrendingUp,
-      iconBg: 'bg-amber-100 dark:bg-amber-900',
-      iconColor: 'text-amber-600',
-      valueColor: 'text-amber-600 dark:text-amber-400',
-    },
-  ]
-
+function SummaryCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  iconWrapClass = '',
+  valueClass = '',
+}) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
-      {stats.map((stat) => {
-        const Icon = stat.icon
-        return (
-          <div
-            key={stat.label}
-            className="rounded-xl border border-border bg-card px-4 py-3.5 flex flex-col gap-2"
-          >
-            <div
-              className={`h-8 w-8 rounded-lg ${stat.iconBg} flex items-center justify-center`}
-            >
-              <Icon className={`h-4 w-4 ${stat.iconColor}`} />
-            </div>
-            <div>
-              <p
-                className={`text-xl font-bold tabular-nums leading-tight ${stat.valueColor}`}
-              >
-                {stat.value}
-              </p>
-              {stat.sub && (
-                <p className="text-[10px] text-muted-foreground mt-0.5">{stat.sub}</p>
-              )}
-              <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
-                {stat.label}
-              </p>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Route Row inside a vehicle
-// ─────────────────────────────────────────────────────────────────────────────
-
-function RouteRow({ route, palette: p }) {
-  const pending = Number(route.pendingAmount || 0)
-  const paid = Number(route.totalPaidByStudents || 0)
-  const est = Number(route.estimatedTotalFee || 0)
-  const discount = Number(route.totalDiscount || 0)
-  const isOverpaid = pending < 0
-  const collPct = pct(paid, est)
-
-  return (
-    <div className={`rounded-lg border ${p.border} bg-card px-4 py-3`}>
-      {/* Route name + class/section */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-start gap-2 min-w-0">
-          <MapPin className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${p.text}`} />
-          <div className="min-w-0">
-            <p className="text-xs font-semibold leading-snug truncate">{route.route}</p>
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              <span
-                className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${p.badge}`}
-              >
-                Class {route.class} · {route.section}
-              </span>
-              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Users className="h-2.5 w-2.5" /> {route.totalStudents} student
-                {route.totalStudents !== 1 ? 's' : ''}
-              </span>
-            </div>
-          </div>
+    <div className="rounded-2xl border bg-card shadow-sm px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground font-medium">{title}</p>
+          <p className={`mt-1 text-2xl font-bold tracking-tight ${valueClass}`}>{value}</p>
+          {subtitle ? (
+            <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+          ) : null}
         </div>
-
-        {/* Status badge */}
-        {isOverpaid ? (
-          <span className="inline-flex items-center gap-1 rounded-full text-[10px] font-semibold px-2 py-0.5 bg-amber-50 dark:bg-amber-950 text-amber-600 border border-amber-200 dark:border-amber-800 whitespace-nowrap shrink-0">
-            <TrendingUp className="h-2.5 w-2.5" /> Excess
-          </span>
-        ) : pending === 0 ? (
-          <span className="inline-flex items-center gap-1 rounded-full text-[10px] font-semibold px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap shrink-0">
-            <CheckCircle2 className="h-2.5 w-2.5" /> Cleared
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 rounded-full text-[10px] font-semibold px-2 py-0.5 bg-red-50 dark:bg-red-950 text-red-500 border border-red-200 dark:border-red-800 whitespace-nowrap shrink-0">
-            <AlertTriangle className="h-2.5 w-2.5" /> Pending
-          </span>
-        )}
-      </div>
-
-      {/* Collection progress bar */}
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-muted-foreground">Collection</span>
-          <span className={`text-[10px] font-semibold ${p.text}`}>{collPct}%</span>
-        </div>
-        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full ${p.bar} transition-all`}
-            style={{ width: `${collPct}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Amount grid */}
-      <div className="grid grid-cols-4 gap-2 text-center">
-        <div>
-          <p className="text-[9px] text-muted-foreground mb-0.5">Estimated</p>
-          <p className="text-[11px] font-semibold tabular-nums">₹{fmt(est)}</p>
-        </div>
-        <div>
-          <p className="text-[9px] text-muted-foreground mb-0.5">Discount</p>
-          <p className="text-[11px] font-semibold text-blue-500 tabular-nums">
-            {discount > 0 ? `-₹${fmt(discount)}` : '—'}
-          </p>
-        </div>
-        <div>
-          <p className="text-[9px] text-muted-foreground mb-0.5">Collected</p>
-          <p className="text-[11px] font-semibold text-emerald-600 tabular-nums">
-            ₹{fmt(paid)}
-          </p>
-        </div>
-        <div>
-          <p className="text-[9px] text-muted-foreground mb-0.5">
-            {isOverpaid ? 'Excess' : 'Pending'}
-          </p>
-          <p
-            className={`text-[11px] font-bold tabular-nums ${
-              isOverpaid
-                ? 'text-amber-500'
-                : pending > 0
-                  ? 'text-red-500'
-                  : 'text-muted-foreground'
-            }`}
-          >
-            {pending !== 0 ? `₹${fmt(pending)}` : '—'}
-          </p>
-        </div>
-      </div>
-
-      {/* Students paid / not paid */}
-      <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-border/50">
-        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
-          <CheckCircle2 className="h-3 w-3" /> {route.studentsPaid} paid
-        </span>
-        {route.studentsNotPaid > 0 && (
-          <span className="inline-flex items-center gap-1 text-[10px] text-red-500 font-medium">
-            <AlertTriangle className="h-3 w-3" /> {route.studentsNotPaid} unpaid
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Vehicle block
-// ─────────────────────────────────────────────────────────────────────────────
-
-function VehicleBlock({ vehicle, palette: p }) {
-  const [expanded, setExpanded] = useState(true)
-
-  const totalRoutes = vehicle.routes.length
-  const totalPaid = vehicle.routes.reduce(
-    (s, r) => s + Number(r.totalPaidByStudents || 0),
-    0
-  )
-  const totalEst = vehicle.routes.reduce(
-    (s, r) => s + Number(r.estimatedTotalFee || 0),
-    0
-  )
-  const totalPending = vehicle.routes.reduce(
-    (s, r) => s + Math.max(0, Number(r.pendingAmount || 0)),
-    0
-  )
-
-  return (
-    <div className={`rounded-xl border ${p.border} overflow-hidden`}>
-      {/* Vehicle header */}
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className={`w-full flex items-center justify-between gap-3 px-4 py-3 ${p.light} hover:opacity-90 transition-opacity`}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={`h-8 w-8 rounded-lg bg-gradient-to-br ${p.gradient} flex items-center justify-center shadow-sm`}
-          >
-            <Bus className="h-4 w-4 text-white" />
-          </div>
-          <div className="text-left">
-            <p className={`text-sm font-bold tracking-wide ${p.text}`}>
-              {vehicle.transportNumber}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {totalRoutes} route{totalRoutes !== 1 ? 's' : ''} ·{' '}
-              <span className="font-medium">₹{fmt(vehicle.feePerStudent)}/student</span>
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-4 text-right">
-            <div>
-              <p className="text-[9px] text-muted-foreground">Collected</p>
-              <p className="text-xs font-bold text-emerald-600 tabular-nums">
-                ₹{fmt(totalPaid)}
-              </p>
-            </div>
-            {totalPending > 0 && (
-              <div>
-                <p className="text-[9px] text-muted-foreground">Pending</p>
-                <p className="text-xs font-bold text-red-500 tabular-nums">
-                  ₹{fmt(totalPending)}
-                </p>
-              </div>
-            )}
-          </div>
-          <div
-            className={`h-6 w-6 rounded-full ${p.light} flex items-center justify-center`}
-          >
-            {expanded ? (
-              <ChevronDown className={`h-3.5 w-3.5 ${p.text}`} />
-            ) : (
-              <ChevronRight className={`h-3.5 w-3.5 ${p.text}`} />
-            )}
-          </div>
-        </div>
-      </button>
-
-      {/* Routes grid */}
-      {expanded && (
-        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 bg-background/60">
-          {vehicle.routes.map((route, idx) => (
-            <RouteRow key={idx} route={route} palette={p} />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Owner Card
-// ─────────────────────────────────────────────────────────────────────────────
-
-function OwnerCard({ owner, paletteIdx }) {
-  const [expanded, setExpanded] = useState(false)
-  const p = palette(paletteIdx)
-
-  const pending = Number(owner.ownerTotalPending || 0)
-  const paid = Number(owner.ownerTotalPaid || 0)
-  const est = Number(owner.ownerTotalEstimated || 0)
-  const isOverpaid = pending < 0
-  const collPct = pct(paid, est + Math.abs(Math.min(0, pending)))
-
-  return (
-    <div className={`rounded-2xl border-2 ${p.border} overflow-hidden shadow-sm`}>
-      {/* Owner header */}
-      <div className={`bg-gradient-to-r  p-0.5`}>
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="w-full flex items-center justify-between gap-4 px-5 py-4 bg-card rounded-t-[14px] hover:bg-muted/30 transition-colors"
+        <div
+          className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${iconWrapClass}`}
         >
-          <div className="flex items-center gap-4">
-            {/* Avatar */}
-            <div
-              className={`h-11 w-11 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center shadow-md`}
-            >
-              <span className="text-white font-bold text-base">
-                {owner.ownerName.charAt(0)}
-              </span>
-            </div>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  )
+}
 
-            <div className="text-left">
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold">{owner.ownerName}</h3>
-                <span
-                  className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.badge}`}
+function TableHeaderSort({ label, column, sortKey, sortDir, onSort, align = 'left' }) {
+  const active = sortKey === column
+  const icon = !active ? (
+    <ArrowUpDown className="h-3.5 w-3.5" />
+  ) : sortDir === 'asc' ? (
+    <ArrowUp className="h-3.5 w-3.5" />
+  ) : (
+    <ArrowDown className="h-3.5 w-3.5" />
+  )
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(column)}
+      className={`inline-flex items-center gap-1 font-semibold hover:text-foreground ${
+        align === 'center' ? 'justify-center w-full' : ''
+      }`}
+    >
+      <span>{label}</span>
+      <span className={`${active ? 'text-foreground' : 'text-muted-foreground'}`}>{icon}</span>
+    </button>
+  )
+}
+
+function FilterChip({ label, onClear }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs">
+      {label}
+      <button
+        type="button"
+        className="text-muted-foreground hover:text-foreground"
+        onClick={onClear}
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  )
+}
+
+function EmptyState({ hasFilters }) {
+  return (
+    <div className="rounded-2xl border border-dashed bg-card py-16 text-center">
+      <Bus className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
+      <p className="text-sm font-medium">No transport records found</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {hasFilters ? 'Try clearing some filters.' : 'No transport data available.'}
+      </p>
+    </div>
+  )
+}
+
+function ExpandedClassBreakdown({ row }) {
+  const entries = Object.entries(row.groupedClasses || {}).sort(([a], [b]) => a.localeCompare(b))
+
+  return (
+    <div className="bg-muted/20 px-4 py-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="rounded-xl border bg-background p-4">
+          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Layers3 className="h-4 w-4 text-violet-500" />
+            Class Breakdown
+          </h4>
+          <div className="space-y-2">
+            {entries.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No class data</p>
+            ) : (
+              entries.map(([cls, obj]) => (
+                <div
+                  key={cls}
+                  className="flex items-center justify-between rounded-lg border px-3 py-2"
                 >
-                  {owner.vehicles.length} vehicle{owner.vehicles.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="h-3 w-3" /> {owner.ownerTotalStudents} students
-                </span>
-                <span className={`flex items-center gap-1 text-xs font-medium ${p.text}`}>
-                  <BarChart3 className="h-3 w-3" /> {collPct}% collected
-                </span>
-              </div>
-            </div>
+                  <div>
+                    <p className="text-sm font-medium">{cls}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Paid: {obj.paidStudents} · Unpaid: {obj.unpaidStudents}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{obj.students} students</Badge>
+                </div>
+              ))
+            )}
           </div>
+        </div>
 
-          {/* Financial summary pills */}
-          <div className="flex items-center gap-2 flex-wrap justify-end">
-            <div className="text-right hidden md:block">
-              <p className="text-[10px] text-muted-foreground">Estimated</p>
-              <p className="text-sm font-bold tabular-nums">₹{fmt(est)}</p>
+        <div className="rounded-xl border bg-background p-4">
+          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <IndianRupee className="h-4 w-4 text-emerald-500" />
+            Financial Overview
+          </h4>
+
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Estimated</p>
+              <p className="text-base font-bold mt-1">{money(row.estimatedAmount)}</p>
             </div>
-            <div className="h-8 w-px bg-border hidden md:block" />
-            <div className="text-right">
-              <p className="text-[10px] text-muted-foreground">Collected</p>
-              <p className="text-sm font-bold text-emerald-600 tabular-nums">
-                ₹{fmt(paid)}
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Collected</p>
+              <p className="text-base font-bold mt-1 text-emerald-600">
+                {money(row.collectedAmount)}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-[10px] text-muted-foreground">
-                {isOverpaid ? 'Excess' : 'Pending'}
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Discount</p>
+              <p className="text-base font-bold mt-1 text-sky-600">
+                {money(row.discountAmount)}
+              </p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">
+                {row.status === 'excess' ? 'Excess' : 'Pending'}
               </p>
               <p
-                className={`text-sm font-bold tabular-nums ${isOverpaid ? 'text-amber-500' : pending > 0 ? 'text-red-500' : 'text-muted-foreground'}`}
+                className={`text-base font-bold mt-1 ${
+                  row.status === 'excess'
+                    ? 'text-amber-600'
+                    : row.status === 'pending'
+                      ? 'text-red-600'
+                      : 'text-muted-foreground'
+                }`}
               >
-                {pending !== 0 ? `₹${fmt(pending)}` : '—'}
+                {money(Math.abs(row.pendingAmount))}
               </p>
             </div>
-            <div
-              className={`h-7 w-7 rounded-full ${p.light} flex items-center justify-center ml-1`}
-            >
-              {expanded ? (
-                <ChevronDown className={`h-4 w-4 ${p.text}`} />
-              ) : (
-                <ChevronRight className={`h-4 w-4 ${p.text}`} />
-              )}
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-background p-4">
+          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-sky-500" />
+            Collection Progress
+          </h4>
+
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-muted-foreground">Collection Rate</span>
+              <span className="text-xs font-semibold">{row.collectionPct}%</span>
+            </div>
+            <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${progressColorClass(
+                  row.collectionPct
+                )}`}
+                style={{ width: `${row.collectionPct}%` }}
+              />
             </div>
           </div>
-        </button>
-      </div>
 
-      {/* Collection bar */}
-      <div className={`px-5 py-2 ${p.light} border-b ${p.border}`}>
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-muted-foreground font-medium">
-            Overall collection rate
-          </span>
-          <span className={`text-[10px] font-bold ${p.text}`}>{collPct}%</span>
-        </div>
-        <div className="h-2 w-full bg-muted/60 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full bg-gradient-to-r ${p.gradient} transition-all`}
-            style={{ width: `${collPct}%` }}
-          />
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-muted-foreground">Students</span>
+              <span className="font-semibold">{row.totalStudents}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-muted-foreground">Paid Students</span>
+              <span className="font-semibold text-emerald-600">{row.paidStudents}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-muted-foreground">Unpaid Students</span>
+              <span className="font-semibold text-red-600">{row.unpaidStudents}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-muted-foreground">Vehicle Fee / Student</span>
+              <span className="font-semibold">{money(row.feePerStudent)}</span>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Vehicles */}
-      {expanded && (
-        <div className="p-4 space-y-3 bg-muted/10">
-          {owner.vehicles.map((vehicle, vIdx) => (
-            <VehicleBlock key={vIdx} vehicle={vehicle} palette={p} />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main Page
+// Main page
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function OwnerTransportReportPage() {
-  const { data: raw, isLoading, isError, error } = useOwnerTransportReport()
+  const { data: raw, isLoading, isError, error, refetch, isFetching } =
+    useOwnerTransportReport()
+
   const [search, setSearch] = useState('')
+  const [driverFilter, setDriverFilter] = useState('all')
+  const [vehicleFilter, setVehicleFilter] = useState('all')
+  const [routeFilter, setRouteFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [collectionBandFilter, setCollectionBandFilter] = useState('all')
+  const [classFilter, setClassFilter] = useState('all')
+  const [minStudents, setMinStudents] = useState('')
+  const [maxStudents, setMaxStudents] = useState('')
+  const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(false)
+
+  const [sortKey, setSortKey] = useState('driverName')
+  const [sortDir, setSortDir] = useState('asc')
+
+  const [page, setPage] = useState(1)
+  const pageSize = 12
+
+  const [expandedRows, setExpandedRows] = useState({})
 
   const owners = raw?.data || []
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return owners
-    const q = search.trim().toLowerCase()
-    return owners.filter(
-      (o) =>
-        o.ownerName.toLowerCase().includes(q) ||
-        o.vehicles.some(
-          (v) =>
-            v.transportNumber.toLowerCase().includes(q) ||
-            v.routes.some((r) => r.route.toLowerCase().includes(q))
-        )
-    )
-  }, [owners, search])
+  const flattenedRows = useMemo(() => {
+    const rows = []
 
-  if (isLoading)
+    owners.forEach((owner, ownerIdx) => {
+      const driverName = owner?.ownerName || 'N/A'
+      const vehicles = owner?.vehicles || []
+
+      vehicles.forEach((vehicle, vehicleIdx) => {
+        const vehicleNo = vehicle?.transportNumber || 'N/A'
+        const feePerStudent = n(vehicle?.feePerStudent)
+        const routeList = vehicle?.routes || []
+
+        const groupedByRoute = {}
+
+        routeList.forEach((route) => {
+          const routeName = route?.route || 'N/A'
+          if (!groupedByRoute[routeName]) groupedByRoute[routeName] = []
+          groupedByRoute[routeName].push(route)
+        })
+
+        Object.entries(groupedByRoute).forEach(([routeName, routes], routeIdx) => {
+          const totalStudents = routes.reduce((sum, r) => sum + n(r?.totalStudents), 0)
+          const paidStudents = routes.reduce((sum, r) => sum + n(r?.studentsPaid), 0)
+          const unpaidStudents = routes.reduce((sum, r) => sum + n(r?.studentsNotPaid), 0)
+          const estimatedAmount = routes.reduce(
+            (sum, r) => sum + n(r?.estimatedTotalFee),
+            0
+          )
+          const discountAmount = routes.reduce((sum, r) => sum + n(r?.totalDiscount), 0)
+          const collectedAmount = routes.reduce(
+            (sum, r) => sum + n(r?.totalPaidByStudents),
+            0
+          )
+          const pendingAmount = routes.reduce((sum, r) => sum + n(r?.pendingAmount), 0)
+
+          const groupedClasses = buildGroupedClassSummary(routes)
+          const classSummary = buildClassSummaryText(groupedClasses)
+          const status = getPendingStatus(pendingAmount)
+          const collectionPct = clampPct(collectedAmount, estimatedAmount)
+          const collectionBand = getCollectionBand(collectedAmount, estimatedAmount)
+          const classNames = Object.keys(groupedClasses)
+
+          rows.push({
+            id: `${ownerIdx}-${vehicleIdx}-${routeIdx}-${driverName}-${vehicleNo}-${routeName}`,
+            driverName,
+            vehicleNo,
+            route: routeName,
+            feePerStudent,
+            totalStudents,
+            paidStudents,
+            unpaidStudents,
+            estimatedAmount,
+            discountAmount,
+            collectedAmount,
+            pendingAmount,
+            status,
+            collectionPct,
+            collectionBand,
+            groupedClasses,
+            classSummary,
+            classNames,
+          })
+        })
+      })
+    })
+
+    return rows
+  }, [owners])
+
+  const drivers = useMemo(() => {
+    return Array.from(new Set(flattenedRows.map((r) => r.driverName))).sort((a, b) =>
+      a.localeCompare(b)
+    )
+  }, [flattenedRows])
+
+  const vehicles = useMemo(() => {
+    return Array.from(new Set(flattenedRows.map((r) => r.vehicleNo))).sort((a, b) =>
+      a.localeCompare(b)
+    )
+  }, [flattenedRows])
+
+  const routes = useMemo(() => {
+    return Array.from(new Set(flattenedRows.map((r) => r.route))).sort((a, b) =>
+      a.localeCompare(b)
+    )
+  }, [flattenedRows])
+
+  const classes = useMemo(() => {
+    const set = new Set()
+    flattenedRows.forEach((row) => {
+      row.classNames.forEach((c) => set.add(c))
+    })
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [flattenedRows])
+
+  const filteredRows = useMemo(() => {
+    let rows = [...flattenedRows]
+
+    const q = normalizeText(search)
+    const min = minStudents === '' ? null : n(minStudents)
+    const max = maxStudents === '' ? null : n(maxStudents)
+
+    if (q) {
+      rows = rows.filter((row) => {
+        return (
+          normalizeText(row.driverName).includes(q) ||
+          normalizeText(row.vehicleNo).includes(q) ||
+          normalizeText(row.route).includes(q) ||
+          normalizeText(row.classSummary).includes(q) ||
+          normalizeText(row.status).includes(q)
+        )
+      })
+    }
+
+    if (driverFilter !== 'all') {
+      rows = rows.filter((row) => row.driverName === driverFilter)
+    }
+
+    if (vehicleFilter !== 'all') {
+      rows = rows.filter((row) => row.vehicleNo === vehicleFilter)
+    }
+
+    if (routeFilter !== 'all') {
+      rows = rows.filter((row) => row.route === routeFilter)
+    }
+
+    if (statusFilter !== 'all') {
+      rows = rows.filter((row) => row.status === statusFilter)
+    }
+
+    if (collectionBandFilter !== 'all') {
+      rows = rows.filter((row) => row.collectionBand === collectionBandFilter)
+    }
+
+    if (classFilter !== 'all') {
+      rows = rows.filter((row) => row.classNames.includes(classFilter))
+    }
+
+    if (min !== null) {
+      rows = rows.filter((row) => row.totalStudents >= min)
+    }
+
+    if (max !== null) {
+      rows = rows.filter((row) => row.totalStudents <= max)
+    }
+
+    if (showOnlyUnpaid) {
+      rows = rows.filter((row) => row.unpaidStudents > 0 || row.pendingAmount > 0)
+    }
+
+    rows.sort((a, b) => {
+      const av = sortValue(a, sortKey)
+      const bv = sortValue(b, sortKey)
+
+      if (typeof av === 'number' && typeof bv === 'number') {
+        return sortDir === 'asc' ? av - bv : bv - av
+      }
+
+      const result = String(av ?? '').localeCompare(String(bv ?? ''), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      })
+      return sortDir === 'asc' ? result : -result
+    })
+
+    return rows
+  }, [
+    flattenedRows,
+    search,
+    driverFilter,
+    vehicleFilter,
+    routeFilter,
+    statusFilter,
+    collectionBandFilter,
+    classFilter,
+    minStudents,
+    maxStudents,
+    showOnlyUnpaid,
+    sortKey,
+    sortDir,
+  ])
+
+  const summary = useMemo(() => {
+    const totalRoutes = filteredRows.length
+    const totalStudents = filteredRows.reduce((sum, row) => sum + n(row.totalStudents), 0)
+    const paidStudents = filteredRows.reduce((sum, row) => sum + n(row.paidStudents), 0)
+    const unpaidStudents = filteredRows.reduce((sum, row) => sum + n(row.unpaidStudents), 0)
+    const estimatedAmount = filteredRows.reduce(
+      (sum, row) => sum + n(row.estimatedAmount),
+      0
+    )
+    const discountAmount = filteredRows.reduce((sum, row) => sum + n(row.discountAmount), 0)
+    const collectedAmount = filteredRows.reduce(
+      (sum, row) => sum + n(row.collectedAmount),
+      0
+    )
+    const positivePending = filteredRows.reduce(
+      (sum, row) => sum + Math.max(0, n(row.pendingAmount)),
+      0
+    )
+    const excess = filteredRows.reduce(
+      (sum, row) => sum + Math.abs(Math.min(0, n(row.pendingAmount))),
+      0
+    )
+
+    const driversCount = new Set(filteredRows.map((row) => row.driverName)).size
+    const vehiclesCount = new Set(filteredRows.map((row) => row.vehicleNo)).size
+    const overallCollectionPct = clampPct(collectedAmount, estimatedAmount)
+
+    return {
+      totalRoutes,
+      totalStudents,
+      paidStudents,
+      unpaidStudents,
+      estimatedAmount,
+      discountAmount,
+      collectedAmount,
+      positivePending,
+      excess,
+      driversCount,
+      vehiclesCount,
+      overallCollectionPct,
+    }
+  }, [filteredRows])
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
+
+  const pagedRows = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredRows.slice(start, start + pageSize)
+  }, [filteredRows, page])
+
+  const hasFilters =
+    !!search ||
+    driverFilter !== 'all' ||
+    vehicleFilter !== 'all' ||
+    routeFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    collectionBandFilter !== 'all' ||
+    classFilter !== 'all' ||
+    minStudents !== '' ||
+    maxStudents !== '' ||
+    showOnlyUnpaid
+
+  function clearFilters() {
+    setSearch('')
+    setDriverFilter('all')
+    setVehicleFilter('all')
+    setRouteFilter('all')
+    setStatusFilter('all')
+    setCollectionBandFilter('all')
+    setClassFilter('all')
+    setMinStudents('')
+    setMaxStudents('')
+    setShowOnlyUnpaid(false)
+    setPage(1)
+  }
+
+  function handleSort(column) {
+    setPage(1)
+    if (sortKey === column) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(column)
+      setSortDir('asc')
+    }
+  }
+
+  function toggleExpanded(id) {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }))
+  }
+
+  function exportCurrentRows() {
+    const rows = filteredRows.map((row) => ({
+      driver_name: row.driverName,
+      vehicle_no: row.vehicleNo,
+      route: row.route,
+      class_summary: row.classSummary,
+      total_students: row.totalStudents,
+      paid_students: row.paidStudents,
+      unpaid_students: row.unpaidStudents,
+      estimated_amount: row.estimatedAmount,
+      discount_amount: row.discountAmount,
+      collected_amount: row.collectedAmount,
+      pending_amount: row.pendingAmount,
+      collection_pct: row.collectionPct,
+      status: row.status,
+      collection_band: row.collectionBand,
+      fee_per_student: row.feePerStudent,
+    }))
+
+    downloadCsv('transport-report.csv', rows)
+  }
+
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
         <CircleLoader />
       </div>
     )
+  }
 
-  if (isError)
+  if (isError) {
     return (
       <div className="p-6">
         <Alert variant="destructive">
@@ -544,72 +757,711 @@ export default function OwnerTransportReportPage() {
         </Alert>
       </div>
     )
+  }
+
+  if (page > totalPages) {
+    setPage(totalPages)
+  }
 
   return (
     <div className="p-6 space-y-6 w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      {/* Header */}
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center shadow">
+          <div className="flex items-center gap-3 mb-1.5">
+            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center shadow">
               <Bus className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight">Transport Report</h2>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Transport Report</h2>
+              <p className="text-sm text-muted-foreground">
+                Driver, vehicle, route and transport fee performance dashboard
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Fee collection overview across all transport owners, vehicles &amp; routes
-          </p>
         </div>
 
-        {/* Search */}
-        {owners.length > 0 && (
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Search owner, vehicle, route…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 w-64 h-9 text-sm"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => refetch?.()}
+            className="gap-2"
+            disabled={isFetching}
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+
+          <Button variant="outline" onClick={exportCurrentRows} className="gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
-      {/* ── Global Summary ── */}
-      {owners.length > 0 && <GlobalSummary data={owners} />}
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8 gap-4">
+        <SummaryCard
+          title="Drivers"
+          value={summary.driversCount}
+          subtitle="Unique drivers shown"
+          icon={ShieldCheck}
+          iconWrapClass="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
+        />
 
-      {/* ── Results info ── */}
-      {search && (
-        <p className="text-xs text-muted-foreground -mt-3">
-          {filtered.length} of {owners.length} owner{owners.length !== 1 ? 's' : ''} match
-          "{search}"
-        </p>
-      )}
+        <SummaryCard
+          title="Vehicles"
+          value={summary.vehiclesCount}
+          subtitle="Unique vehicles shown"
+          icon={Car}
+          iconWrapClass="bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+        />
 
-      {/* ── Owner Cards ── */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground border border-dashed border-border rounded-xl">
-          <Bus className="h-8 w-8 mx-auto mb-2 opacity-20" />
-          <p className="text-sm font-medium">No owners found.</p>
-          {search && (
-            <p className="text-xs mt-1 opacity-60">Try a different search term.</p>
-          )}
+        <SummaryCard
+          title="Routes"
+          value={summary.totalRoutes}
+          subtitle="Filtered route entries"
+          icon={Route}
+          iconWrapClass="bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300"
+        />
+
+        <SummaryCard
+          title="Students"
+          value={summary.totalStudents}
+          subtitle={`${summary.paidStudents} paid · ${summary.unpaidStudents} unpaid`}
+          icon={Users}
+          iconWrapClass="bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+        />
+
+        <SummaryCard
+          title="Estimated"
+          value={money(summary.estimatedAmount)}
+          subtitle="Expected transport total"
+          icon={Wallet}
+          iconWrapClass="bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300"
+        />
+
+        <SummaryCard
+          title="Collected"
+          value={money(summary.collectedAmount)}
+          subtitle={`${summary.overallCollectionPct}% collection rate`}
+          icon={TrendingUp}
+          iconWrapClass="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+          valueClass="text-emerald-600"
+        />
+
+        <SummaryCard
+          title="Pending"
+          value={money(summary.positivePending)}
+          subtitle="Outstanding pending amount"
+          icon={TrendingDown}
+          iconWrapClass="bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+          valueClass="text-red-600"
+        />
+
+        <SummaryCard
+          title="Excess"
+          value={money(summary.excess)}
+          subtitle="Over-collected amount"
+          icon={IndianRupee}
+          iconWrapClass="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+          valueClass="text-amber-600"
+        />
+      </div>
+
+      {/* Filters */}
+      <div className="rounded-2xl border bg-card shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-violet-500" />
+            <h3 className="font-semibold">Filters & Search</h3>
+          </div>
+
+          {hasFilters ? (
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              Clear All
+            </Button>
+          ) : null}
         </div>
+
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 2xl:grid-cols-6 gap-3">
+            <div className="relative lg:col-span-3 2xl:col-span-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setPage(1)
+                }}
+                placeholder="Search driver, vehicle, route, class, status..."
+                className="pl-9"
+              />
+            </div>
+
+            <Select
+              value={driverFilter}
+              onValueChange={(v) => {
+                setDriverFilter(v)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Driver" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Drivers</SelectItem>
+                {drivers.map((driver) => (
+                  <SelectItem key={driver} value={driver}>
+                    {driver}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={vehicleFilter}
+              onValueChange={(v) => {
+                setVehicleFilter(v)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Vehicle" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Vehicles</SelectItem>
+                {vehicles.map((vehicle) => (
+                  <SelectItem key={vehicle} value={vehicle}>
+                    {vehicle}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={routeFilter}
+              onValueChange={(v) => {
+                setRouteFilter(v)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Route" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Routes</SelectItem>
+                {routes.map((route) => (
+                  <SelectItem key={route} value={route}>
+                    {route}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={classFilter}
+              onValueChange={(v) => {
+                setClassFilter(v)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Class" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {classes.map((cls) => (
+                  <SelectItem key={cls} value={cls}>
+                    {cls}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 2xl:grid-cols-6 gap-3">
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => {
+                setStatusFilter(v)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="cleared">Cleared</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="excess">Excess</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={collectionBandFilter}
+              onValueChange={(v) => {
+                setCollectionBandFilter(v)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Collection Band" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Bands</SelectItem>
+                <SelectItem value="excellent">Excellent (90%+)</SelectItem>
+                <SelectItem value="good">Good (70%+)</SelectItem>
+                <SelectItem value="average">Average (40%+)</SelectItem>
+                <SelectItem value="low">Low (&lt; 40%)</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="number"
+              placeholder="Min students"
+              value={minStudents}
+              onChange={(e) => {
+                setMinStudents(e.target.value)
+                setPage(1)
+              }}
+            />
+
+            <Input
+              type="number"
+              placeholder="Max students"
+              value={maxStudents}
+              onChange={(e) => {
+                setMaxStudents(e.target.value)
+                setPage(1)
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowOnlyUnpaid((prev) => !prev)
+                setPage(1)
+              }}
+              className={`rounded-md border px-3 text-sm font-medium transition ${
+                showOnlyUnpaid
+                  ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900'
+                  : 'bg-background hover:bg-muted'
+              }`}
+            >
+              Show only unpaid / pending
+            </button>
+
+            <div className="rounded-md border px-3 py-2 text-sm flex items-center justify-between">
+              <span className="text-muted-foreground">Sort</span>
+              <span className="font-medium capitalize">
+                {sortKey} · {sortDir}
+              </span>
+            </div>
+          </div>
+
+          {/* active chips */}
+          {hasFilters ? (
+            <div className="flex flex-wrap gap-2">
+              {search ? <FilterChip label={`Search: ${search}`} onClear={() => setSearch('')} /> : null}
+              {driverFilter !== 'all' ? (
+                <FilterChip label={`Driver: ${driverFilter}`} onClear={() => setDriverFilter('all')} />
+              ) : null}
+              {vehicleFilter !== 'all' ? (
+                <FilterChip label={`Vehicle: ${vehicleFilter}`} onClear={() => setVehicleFilter('all')} />
+              ) : null}
+              {routeFilter !== 'all' ? (
+                <FilterChip label={`Route: ${routeFilter}`} onClear={() => setRouteFilter('all')} />
+              ) : null}
+              {classFilter !== 'all' ? (
+                <FilterChip label={`Class: ${classFilter}`} onClear={() => setClassFilter('all')} />
+              ) : null}
+              {statusFilter !== 'all' ? (
+                <FilterChip label={`Status: ${statusFilter}`} onClear={() => setStatusFilter('all')} />
+              ) : null}
+              {collectionBandFilter !== 'all' ? (
+                <FilterChip
+                  label={`Band: ${collectionBandFilter}`}
+                  onClear={() => setCollectionBandFilter('all')}
+                />
+              ) : null}
+              {minStudents !== '' ? (
+                <FilterChip label={`Min Students: ${minStudents}`} onClear={() => setMinStudents('')} />
+              ) : null}
+              {maxStudents !== '' ? (
+                <FilterChip label={`Max Students: ${maxStudents}`} onClear={() => setMaxStudents('')} />
+              ) : null}
+              {showOnlyUnpaid ? (
+                <FilterChip label="Only unpaid/pending" onClear={() => setShowOnlyUnpaid(false)} />
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Table toolbar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="text-sm text-muted-foreground">
+          Showing <span className="font-semibold text-foreground">{filteredRows.length}</span>{' '}
+          records · Page <span className="font-semibold text-foreground">{page}</span> of{' '}
+          <span className="font-semibold text-foreground">{totalPages}</span>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            Cleared
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+            Pending
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
+            Excess
+          </span>
+        </div>
+      </div>
+
+      {/* Table */}
+      {pagedRows.length === 0 ? (
+        <EmptyState hasFilters={hasFilters} />
       ) : (
-        <div className="space-y-5">
-          {filtered.map((owner, idx) => (
-            <OwnerCard key={owner.ownerName} owner={owner} paletteIdx={idx} />
-          ))}
+        <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1700px] text-sm">
+              <thead className="bg-muted/50 sticky top-0 z-10">
+                <tr className="border-b">
+                  <th className="px-4 py-3 w-[56px]"></th>
+                  <th className="text-left px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Driver"
+                      column="driverName"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                  <th className="text-left px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Vehicle"
+                      column="vehicleNo"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                  <th className="text-left px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Route"
+                      column="route"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                  <th className="text-left px-4 py-3 min-w-[260px]">
+                    <TableHeaderSort
+                      label="Classes"
+                      column="classSummary"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                  <th className="text-center px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Students"
+                      column="totalStudents"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      align="center"
+                    />
+                  </th>
+                  <th className="text-center px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Paid"
+                      column="paidStudents"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      align="center"
+                    />
+                  </th>
+                  <th className="text-center px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Unpaid"
+                      column="unpaidStudents"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      align="center"
+                    />
+                  </th>
+                  <th className="text-right px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Estimated"
+                      column="estimatedAmount"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                  <th className="text-right px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Discount"
+                      column="discountAmount"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                  <th className="text-right px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Collected"
+                      column="collectedAmount"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                  <th className="text-right px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Pending"
+                      column="pendingAmount"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                  <th className="text-center px-4 py-3 whitespace-nowrap">
+                    <TableHeaderSort
+                      label="Collection %"
+                      column="collectionPct"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      align="center"
+                    />
+                  </th>
+                  <th className="text-center px-4 py-3 whitespace-nowrap">Band</th>
+                  <th className="text-center px-4 py-3 whitespace-nowrap">Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {pagedRows.map((row) => {
+                  const expanded = !!expandedRows[row.id]
+
+                  return (
+                    <FragmentRow
+                      key={row.id}
+                      row={row}
+                      expanded={expanded}
+                      onToggle={() => toggleExpanded(row.id)}
+                    />
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
+
+      {/* Pagination */}
+      {filteredRows.length > 0 ? (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Showing{' '}
+            <span className="font-semibold text-foreground">
+              {(page - 1) * pageSize + 1}
+            </span>{' '}
+            to{' '}
+            <span className="font-semibold text-foreground">
+              {Math.min(page * pageSize, filteredRows.length)}
+            </span>{' '}
+            of{' '}
+            <span className="font-semibold text-foreground">{filteredRows.length}</span>{' '}
+            records
+          </p>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(1)}
+              disabled={page === 1}
+            >
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Prev
+            </Button>
+            <div className="px-3 py-1.5 text-sm rounded-md border bg-background">
+              {page} / {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              Next
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(totalPages)}
+              disabled={page === totalPages}
+            >
+              Last
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fragment row component
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FragmentRow({ row, expanded, onToggle }) {
+  const statusClass = getStatusClasses(row.status)
+  const bandClass = getBandClasses(row.collectionBand)
+
+  return (
+    <>
+      <tr className="border-b hover:bg-muted/25 transition-colors">
+        <td className="px-4 py-3 align-middle">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="h-8 w-8 rounded-lg border bg-background hover:bg-muted inline-flex items-center justify-center"
+          >
+            {expanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+        </td>
+
+        <td className="px-4 py-3 align-middle">
+          <div className="flex items-center gap-2 min-w-[180px]">
+            <div className="h-9 w-9 rounded-xl bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 flex items-center justify-center shrink-0">
+              <Users className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-semibold leading-tight">{row.driverName}</p>
+              <p className="text-xs text-muted-foreground">Transport Driver</p>
+            </div>
+          </div>
+        </td>
+
+        <td className="px-4 py-3 align-middle">
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <Car className="h-4 w-4 text-sky-500" />
+            <span className="font-medium">{row.vehicleNo}</span>
+          </div>
+        </td>
+
+        <td className="px-4 py-3 align-middle">
+          <div className="flex items-center gap-2 min-w-[180px]">
+            <MapPin className="h-4 w-4 text-rose-500 shrink-0" />
+            <span className="font-medium">{row.route}</span>
+          </div>
+        </td>
+
+        <td className="px-4 py-3 align-middle min-w-[260px]">
+          <div className="max-w-[280px]">
+            <p className="line-clamp-2 text-sm">{row.classSummary || '-'}</p>
+          </div>
+        </td>
+
+        <td className="px-4 py-3 text-center align-middle font-semibold">
+          {row.totalStudents}
+        </td>
+
+        <td className="px-4 py-3 text-center align-middle">
+          <span className="font-semibold text-emerald-600">{row.paidStudents}</span>
+        </td>
+
+        <td className="px-4 py-3 text-center align-middle">
+          <span className="font-semibold text-red-600">{row.unpaidStudents}</span>
+        </td>
+
+        <td className="px-4 py-3 text-right align-middle whitespace-nowrap font-medium">
+          {money(row.estimatedAmount)}
+        </td>
+
+        <td className="px-4 py-3 text-right align-middle whitespace-nowrap font-medium text-sky-600">
+          {money(row.discountAmount)}
+        </td>
+
+        <td className="px-4 py-3 text-right align-middle whitespace-nowrap font-semibold text-emerald-600">
+          {money(row.collectedAmount)}
+        </td>
+
+        <td className="px-4 py-3 text-right align-middle whitespace-nowrap font-semibold">
+          <span
+            className={
+              row.status === 'excess'
+                ? 'text-amber-600'
+                : row.status === 'pending'
+                  ? 'text-red-600'
+                  : 'text-muted-foreground'
+            }
+          >
+            {money(Math.abs(row.pendingAmount))}
+          </span>
+        </td>
+
+        <td className="px-4 py-3 text-center align-middle">
+          <div className="min-w-[120px]">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-muted-foreground">Rate</span>
+              <span className="text-xs font-semibold">{row.collectionPct}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className={`h-full rounded-full ${progressColorClass(row.collectionPct)}`}
+                style={{ width: `${row.collectionPct}%` }}
+              />
+            </div>
+          </div>
+        </td>
+
+        <td className="px-4 py-3 text-center align-middle">
+          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${bandClass}`}>
+            {row.collectionBand}
+          </span>
+        </td>
+
+        <td className="px-4 py-3 text-center align-middle">
+          <span
+            className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass}`}
+          >
+            {getStatusLabel(row.status)}
+          </span>
+        </td>
+      </tr>
+
+      {expanded ? (
+        <tr className="border-b">
+          <td colSpan={15} className="p-0">
+            <ExpandedClassBreakdown row={row} />
+          </td>
+        </tr>
+      ) : null}
+    </>
   )
 }
