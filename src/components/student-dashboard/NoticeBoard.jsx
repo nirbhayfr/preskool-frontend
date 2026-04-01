@@ -43,9 +43,9 @@ export function NoticeBoard({ title = 'Notices' }) {
     <Card className="h-full rounded-sm w-full">
       <CardHeader className="flex justify-between items-center px-4">
         <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-        <Button variant="ghost" size="sm" className="text-xs">
+        {/* <Button variant="ghost" size="sm" className="text-xs">
           View All
-        </Button>
+        </Button> */}
       </CardHeader>
 
       <CardContent className="space-y-3 px-4 py-2 max-h-96 overflow-y-auto">

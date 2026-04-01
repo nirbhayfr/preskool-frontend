@@ -237,7 +237,7 @@ const data = {
       icon: Bus,
     },
     {
-      title: 'Owner Transport Report',
+      title: 'Driver Transport Report',
       url: '/owner-transport-report',
       icon: Bus,
     },

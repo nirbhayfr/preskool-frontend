@@ -10,6 +10,10 @@ import { X } from 'lucide-react'
 import { decryptData } from '@/utils/crypto'
 import StudentDashboardCalendar from '@/components/student-dashboard/StudentDashboardCalendar'
 import StudentDashboardResult from '@/components/student-dashboard/StudentDashboardResults'
+import StudentDashboardTransport from '@/components/student-dashboard/StudentDashboardTransport'
+import { useStudent } from '@/hooks/useStudents'
+import { CircleLoader } from '@/components/layout/RouteLoader'
+import StudentDashboardTimetable from '@/components/student-dashboard/StudentDashboardTimetable'
 function StudentDashboard() {
   const [activeModal, setActiveModal] = useState(null)
   useEffect(() => {
@@ -33,7 +37,17 @@ function StudentDashboard() {
     }
   }, [])
 
-  console.log(user)
+  const { data: student, isLoading, isError } = useStudent(user?.LinkedID)
+  if (isLoading) return <CircleLoader />
+  if (isError) {
+    return (
+      <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400">
+        Failed to load student profile
+      </div>
+    )
+  }
+
+  console.log(student)
   return (
     <section>
       <div>
@@ -109,7 +123,13 @@ function StudentDashboard() {
 
               {activeModal === 'leave' && <LeaveStatus />}
 
-              {['transport', 'lms', 'timetable'].includes(activeModal) && (
+              {activeModal === 'transport' && <StudentDashboardTransport />}
+
+              {activeModal === 'timetable' && (
+                <StudentDashboardTimetable student={student} />
+              )}
+
+              {['lms'].includes(activeModal) && (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                     🚀
