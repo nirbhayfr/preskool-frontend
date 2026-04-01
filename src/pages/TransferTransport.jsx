@@ -559,7 +559,7 @@ export default function TransportRoutePage() {
                             <SelectItem key={t.TransportID} value={t.TransportNumber}>
                               <div className="flex flex-col">
                                 <span className="font-mono font-semibold">
-                                  {t.TransportNumber}
+                                  {t.TransportNumber} • {t.OwnerName}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
                                   {t.TransportType} • {t.TransporterName}
