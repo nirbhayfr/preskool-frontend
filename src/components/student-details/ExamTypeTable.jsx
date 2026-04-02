@@ -24,6 +24,9 @@ function ExamTypeTable({ examType, examData, student }) {
 
   const columns = useMemo(
     () => [
+      { accessorKey: 'StudentID', header: 'Student ID' },
+      { accessorKey: 'Class', header: 'Class' },
+      { accessorKey: 'Section', header: 'Section' },
       { accessorKey: 'Subject', header: 'Subject' },
       { accessorKey: 'MaxMarks', header: 'Max Marks' },
       { accessorKey: 'MinMarks', header: 'Min Marks' },
@@ -92,10 +95,12 @@ function ExamTypeTable({ examType, examData, student }) {
     <Card className="rounded-sm">
       <CardHeader className="py-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold">{examType} Examination</CardTitle>
-        <Button size="sm" variant="outline" onClick={handlePrint}>
-          <Printer size={14} className="mr-1" />
-          Print Result
-        </Button>
+        {student && (
+          <Button size="sm" variant="outline" onClick={handlePrint}>
+            <Printer size={14} className="mr-1" />
+            Print Result
+          </Button>
+        )}
       </CardHeader>
 
       <CardContent className="pt-0 space-y-6">

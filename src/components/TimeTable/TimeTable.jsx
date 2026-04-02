@@ -12,14 +12,28 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { classes, sections } from '@/data/basicData'
+import { decryptData } from '@/utils/crypto'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 export default function TimeTable() {
-  const [filters, setFilters] = useState({
-    classId: 'all',
-    sectionId: 'all',
-  })
+  const user = useMemo(() => {
+    try {
+      const encrypted = localStorage.getItem('user')
+      return encrypted ? decryptData(encrypted) : null
+    } catch {
+      return null
+    }
+  }, [])
+
+  console.log(user)
+
+  const [filters, setFilters] = useState(() => ({
+    classId: user?.Role === 'Teacher' ? user?.Class : 'all',
+    sectionId: user?.Role === 'Teacher' ? user?.Section : 'all',
+  }))
+
+  const isTeacher = user?.Role === 'Teacher'
 
   const dayRefs = useRef({})
   const { data: timetable, isLoading, isError } = useTeacherTimeTables()
@@ -98,6 +112,7 @@ export default function TimeTable() {
                 onValueChange={(value) =>
                   setFilters((prev) => ({ ...prev, classId: value }))
                 }
+                disabled={isTeacher}
               >
                 <SelectTrigger className="w-full lg:w-36">
                   <SelectValue placeholder="All" />
@@ -121,6 +136,7 @@ export default function TimeTable() {
                 onValueChange={(value) =>
                   setFilters((prev) => ({ ...prev, sectionId: value }))
                 }
+                disabled={isTeacher}
               >
                 <SelectTrigger className="w-full lg:w-36">
                   <SelectValue placeholder="All" />
@@ -138,19 +154,21 @@ export default function TimeTable() {
 
             {/* Reset Button */}
             <div className="w-full lg:w-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full lg:w-auto"
-                onClick={() =>
-                  setFilters({
-                    classId: '',
-                    sectionId: '',
-                  })
-                }
-              >
-                Reset
-              </Button>
+              {!isTeacher && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full lg:w-auto"
+                  onClick={() =>
+                    setFilters({
+                      classId: 'all',
+                      sectionId: 'all',
+                    })
+                  }
+                >
+                  Reset
+                </Button>
+              )}
             </div>
           </div>
         </div>

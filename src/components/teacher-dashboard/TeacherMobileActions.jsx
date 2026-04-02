@@ -6,10 +6,13 @@ import {
   ClipboardList,
   IndianRupee,
   X,
+  Bell,
 } from 'lucide-react'
 import SyllabusSlider from './SyllabusSlider'
-import { StudentMarksTable } from './StudentMarksTableTD'
+import StudentMarksTable from './StudentMarksTableTD'
 import UpcomingEvents from './UpcomingEventsTD'
+import AttendanceTD from './AttendanceTD'
+import { NoticesTD } from './NoticesTD'
 const actions = [
   {
     label: 'Syllabus',
@@ -40,6 +43,12 @@ const actions = [
     key: 'salary',
     icon: IndianRupee,
     color: 'text-yellow-600 bg-yellow-50',
+  },
+  {
+    label: 'Notices',
+    key: 'notices',
+    icon: Bell,
+    color: 'text-rose-600 bg-rose-50',
   },
 ]
 
@@ -132,8 +141,10 @@ export default function TeacherMobileActions() {
               {active === 'syllabus' && <SyllabusSlider />}
               {active === 'marks' && <StudentMarksTable />}
               {active === 'events' && <UpcomingEvents />}
+              {active === 'attendance' && <AttendanceTD />}
+              {active === 'notices' && <NoticesTD />}
 
-              {['attendance', 'salary'].includes(active) && (
+              {['salary'].includes(active) && (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
                   <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-lg">
                     🚀

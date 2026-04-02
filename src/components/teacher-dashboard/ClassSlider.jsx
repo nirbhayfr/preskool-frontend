@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useTeacherTimeTableByTeacher } from '@/hooks/useTeacherTimeTable'
+import { Link } from 'react-router-dom'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -79,6 +80,10 @@ function ClassSlider({ teacherId }) {
             </Button>
           </div>
         </div>
+
+        <Button size="sm" variant="outline">
+          <Link to="/class-timetable">Edit Timetable</Link>
+        </Button>
       </div>
 
       {/* Day Pills */}

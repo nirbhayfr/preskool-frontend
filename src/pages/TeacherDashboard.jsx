@@ -1,5 +1,5 @@
 import ClassSlider from '@/components/teacher-dashboard/ClassSlider'
-import { StudentMarksTable } from '@/components/teacher-dashboard/StudentMarksTableTD'
+import StudentMarksTable from '@/components/teacher-dashboard/StudentMarksTableTD'
 import SyllabusCard from '@/components/teacher-dashboard/SyllabusCard'
 import SyllabusSlider from '@/components/teacher-dashboard/SyllabusSlider'
 import TeacherProfilecard from '@/components/teacher-dashboard/TeacherProfilecard'
@@ -9,6 +9,8 @@ import { decryptData } from '@/utils/crypto'
 import { useMemo } from 'react'
 import { CircleLoader } from '@/components/layout/RouteLoader'
 import UpcomingEvents from '@/components/teacher-dashboard/UpcomingEventsTD'
+import { NoticesTD } from '@/components/teacher-dashboard/NoticesTD'
+import AttendanceTD from '@/components/teacher-dashboard/AttendanceTD'
 
 function TeacherDashboard() {
   const user = useMemo(() => {
@@ -41,6 +43,10 @@ function TeacherDashboard() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
           <StudentMarksTable />
           <UpcomingEvents />
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
+          <NoticesTD />
+          <AttendanceTD />
         </div>
       </div>
 

@@ -30,9 +30,22 @@ import { CircleLoader } from '../layout/RouteLoader'
 import { useCreateTeacherTimeTable } from '@/hooks/useTeacherTimeTable'
 import { toast } from 'sonner'
 
+import { useMemo, useEffect } from 'react'
+import { decryptData } from '@/utils/crypto'
+
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 export default function AddTimeTableModal({ onClose }) {
+  const user = useMemo(() => {
+    try {
+      const encrypted = localStorage.getItem('user')
+      return encrypted ? decryptData(encrypted) : null
+    } catch {
+      return null
+    }
+  }, [])
+
+  const isTeacher = user?.Role === 'Teacher'
   const createMutation = useCreateTeacherTimeTable()
   const { data: teachers, isLoading } = useTeachers()
   const teacherList = teachers?.data ?? []
@@ -115,8 +128,6 @@ export default function AddTimeTableModal({ onClose }) {
 
     if (!payloads.length) return
 
-    console.log(payloads)
-
     Promise.all(payloads.map((payload) => createMutation.mutateAsync(payload)))
       .then(() => {
         toast.success('Time table added successfully')
@@ -127,11 +138,21 @@ export default function AddTimeTableModal({ onClose }) {
       })
   }
 
+  useEffect(() => {
+    if (isTeacher) {
+      setForm((prev) => ({
+        ...prev,
+        classId: user.Class || '',
+        sectionId: user.Section || '',
+      }))
+    }
+  }, [isTeacher, user])
+
   if (isLoading) return <CircleLoader />
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-[1300px] w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-325 w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Add Time Table</DialogTitle>
         </DialogHeader>
@@ -141,7 +162,11 @@ export default function AddTimeTableModal({ onClose }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-2">
               <Label>Class</Label>
-              <Select onValueChange={(val) => handleTopChange('classId', val)}>
+              <Select
+                value={form.classId}
+                onValueChange={(val) => handleTopChange('classId', val)}
+                disabled={isTeacher}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Class" />
                 </SelectTrigger>
@@ -157,7 +182,11 @@ export default function AddTimeTableModal({ onClose }) {
 
             <div className="space-y-2">
               <Label>Section</Label>
-              <Select onValueChange={(val) => handleTopChange('sectionId', val)}>
+              <Select
+                value={form.sectionId}
+                onValueChange={(val) => handleTopChange('sectionId', val)}
+                disabled={isTeacher}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Section" />
                 </SelectTrigger>
