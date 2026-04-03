@@ -11,6 +11,7 @@ import { CircleLoader } from '@/components/layout/RouteLoader'
 import UpcomingEvents from '@/components/teacher-dashboard/UpcomingEventsTD'
 import { NoticesTD } from '@/components/teacher-dashboard/NoticesTD'
 import AttendanceTD from '@/components/teacher-dashboard/AttendanceTD'
+import TeacherSalaryTD from '@/components/teacher-dashboard/TeacherSalaryTD'
 
 function TeacherDashboard() {
   const user = useMemo(() => {
@@ -48,6 +49,7 @@ function TeacherDashboard() {
           <NoticesTD />
           <AttendanceTD />
         </div>
+        <TeacherSalaryTD />
       </div>
 
       {/* MOBILE */}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useTeacherTimeTableByTeacher } from '@/hooks/useTeacherTimeTable'
 import { Link } from 'react-router-dom'
+import TimeTableCard from '../TimeTable/TimeTableCard'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -121,30 +122,11 @@ function ClassSlider({ teacherId }) {
             No classes for {selectedDay === todayDay ? 'today' : selectedDay}
           </p>
         ) : (
-          processedData.map((item, index) => {
-            return (
-              <div
-                key={index}
-                className="shrink-0 w-[180px] rounded-md bg-muted p-3 space-y-3"
-              >
-                <div
-                  className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] text-white rounded-sm ${
-                    cardColors[index % cardColors.length]
-                  }`}
-                >
-                  <Clock className="h-3 w-3" />
-                  {item.StartTime} - {item.EndTime}{' '}
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold">{item.Subject}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Class {item.ClassID}, {item.SectionID}
-                  </p>
-                </div>
-              </div>
-            )
-          })
+          processedData.map((item) => (
+            <div key={item.TimeTableID} className="shrink-0 w-[220px]">
+              <TimeTableCard data={item} />
+            </div>
+          ))
         )}
       </div>
     </Card>

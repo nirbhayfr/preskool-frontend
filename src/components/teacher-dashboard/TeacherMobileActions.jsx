@@ -13,6 +13,7 @@ import StudentMarksTable from './StudentMarksTableTD'
 import UpcomingEvents from './UpcomingEventsTD'
 import AttendanceTD from './AttendanceTD'
 import { NoticesTD } from './NoticesTD'
+import TeacherSalaryTD from './TeacherSalaryTD'
 const actions = [
   {
     label: 'Syllabus',
@@ -143,8 +144,9 @@ export default function TeacherMobileActions() {
               {active === 'events' && <UpcomingEvents />}
               {active === 'attendance' && <AttendanceTD />}
               {active === 'notices' && <NoticesTD />}
+              {active === 'salary' && <TeacherSalaryTD />}
 
-              {['salary'].includes(active) && (
+              {['example'].includes(active) && (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
                   <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-lg">
                     🚀
